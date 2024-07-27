@@ -1,0 +1,19 @@
+NAMESPACE                      NAME                                               READY   STATUS    RESTARTS        AGE
+kube-system                    calico-kube-controllers-69d878584c-jn2ls           1/1     Running   0               4h25m
+kube-system                    calico-node-jqs4m                                  1/1     Running   0               4h25m
+kube-system                    coredns-7796b77cd4-5j9vh                           1/1     Running   0               4h30m
+kube-system                    openebs-localpv-provisioner-7f95444755-s2mj9       1/1     Running   0               4h25m
+kube-system                    snapshot-controller-0                              1/1     Running   0               4h25m
+kubesphere-controls-system     default-http-backend-5bf68ff9b8-mzn92              1/1     Running   0               4h24m
+kubesphere-controls-system     kubectl-admin-6dbcb94855-vbm9b                     1/1     Running   0               4h24m
+kubesphere-monitoring-system   alertmanager-main-0                                2/2     Running   0               4h24m
+kubesphere-monitoring-system   kube-state-metrics-54d48d57db-dkgh7                3/3     Running   0               4h24m
+kubesphere-monitoring-system   node-exporter-cbp8x                                2/2     Running   0               4h24m
+kubesphere-monitoring-system   notification-manager-deployment-578bd94dfd-cqlmd   2/2     Running   0               4h24m
+kubesphere-monitoring-system   notification-manager-operator-587697798f-56b2h     2/2     Running   0               4h24m
+kubesphere-monitoring-system   prometheus-k8s-0                                   2/2     Running   0               4h24m
+kubesphere-monitoring-system   prometheus-operator-8955bbd98-587k6                2/2     Running   0               4h24m
+kubesphere-system              ks-apiserver-65bcfdfbfd-2r5x7                      1/1     Running   3 (4h24m ago)   4h24m
+kubesphere-system              ks-controller-manager-779b468cc7-swkrz             1/1     Running   0               4h24m
+kubesphere-system              ks-installer-7c978cbb64-6z6jq                      1/1     Running   0               4h25m
+kubesphere-system              redis-d744b7468-rgpq7                              1/1     Running   0               4h25m

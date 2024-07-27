@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Tags'
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+
+    - name: Unshallow
+      run: git fetch --prune --unshallow
+
+    - name: Get latest tag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      id: get-latest-tag
+      with:
+        fallback: latest
+
+    - name: Setup Node
+      uses: actions/setup-node@v1
+      with:
+        node-version: "18"
+
+    - name: Build
+      run: cd frontend;npm install;npm i -g @quasar/cli;quasar build;
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.22.4
+
+    - name: Install x86_64 cross-compiler
+      run: sudo apt-get update && sudo apt-get install -y build-essential
+
+    - name: Install ARM cross-compiler
+      run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v3.1.0
+      with:
+        distribution: goreleaser
+        version: v1.18.2
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,90 @@
+# Whether Notification manager is running at the kubesphere.
+kubesphere: true
+
+# notification-manager-operator
+operator: 
+  containers:
+    proxy:
+      image:
+        repo: kubesphere/kube-rbac-proxy
+        tag: v0.8.0
+        pullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 50m
+          memory: 50Mi
+        requests:
+          cpu: 5m
+          memory: 10Mi
+    operator:
+      image:
+        repo: beclab/notification-manager-operator-ext
+        tag: v0.1.0-ext
+        pullPolicy: IfNotPresent 
+      resources:
+        limits:
+          cpu: 50m
+          memory: 50Mi
+        requests:
+          cpu: 5m
+          memory: 20Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+
+# value of notification-manager
+notificationmanager:
+  name: notification-manager
+  image:
+    repo: beclab/notification-manager-ext
+    tag: v0.1.1-ext
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 5m
+      memory: 20Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  defaultConfigSelector:
+    matchLabels:
+      type: default
+  receivers:
+    tenantKey: user
+    globalReceiverSelector:
+      matchLabels:
+        type: global
+    tenantReceiverSelector:
+      matchLabels:
+        type: tenant
+    options:
+      global:
+        templateFile:
+        - /etc/notification-manager/template
+      email:
+        notificationTimeout: 5
+        deliveryType: bulk
+      slack:
+        notificationTimeout: 5
+      wechat:
+        notificationTimeout: 5
+  volumeMounts:
+    - mountPath: /etc/notification-manager/
+      name: notification-manager-template
+  volumes:
+    - configMap:
+        defaultMode: 420
+        name: notification-manager-template
+      name: notification-manager-template
+  defaultSecretNamespace: kubesphere-monitoring-federated
+  sidecars:
+    tenant:
+      image: beclab/notification-tenant-sidecar:v0.1.0
+      name: tenant
+      type: bytetrade
+

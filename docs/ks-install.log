@@ -1,0 +1,678 @@
+2024-07-08T10:03:12Z INFO     : shell-operator latest
+2024-07-08T10:03:12Z INFO     : HTTP SERVER Listening on 0.0.0.0:9115
+2024-07-08T10:03:12Z INFO     : Use temporary dir: /tmp/shell-operator
+2024-07-08T10:03:12Z INFO     : Initialize hooks manager ...
+2024-07-08T10:03:12Z INFO     : Search and load hooks ...
+2024-07-08T10:03:12Z INFO     : Load hook config from '/hooks/kubesphere/installRunner.py'
+2024-07-08T10:03:13Z INFO     : Load hook config from '/hooks/kubesphere/schedule.sh'
+2024-07-08T10:03:13Z INFO     : Initializing schedule manager ...
+2024-07-08T10:03:13Z INFO     : KUBE Init Kubernetes client
+2024-07-08T10:03:13Z INFO     : KUBE-INIT Kubernetes client is configured successfully
+2024-07-08T10:03:13Z INFO     : MAIN: run main loop
+2024-07-08T10:03:13Z INFO     : MAIN: add onStartup tasks
+2024-07-08T10:03:13Z INFO     : QUEUE add all HookRun@OnStartup
+2024-07-08T10:03:13Z INFO     : Running schedule manager ...
+2024-07-08T10:03:13Z INFO     : MSTOR Create new metric shell_operator_live_ticks
+2024-07-08T10:03:13Z INFO     : MSTOR Create new metric shell_operator_tasks_queue_length
+2024-07-08T10:03:13Z INFO     : GVR for kind 'ClusterConfiguration' is installer.kubesphere.io/v1alpha1, Resource=clusterconfigurations
+2024-07-08T10:03:13Z INFO     : EVENT Kube event '10beeb77-ff33-4846-a2e3-f4cc6fcaa30e'
+2024-07-08T10:03:13Z INFO     : QUEUE add TASK_HOOK_RUN@KUBE_EVENTS kubesphere/installRunner.py
+2024-07-08T10:03:16Z INFO     : TASK_RUN HookRun@KUBE_EVENTS kubesphere/installRunner.py
+2024-07-08T10:03:16Z INFO     : Running hook 'kubesphere/installRunner.py' binding 'KUBE_EVENTS' ...
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [localhost] ***************************************************************
+
+TASK [download : Generating images list] ***************************************
+skipping: [localhost]
+
+TASK [download : Synchronizing images] *****************************************
+
+TASK [kubesphere-defaults : KubeSphere | Setting images' namespace override] ***
+skipping: [localhost]
+
+TASK [kubesphere-defaults : KubeSphere | Configuring defaults] *****************
+ok: [localhost] => {
+    "msg": "Check roles/kubesphere-defaults/defaults/main.yml"
+}
+
+TASK [preinstall : KubeSphere | Stopping if Kubernetes version is nonsupport] ***
+ok: [localhost] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [preinstall : KubeSphere | Checking StorageClass] *************************
+changed: [localhost]
+
+TASK [preinstall : KubeSphere | Stopping if StorageClass was not found] ********
+skipping: [localhost]
+
+TASK [preinstall : KubeSphere | Checking default StorageClass] *****************
+changed: [localhost]
+
+TASK [preinstall : KubeSphere | Stopping if default StorageClass was not found] ***
+ok: [localhost] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [preinstall : KubeSphere | Checking KubeSphere component] *****************
+changed: [localhost]
+
+TASK [preinstall : KubeSphere | Getting KubeSphere component version] **********
+skipping: [localhost] => (item=ks-openldap) 
+skipping: [localhost] => (item=ks-redis) 
+skipping: [localhost] => (item=ks-minio) 
+skipping: [localhost] => (item=ks-openpitrix) 
+skipping: [localhost] => (item=elasticsearch-logging) 
+skipping: [localhost] => (item=elasticsearch-logging-curator) 
+skipping: [localhost] => (item=istio) 
+skipping: [localhost] => (item=istio-init) 
+skipping: [localhost] => (item=jaeger-operator) 
+skipping: [localhost] => (item=ks-jenkins) 
+skipping: [localhost] => (item=ks-sonarqube) 
+skipping: [localhost] => (item=logging-fluentbit-operator) 
+skipping: [localhost] => (item=uc) 
+skipping: [localhost] => (item=metrics-server) 
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=6    changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [localhost] ***************************************************************
+
+TASK [download : Generating images list] ***************************************
+skipping: [localhost]
+
+TASK [download : Synchronizing images] *****************************************
+
+TASK [kubesphere-defaults : KubeSphere | Setting images' namespace override] ***
+skipping: [localhost]
+
+TASK [kubesphere-defaults : KubeSphere | Configuring defaults] *****************
+ok: [localhost] => {
+    "msg": "Check roles/kubesphere-defaults/defaults/main.yml"
+}
+
+TASK [Metrics-Server | Getting metrics-server installation files] **************
+skipping: [localhost]
+
+TASK [metrics-server : Metrics-Server | Creating manifests] ********************
+skipping: [localhost] => (item={'file': 'metrics-server.yaml'}) 
+
+TASK [metrics-server : Metrics-Server | Checking Metrics-Server] ***************
+skipping: [localhost]
+
+TASK [Metrics-Server | Uninstalling old metrics-server] ************************
+skipping: [localhost]
+
+TASK [Metrics-Server | Installing new metrics-server] **************************
+skipping: [localhost]
+
+TASK [metrics-server : Metrics-Server | Waitting for metrics.k8s.io ready] *****
+skipping: [localhost]
+
+TASK [Metrics-Server | Importing metrics-server status] ************************
+skipping: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=1    changed=0    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [localhost] ***************************************************************
+
+TASK [download : Generating images list] ***************************************
+skipping: [localhost]
+
+TASK [download : Synchronizing images] *****************************************
+
+TASK [kubesphere-defaults : KubeSphere | Setting images' namespace override] ***
+skipping: [localhost]
+
+TASK [kubesphere-defaults : KubeSphere | Configuring defaults] *****************
+ok: [localhost] => {
+    "msg": "Check roles/kubesphere-defaults/defaults/main.yml"
+}
+
+TASK [common : KubeSphere | Checking kube-node-lease namespace] ****************
+changed: [localhost]
+
+TASK [common : KubeSphere | Getting system namespaces] *************************
+ok: [localhost]
+
+TASK [common : set_fact] *******************************************************
+ok: [localhost]
+
+TASK [common : debug] **********************************************************
+ok: [localhost] => {
+    "msg": [
+        "kubesphere-system",
+        "kubesphere-controls-system",
+        "kubesphere-monitoring-system",
+        "kubesphere-monitoring-federated",
+        "kube-node-lease"
+    ]
+}
+
+TASK [common : KubeSphere | Creating KubeSphere namespace] *********************
+changed: [localhost] => (item=kubesphere-system)
+changed: [localhost] => (item=kubesphere-controls-system)
+changed: [localhost] => (item=kubesphere-monitoring-system)
+changed: [localhost] => (item=kubesphere-monitoring-federated)
+changed: [localhost] => (item=kube-node-lease)
+
+TASK [common : KubeSphere | Labeling system-workspace] *************************
+changed: [localhost] => (item=default)
+changed: [localhost] => (item=kube-public)
+changed: [localhost] => (item=kube-system)
+changed: [localhost] => (item=kubesphere-system)
+changed: [localhost] => (item=kubesphere-controls-system)
+changed: [localhost] => (item=kubesphere-monitoring-system)
+changed: [localhost] => (item=kubesphere-monitoring-federated)
+changed: [localhost] => (item=kube-node-lease)
+
+TASK [common : KubeSphere | Labeling namespace for network policy] *************
+changed: [localhost]
+
+TASK [common : KubeSphere | Getting Kubernetes master num] *********************
+changed: [localhost]
+
+TASK [common : KubeSphere | Setting master num] ********************************
+ok: [localhost]
+
+TASK [KubeSphere | Getting common component installation files] ****************
+changed: [localhost] => (item=common)
+
+TASK [common : KubeSphere | Checking Kubernetes version] ***********************
+changed: [localhost]
+
+TASK [KubeSphere | Getting common component installation files] ****************
+changed: [localhost] => (item=snapshot-controller)
+
+TASK [common : KubeSphere | Creating snapshot controller values] ***************
+changed: [localhost] => (item={'name': 'custom-values-snapshot-controller', 'file': 'custom-values-snapshot-controller.yaml'})
+
+TASK [common : KubeSphere | Updating snapshot crd] *****************************
+changed: [localhost]
+
+TASK [common : KubeSphere | Deploying snapshot controller] *********************
+changed: [localhost]
+
+TASK [KubeSphere | Creating common component manifests] ************************
+changed: [localhost] => (item={'path': 'redis', 'file': 'redis.yaml'})
+
+TASK [common : KubeSphere | Generet Random password] ***************************
+ok: [localhost]
+
+TASK [common : KubeSphere | Creating Redis Password Secret] ********************
+changed: [localhost]
+
+TASK [common : KubeSphere | Getting redis installation files] ******************
+skipping: [localhost] => (item=redis-ha) 
+
+TASK [common : KubeSphere | Creating manifests] ********************************
+skipping: [localhost] => (item={'name': 'custom-values-redis', 'file': 'custom-values-redis.yaml'}) 
+
+TASK [common : KubeSphere | Checking old redis status] *************************
+skipping: [localhost]
+
+TASK [common : KubeSphere | Deleting and backup old redis svc] *****************
+skipping: [localhost]
+
+TASK [common : KubeSphere | Deploying redis] ***********************************
+skipping: [localhost]
+
+TASK [common : KubeSphere | Deploying redis] ***********************************
+changed: [localhost] => (item=redis.yaml)
+
+TASK [common : KubeSphere | Importing redis status] ****************************
+changed: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=21   changed=15   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [localhost] ***************************************************************
+
+TASK [download : Generating images list] ***************************************
+skipping: [localhost]
+
+TASK [download : Synchronizing images] *****************************************
+
+TASK [kubesphere-defaults : KubeSphere | Setting images' namespace override] ***
+skipping: [localhost]
+
+TASK [kubesphere-defaults : KubeSphere | Configuring defaults] *****************
+ok: [localhost] => {
+    "msg": "Check roles/kubesphere-defaults/defaults/main.yml"
+}
+
+TASK [ks-core/init-token : KubeSphere | Creating KubeSphere directory] *********
+ok: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Getting installation init files] *******
+changed: [localhost] => (item=jwt-script)
+
+TASK [ks-core/init-token : KubeSphere | Creating KubeSphere Secret] ************
+changed: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Creating KubeSphere Secret] ************
+ok: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Creating KubeSphere Secret] ************
+skipping: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Enabling Token Script] *****************
+changed: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Getting KubeSphere Token] **************
+changed: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Checking KubeSphere secrets] ***********
+changed: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Deleting KubeSphere secret] ************
+skipping: [localhost]
+
+TASK [ks-core/init-token : KubeSphere | Creating components token] *************
+changed: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Setting Kubernetes version] ***************
+ok: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Getting Kubernetes master num] ************
+changed: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Setting master num] ***********************
+ok: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Override master num] **********************
+skipping: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Setting enableHA] *************************
+ok: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Checking ks-core Helm Release] ************
+changed: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Checking ks-core Exsit] *******************
+changed: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Convert ks-core to helm mananged] *********
+skipping: [localhost] => (item={'ns': 'kubesphere-controls-system', 'kind': 'serviceaccounts', 'resource': 'kubesphere-cluster-admin', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-controls-system', 'kind': 'serviceaccounts', 'resource': 'kubesphere-router-serviceaccount', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-controls-system', 'kind': 'role', 'resource': 'system:kubesphere-router-role', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-controls-system', 'kind': 'rolebinding', 'resource': 'nginx-ingress-role-nisa-binding', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-controls-system', 'kind': 'deployment', 'resource': 'default-http-backend', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-controls-system', 'kind': 'service', 'resource': 'default-http-backend', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'secrets', 'resource': 'ks-controller-manager-webhook-cert', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'serviceaccounts', 'resource': 'kubesphere', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'configmaps', 'resource': 'ks-router-config', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'configmaps', 'resource': 'sample-bookinfo', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'clusterroles', 'resource': 'system:kubesphere-router-clusterrole', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'clusterrolebindings', 'resource': 'system:nginx-ingress-clusterrole-nisa-binding', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'clusterrolebindings', 'resource': 'system:kubesphere-cluster-admin', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'clusterrolebindings', 'resource': 'kubesphere', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'services', 'resource': 'ks-apiserver', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'services', 'resource': 'ks-controller-manager', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'deployments', 'resource': 'ks-apiserver', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'deployments', 'resource': 'ks-controller-manager', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'validatingwebhookconfigurations', 'resource': 'users.iam.kubesphere.io', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'validatingwebhookconfigurations', 'resource': 'resourcesquotas.quota.kubesphere.io', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'validatingwebhookconfigurations', 'resource': 'network.kubesphere.io', 'release': 'ks-core'}) 
+skipping: [localhost] => (item={'ns': 'kubesphere-system', 'kind': 'users.iam.kubesphere.io', 'resource': 'admin', 'release': 'ks-core'}) 
+
+TASK [ks-core/ks-core : KubeSphere | Patch admin user] *************************
+skipping: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Getting ks-core helm charts] **************
+changed: [localhost] => (item=ks-core-config)
+changed: [localhost] => (item=ks-core)
+
+TASK [ks-core/ks-core : KubeSphere | Creating manifests] ***********************
+changed: [localhost] => (item={'path': 'ks-core', 'file': 'custom-values-ks-core.yaml'})
+
+TASK [ks-core/ks-core : KubeSphere | Upgrade CRDs] *****************************
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/quota.kubesphere.io_resourcequotas.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/servicemesh.kubesphere.io_strategies.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_federatedusers.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/application.kubesphere.io_helmreleases.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_workspaceroles.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/storage.kubesphere.io_storageclasseraccessor.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/application.kubesphere.io_helmrepos.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_globalrolebindings.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_groupbindings.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/servicemesh.kubesphere.io_servicepolicies.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_federatedrolebindings.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/application.kubesphere.io_helmapplicationversions.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_globalroles.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/network.kubesphere.io_ipamhandles.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/application.kubesphere.io_helmapplications.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_workspacerolebindings.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_users.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/network.kubesphere.io_ipamblocks.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_rolebases.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/network.kubesphere.io_namespacenetworkpolicies.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_loginrecords.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/tenant.kubesphere.io_workspaces.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/cluster.kubesphere.io_clusters.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/gateway.kubesphere.io_gateways.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_groups.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/app_v1beta1_application.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/network.kubesphere.io_ippools.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/iam.kubesphere.io_federatedroles.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/gateway.kubesphere.io_nginxes.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/application.kubesphere.io_helmcategories.yaml)
+changed: [localhost] => (item=/kubesphere/kubesphere/ks-core-config/crds/tenant.kubesphere.io_workspacetemplates.yaml)
+
+TASK [ks-core/ks-core : KubeSphere | Creating ks-core-config] ******************
+changed: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Creating ks-core] *************************
+changed: [localhost]
+
+TASK [ks-core/ks-core : KubeSphere | Importing ks-core status] *****************
+changed: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Checking core components (1)] *************
+changed: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Checking core components (2)] *************
+changed: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Checking core components (3)] *************
+skipping: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Checking core components (4)] *************
+skipping: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Updating ks-core status] ******************
+skipping: [localhost]
+
+TASK [ks-core/prepare : set_fact] **********************************************
+skipping: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Creating KubeSphere directory] ************
+ok: [localhost]
+
+TASK [ks-core/prepare : KubeSphere | Getting installation init files] **********
+changed: [localhost] => (item=ks-init)
+
+TASK [ks-core/prepare : KubeSphere | Initing KubeSphere] ***********************
+changed: [localhost] => (item=role-templates.yaml)
+
+TASK [ks-core/prepare : KubeSphere | Generating kubeconfig-admin] **************
+skipping: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=26   changed=19   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+Start installing monitoring
+Start installing multicluster
+Start installing openpitrix
+Start installing network
+**************************************************
+Waiting for all tasks to be completed ...
+task openpitrix status is successful  (1/4)
+task network status is successful  (2/4)
+task multicluster status is successful  (3/4)
+task monitoring status is successful  (4/4)
+**************************************************
+Collecting installation results ...
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [localhost] ***************************************************************
+
+TASK [download : Generating images list] ***************************************
+skipping: [localhost]
+
+TASK [download : Synchronizing images] *****************************************
+
+TASK [kubesphere-defaults : KubeSphere | Setting images' namespace override] ***
+skipping: [localhost]
+
+TASK [kubesphere-defaults : KubeSphere | Configuring defaults] *****************
+ok: [localhost] => {
+    "msg": "Check roles/kubesphere-defaults/defaults/main.yml"
+}
+
+TASK [ks-core/config : KubeSphere | Getting sonarqube host] ********************
+changed: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting sonarqube token] *******************
+changed: [localhost]
+
+TASK [ks-core/config : set_fact] ***********************************************
+skipping: [localhost]
+
+TASK [ks-core/config : set_fact] ***********************************************
+skipping: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting es index prefix] *******************
+changed: [localhost]
+
+TASK [ks-core/config : set_fact] ***********************************************
+skipping: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting token] *****************************
+changed: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting ks-secret] *************************
+changed: [localhost]
+
+TASK [ks-core/config : debug] **************************************************
+ok: [localhost] => {
+    "msg": "Current Kubernetes version is v1.22.16+k3s1"
+}
+
+TASK [ks-core/config : KubeSphere | Setting kubectl image version] *************
+ok: [localhost] => (item={'key': 'v1.22.0', 'value': 'v1.22.0'})
+skipping: [localhost] => (item={'key': 'v1.21.0', 'value': 'v1.21.0'}) 
+skipping: [localhost] => (item={'key': 'v1.20.0', 'value': 'v1.20.0'}) 
+skipping: [localhost] => (item={'key': 'v1.19.0', 'value': 'v1.19.1'}) 
+skipping: [localhost] => (item={'key': 'v1.18.0', 'value': 'v1.18.0'}) 
+skipping: [localhost] => (item={'key': 'v1.17.0', 'value': 'v1.17.0'}) 
+skipping: [localhost] => (item={'key': 'v1.16.0', 'value': 'v1.16.0'}) 
+skipping: [localhost] => (item={'key': 'v1.15.0', 'value': 'v1.0.0'}) 
+
+TASK [ks-core/config : debug] **************************************************
+ok: [localhost] => {
+    "msg": "Current kubectl image version is v1.22.0"
+}
+
+TASK [ks-core/config : KubeSphere | Getting Kubernetes master num] *************
+changed: [localhost]
+
+TASK [ks-core/config : KubeSphere | Setting master num] ************************
+ok: [localhost]
+
+TASK [ks-core/config : KubeSphere | Creating manifests] ************************
+changed: [localhost] => (item={'name': 'kubesphere-config', 'file': 'kubesphere-config.yaml', 'type': 'cm'})
+
+TASK [ks-core/config : KubeSphere | Initing KubeSphere] ************************
+changed: [localhost] => (item=kubesphere-config.yaml)
+
+TASK [ks-core/config : OpenPitrix | Getting openpitrix jobs installation files] ***
+skipping: [localhost] => (item=openpitrix) 
+
+TASK [ks-core/config : OpenPitrix | Creating openpitrix jobs manifests] ********
+skipping: [localhost] => (item={'path': 'openpitrix', 'file': 'ks-openpitrix-upgrade.yaml'}) 
+
+TASK [ks-core/config : OpenPitrix | Upgrade OpenPitrix] ************************
+skipping: [localhost]
+
+TASK [ks-core/config : OpenPitrix | Delete namespace openpitrix-system] ********
+skipping: [localhost]
+
+TASK [ks-core/config : Alerting | Checking status v3.0.0] **********************
+changed: [localhost]
+
+TASK [ks-core/config : Alerting | Getting migration files] *********************
+skipping: [localhost] => (item=alerting-migration) 
+
+TASK [ks-core/config : Alerting | Getting migration files] *********************
+skipping: [localhost] => (item={'path': 'alerting-migration', 'file': 'ks-alerting-migration.yaml'}) 
+
+TASK [ks-core/config : Alerting | Creating migration job] **********************
+skipping: [localhost]
+
+TASK [ks-core/config : Alerting | Getting migration job status] ****************
+skipping: [localhost]
+
+TASK [ks-core/config : Alerting | Getting migration job status] ****************
+skipping: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=14   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [localhost] ***************************************************************
+
+TASK [download : Generating images list] ***************************************
+skipping: [localhost]
+
+TASK [download : Synchronizing images] *****************************************
+
+TASK [kubesphere-defaults : KubeSphere | Setting images' namespace override] ***
+skipping: [localhost]
+
+TASK [kubesphere-defaults : KubeSphere | Configuring defaults] *****************
+ok: [localhost] => {
+    "msg": "Check roles/kubesphere-defaults/defaults/main.yml"
+}
+
+TASK [ks-core/config : KubeSphere | Getting sonarqube host] ********************
+changed: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting sonarqube token] *******************
+changed: [localhost]
+
+TASK [ks-core/config : set_fact] ***********************************************
+skipping: [localhost]
+
+TASK [ks-core/config : set_fact] ***********************************************
+skipping: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting es index prefix] *******************
+changed: [localhost]
+
+TASK [ks-core/config : set_fact] ***********************************************
+skipping: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting token] *****************************
+changed: [localhost]
+
+TASK [ks-core/config : KubeSphere | Getting ks-secret] *************************
+changed: [localhost]
+
+TASK [ks-core/config : debug] **************************************************
+ok: [localhost] => {
+    "msg": "Current Kubernetes version is v1.22.16+k3s1"
+}
+
+TASK [ks-core/config : KubeSphere | Setting kubectl image version] *************
+ok: [localhost] => (item={'key': 'v1.22.0', 'value': 'v1.22.0'})
+skipping: [localhost] => (item={'key': 'v1.21.0', 'value': 'v1.21.0'}) 
+skipping: [localhost] => (item={'key': 'v1.20.0', 'value': 'v1.20.0'}) 
+skipping: [localhost] => (item={'key': 'v1.19.0', 'value': 'v1.19.1'}) 
+skipping: [localhost] => (item={'key': 'v1.18.0', 'value': 'v1.18.0'}) 
+skipping: [localhost] => (item={'key': 'v1.17.0', 'value': 'v1.17.0'}) 
+skipping: [localhost] => (item={'key': 'v1.16.0', 'value': 'v1.16.0'}) 
+skipping: [localhost] => (item={'key': 'v1.15.0', 'value': 'v1.0.0'}) 
+
+TASK [ks-core/config : debug] **************************************************
+ok: [localhost] => {
+    "msg": "Current kubectl image version is v1.22.0"
+}
+
+TASK [ks-core/config : KubeSphere | Getting Kubernetes master num] *************
+changed: [localhost]
+
+TASK [ks-core/config : KubeSphere | Setting master num] ************************
+ok: [localhost]
+
+TASK [ks-core/config : KubeSphere | Creating manifests] ************************
+ok: [localhost] => (item={'name': 'kubesphere-config', 'file': 'kubesphere-config.yaml', 'type': 'cm'})
+
+TASK [ks-core/config : KubeSphere | Initing KubeSphere] ************************
+changed: [localhost] => (item=kubesphere-config.yaml)
+
+TASK [ks-core/config : OpenPitrix | Getting openpitrix jobs installation files] ***
+skipping: [localhost] => (item=openpitrix) 
+
+TASK [ks-core/config : OpenPitrix | Creating openpitrix jobs manifests] ********
+skipping: [localhost] => (item={'path': 'openpitrix', 'file': 'ks-openpitrix-upgrade.yaml'}) 
+
+TASK [ks-core/config : OpenPitrix | Upgrade OpenPitrix] ************************
+skipping: [localhost]
+
+TASK [ks-core/config : OpenPitrix | Delete namespace openpitrix-system] ********
+skipping: [localhost]
+
+TASK [ks-core/config : Alerting | Checking status v3.0.0] **********************
+changed: [localhost]
+
+TASK [ks-core/config : Alerting | Getting migration files] *********************
+skipping: [localhost] => (item=alerting-migration) 
+
+TASK [ks-core/config : Alerting | Getting migration files] *********************
+skipping: [localhost] => (item={'path': 'alerting-migration', 'file': 'ks-alerting-migration.yaml'}) 
+
+TASK [ks-core/config : Alerting | Creating migration job] **********************
+skipping: [localhost]
+
+TASK [ks-core/config : Alerting | Getting migration job status] ****************
+skipping: [localhost]
+
+TASK [ks-core/config : Alerting | Getting migration job status] ****************
+skipping: [localhost]
+
+TASK [check-result : ks-devops | Getting ks-sonarqube NodeIp] ******************
+changed: [localhost]
+
+TASK [check-result : KubeSphere | Waiting for ks-apiserver] ********************
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (30 retries left).
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (29 retries left).
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (28 retries left).
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (27 retries left).
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (26 retries left).
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (25 retries left).
+FAILED - RETRYING: KubeSphere | Waiting for ks-apiserver (24 retries left).
+changed: [localhost]
+
+TASK [check-result : KubeSphere | Importing ks-core status] ********************
+changed: [localhost]
+
+TASK [check-result : KubeSphere | Creating info_file] **************************
+changed: [localhost -> localhost] => (item={'name': 'welcome', 'file': 'kubesphere_running', 'type': 'info'})
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=18   changed=12   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+#####################################################
+###              Welcome to KubeSphere!           ###
+#####################################################
+
+NOTES：
+  1. After you log into the console, please check the
+     monitoring status of service components in
+     "Cluster Management". If any service is not
+     ready, please wait patiently until all components 
+     are up and running.
+  2. Please change the default password after login.
+
+#####################################################
+https://kubesphere.io             2024-07-08 10:17:36
+#####################################################
+
