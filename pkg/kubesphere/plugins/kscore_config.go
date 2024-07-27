@@ -175,8 +175,10 @@ type PatchKsCoreStatus struct {
 
 func (t *PatchKsCoreStatus) Execute(runtime connector.Runtime) error {
 	// ! todo need test on linux
-	// var jsonPath = fmt.Sprintf(`{\"status\": {\"core\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
-	var jsonPath = fmt.Sprintf(`{"status": {"core": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
+	var jsonPath = fmt.Sprintf(`{\"status\": {\"core\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
+	if runtime.GetRunner().Host.GetMinikube() {
+		jsonPath = fmt.Sprintf(`{"status": {"core": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
+	}
 	var cmd = fmt.Sprintf("/usr/local/bin/kubectl patch cc ks-installer --type merge -p '%s' -n %s", jsonPath, common.NamespaceKubesphereSystem)
 
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
