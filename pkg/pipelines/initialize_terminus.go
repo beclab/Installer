@@ -114,16 +114,7 @@ func getNodeVersion(kubeType string, minikube bool) (string, error) {
 	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'")
 	stdout, _, err := util.Exec(cmd, false, false)
 	if err != nil {
-		switch kubeType { // todo minikube 应该要查一个 node 的信息才对
-		case common.K8s:
-			ver = common.DefaultK8sVersion
-		case common.K3s:
-			fallthrough
-		default:
-			ver = common.DefaultK3sVersion
-		}
-		return ver, nil
-		// return ver, err
+		return common.DefaultK8sVersion, nil
 	}
 
 	if strings.Contains(stdout, "k3s") {
