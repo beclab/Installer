@@ -3,20 +3,75 @@ package kubesphere
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 
+	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/files"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
 	mk "bytetrade.io/web3os/installer/pkg/version/minikube"
 	"github.com/pkg/errors"
 )
+
+// ~ Download
+type Download struct {
+	common.KubeAction
+}
+
+func (t *Download) Execute(runtime connector.Runtime) error {
+	var arch = runtime.GetRunner().Host.GetArch()
+	helm := files.NewKubeBinary("helm", arch, kubekeyapiv1alpha2.DefaultHelmVersion, runtime.GetWorkDir())
+
+	if err := helm.CreateBaseDir(); err != nil {
+		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", helm.FileName)
+	}
+
+	var exists = util.IsExist(helm.Path())
+	if exists {
+		p := helm.Path()
+		if err := helm.SHA256Check(); err != nil {
+			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
+		}
+	}
+
+	if !exists || helm.OverWrite {
+		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, helm.ID, helm.Version)
+		if err := helm.Download(); err != nil {
+			return fmt.Errorf("Failed to download %s binary: %s error: %w ", helm.ID, helm.Url, err)
+		}
+	}
+
+	return nil
+}
+
+// ~ DownloadMinikubeBinaries
+type DownloadMinikubeBinaries struct {
+	common.KubeModule
+}
+
+func (m *DownloadMinikubeBinaries) Init() {
+	m.Name = "DownloadMinikubeBinaries"
+
+	downloadBinaries := &task.RemoteTask{
+		Name:     "DownloadHelm",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Action:   new(Download),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		downloadBinaries,
+	}
+}
 
 // ~ GetMinikubeProfile
 type GetMinikubeProfile struct {
@@ -102,10 +157,6 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 
 	if d, err := util.GetCommand(common.CommandDocker); err != nil || d == "" {
 		return fmt.Errorf("docker not found")
-	}
-
-	if h, err := util.GetCommand(common.CommandHelm); err != nil || h == "" {
-		return fmt.Errorf("helm not found")
 	}
 
 	if h, err := util.GetCommand(common.CommandKubectl); err != nil || h == "" {

@@ -16,7 +16,7 @@ var (
 	KubecniUrl   = "https://github.com/containernetworking/plugins/releases/download/%s/cni-plugins-linux-%s-%s.tgz"
 	KubecniUrlCN = "https://containernetworking.pek3b.qingstor.com/plugins/releases/download/%s/cni-plugins-linux-%s-%s.tgz"
 
-	HelmUrl   = "https://get.helm.sh/helm-%s-linux-%s.tar.gz"
+	HelmUrl   = "https://get.helm.sh/helm-%s-%s-%s.tar.gz"
 	HelmUrlCN = "https://kubernetes-helm.pek3b.qingstor.com/linux-%s/%s/helm"
 
 	DockerUrl   = "https://download.docker.com/linux/static/stable/%s/docker-%s.tgz"

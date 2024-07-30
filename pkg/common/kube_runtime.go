@@ -19,6 +19,7 @@ package common
 import (
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
 )
@@ -128,7 +129,6 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.Minikube)
-
 	hostSet := make(map[string]struct{})
 	for _, role := range roleGroups {
 		for _, host := range role {
@@ -143,6 +143,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 				base.AppendHost(host)
 				base.AppendRoleMap(host)
 			}
+			host.SetOs(constants.OsType)
 			host.SetMinikube(arg.Minikube)
 			host.SetMinikubeProfile(arg.MinikubeProfile)
 		}

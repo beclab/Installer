@@ -35,6 +35,7 @@ type BaseHost struct {
 	PrivateKey      string `yaml:"privateKey,omitempty" json:"privateKey,omitempty"`
 	PrivateKeyPath  string `yaml:"privateKeyPath,omitempty" json:"privateKeyPath,omitempty"`
 	Arch            string `yaml:"arch,omitempty" json:"arch,omitempty"`
+	Os              string `yaml:"os,omitempty" json:"os,omitempty"`
 	Timeout         int64  `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 	Minikube        bool   `yaml:"minikube,omitempty" json:"minikube,omitempty"`
 	MiniKubeProfile string `json:"minikubeProfileName,omitempty" json:"minikubeProfileName,omitempty"`
@@ -122,6 +123,14 @@ func (b *BaseHost) GetArch() string {
 
 func (b *BaseHost) SetArch(arch string) {
 	b.Arch = arch
+}
+
+func (b *BaseHost) GetOs() string {
+	return b.Os
+}
+
+func (b *BaseHost) SetOs(osType string) {
+	b.Os = osType
 }
 
 func (b *BaseHost) SetMinikube(minikube bool) {

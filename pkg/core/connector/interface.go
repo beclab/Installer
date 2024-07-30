@@ -93,6 +93,8 @@ type Host interface {
 	SetPrivateKeyPath(path string)
 	GetArch() string
 	SetArch(arch string)
+	GetOs() string
+	SetOs(osType string)
 	SetMinikube(minikube bool)
 	GetMinikube() bool
 	SetMinikubeProfile(profile string)

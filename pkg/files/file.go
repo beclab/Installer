@@ -165,9 +165,9 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		}
 	case helm:
 		component.Type = HELM
-		component.FileName = fmt.Sprintf("helm-%s-linux-%s.tar.gz", version, arch)
+		component.FileName = fmt.Sprintf("helm-%s-%s-%s.tar.gz", version, component.Os, arch)
 		component.CheckSum = false
-		component.Url = fmt.Sprintf(HelmUrl, version, arch)
+		component.Url = fmt.Sprintf(HelmUrl, version, component.Os, arch)
 		if component.Zone == "cn" {
 			component.Url = fmt.Sprintf(HelmUrlCN, arch, version)
 		}
@@ -398,8 +398,8 @@ func (b *KubeBinary) GetTarCmd() string {
 	switch b.ID {
 	case helm:
 		if b.Zone != "cn" {
-			cmd = fmt.Sprintf("cd %s && tar -zxf helm-%s-linux-%s.tar.gz && mv linux-%s/helm . && rm -rf ./linux-%s/ && cp ./helm /usr/local/bin/",
-				b.BaseDir, b.Version, b.Arch, b.Arch, b.Arch)
+			cmd = fmt.Sprintf("cd %s && tar -zxf helm-%s-%s-%s.tar.gz && mv %s-%s/helm . && rm -rf ./%s-%s/ && cp ./helm /usr/local/bin/",
+				b.BaseDir, b.Version, b.Os, b.Arch, b.Os, b.Arch, b.Os, b.Arch)
 		}
 	case kubekey: // debug
 		cmd = fmt.Sprintf("cd %s && tar -zxf kubekey-ext-v%s-linux-%s.tar.gz",
