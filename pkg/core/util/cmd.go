@@ -3,9 +3,11 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"github.com/pkg/errors"
@@ -14,7 +16,9 @@ import (
 func Exec(name string, printOutput bool, printLine bool) (stdout string, code int, err error) {
 	exitCode := 0
 
-	cmd := exec.Command("/bin/sh", "-c", name)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", name)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", exitCode, err

@@ -44,6 +44,7 @@ type BaseRuntime struct {
 	roleHosts       map[string][]Host
 	deprecatedHosts map[string]string
 	cmdSed          string
+	minikube        bool
 }
 
 func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider) BaseRuntime {
@@ -68,6 +69,14 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 	// }
 
 	return base
+}
+
+func (b *BaseRuntime) SetMinikube(minikube bool) {
+	b.minikube = minikube
+}
+
+func (b *BaseRuntime) GetMinikube() bool {
+	return b.minikube
 }
 
 func (b *BaseRuntime) GetObjName() string {

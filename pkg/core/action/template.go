@@ -47,7 +47,7 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 	}
 
 	var fileMode fs.FileMode = common.FileMode0644
-	if runtime.RemoteHost().GetMinikube() {
+	if runtime.GetRunner().Host.GetMinikube() {
 		fileMode = common.FileMode0755
 	}
 	fileName := filepath.Join(runtime.GetHostWorkDir(), t.Template.Name())

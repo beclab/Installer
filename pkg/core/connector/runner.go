@@ -35,8 +35,10 @@ type Runner struct {
 }
 
 func (r *Runner) Exec(cmd string, printOutput bool, printLine bool) (string, int, error) {
-	if r.Conn == nil {
-		return "", 1, errors.New("no ssh connection available")
+	if !r.Host.GetMinikube() {
+		if r.Conn == nil {
+			return "", 1, errors.New("no ssh connection available")
+		}
 	}
 
 	var stdout string
@@ -72,8 +74,10 @@ func (r *Runner) Cmd(cmd string, printOutput bool, printLine bool) (string, erro
 
 // ~ Extension
 func (r *Runner) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
-	if r.Conn == nil {
-		return "", errors.New("no ssh connection available")
+	if !r.Host.GetMinikube() {
+		if r.Conn == nil {
+			return "", errors.New("no ssh connection available")
+		}
 	}
 
 	var stdout string
@@ -103,8 +107,10 @@ func (r *Runner) SudoCmd(cmd string, printOutput bool, printLine bool) (string, 
 
 // ~ Extension
 func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
-	if r.Conn == nil {
-		return "", errors.New("no ssh connection available")
+	if !r.Host.GetMinikube() {
+		if r.Conn == nil {
+			return "", errors.New("no ssh connection available")
+		}
 	}
 
 	var stdout string
@@ -140,8 +146,10 @@ func (r *Runner) Fetch(local, remote string) error {
 }
 
 func (r *Runner) Scp(local, remote string) error {
-	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+	if !r.Host.GetMinikube() {
+		if r.Conn == nil {
+			return errors.New("no ssh connection available")
+		}
 	}
 
 	var err error
@@ -160,8 +168,10 @@ func (r *Runner) Scp(local, remote string) error {
 }
 
 func (r *Runner) SudoScp(local, remote string) error {
-	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+	if !r.Host.GetMinikube() {
+		if r.Conn == nil {
+			return errors.New("no ssh connection available")
+		}
 	}
 
 	// ! remote             /etc/kubernetes/addons/clusterconfigurations.yaml
@@ -175,17 +185,12 @@ func (r *Runner) SudoScp(local, remote string) error {
 	}
 
 	// ! local              /Users/admin/my/build_1/install-wizard-v1.7.0-6659/pkg/admindeMBP-2/kubesphere.yaml
-
 	// ! baseRemotePath     /etc/kubernetes/addons
 	baseRemotePath := remote
 	if !util.IsDir(local) {
 		baseRemotePath = filepath.Dir(remote)
 	}
-	if r.Host.GetMinikube() {
-		if err := r.Host.MkDirAll(baseRemotePath, ""); err != nil {
-			return err
-		}
-	} else {
+	if !r.Host.GetMinikube() {
 		if err := r.Conn.MkDirAll(baseRemotePath, "", r.Host); err != nil {
 			return err
 		}

@@ -25,7 +25,7 @@ type GetMinikubeProfile struct {
 
 func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 	var cmd = fmt.Sprintf("minikube -p %s profile list -o json --light=false", runtime.GetRunner().Host.GetMinikubeProfile())
-	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
 	if err != nil {
 		return err
 	}
@@ -57,6 +57,7 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 	t.PipelineCache.Set(common.CacheMinikubeNodeIp, nodeIp)
 
 	return nil
+
 }
 
 // ~ InitMinikubeNs

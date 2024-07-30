@@ -162,9 +162,13 @@ func (t *RemoteTask) Run(runtime connector.Runtime, host connector.Host, index i
 }
 
 func (t *RemoteTask) ConfigureSelfRuntime(runtime connector.Runtime, host connector.Host, index int) error {
-	conn, err := runtime.GetConnector().Connect(host)
-	if err != nil {
-		return errors.Wrapf(err, "failed to connect to %s", host.GetAddress())
+	var conn connector.Connection
+	var err error
+	if !host.GetMinikube() {
+		conn, err = runtime.GetConnector().Connect(host)
+		if err != nil {
+			return errors.Wrapf(err, "failed to connect to %s", host.GetAddress())
+		}
 	}
 
 	r := &connector.Runner{

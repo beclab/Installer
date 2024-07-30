@@ -69,6 +69,8 @@ type Runtime interface {
 	GetStorage() storage.Provider
 	RemoteHost() Host
 	Copy() Runtime
+	SetMinikube(minikube bool)
+	GetMinikube() bool
 	ModuleRuntime
 }
 
