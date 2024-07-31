@@ -190,11 +190,13 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 		for i := 0; i < times; i++ {
 			err = f()
 			if err == nil {
-				return
+				return nil
 			}
 			var dur = 5 + (i+1)*10
 			logger.Debugf("load image %s failed, wait for %d seconds(%d times)", err, dur, i+1)
-			time.Sleep(time.Duration(dur) * time.Second)
+			if (i + 1) < times {
+				time.Sleep(time.Duration(dur) * time.Second)
+			}
 		}
 
 		return

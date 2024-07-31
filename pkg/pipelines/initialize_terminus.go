@@ -1,11 +1,13 @@
 package pipelines
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	ctrl "bytetrade.io/web3os/installer/controllers"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -111,8 +113,10 @@ func getNodeVersion(kubeType string, minikube bool) (string, error) {
 		return ver, fmt.Errorf("Start minikube, but the system type is incorrect, not a Darwin system.")
 	}
 
+	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'")
-	stdout, _, err := util.Exec(cmd, false, false)
+	stdout, _, err := util.ExecWithContext(ctx, cmd, false, false)
 	if err != nil {
 		return common.DefaultK8sVersion, nil
 	}
