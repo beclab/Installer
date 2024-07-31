@@ -55,26 +55,6 @@ func CliInstallTerminusPipeline(kubeType string, proxy string) error {
 		return fmt.Errorf("create terminus error %v", err)
 	}
 
-	if runtime.Cluster.KubeSphere.Enabled {
-
-		fmt.Print(`Installation is complete.
-
-Please check the result using the command:
-
-	kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l 'app in (ks-install, ks-installer)' -o jsonpath='{.items[0].metadata.name}') -f   
-
-`)
-	} else {
-		fmt.Print(`Installation is complete.
-
-Please check the result using the command:
-		
-	kubectl get pod -A
-
-`)
-
-	}
-
 	if runtime.Arg.InCluster {
 		if err := ctrl.UpdateStatus(runtime); err != nil {
 			logger.Errorf("failed to update status: %v", err)
