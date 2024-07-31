@@ -177,6 +177,10 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("helm not found")
 	}
 
+	fmt.Println("helm path:", helmpath)
+	fmt.Println("kubectl path:", kubectlpath)
+	fmt.Println("minikube path:", minikubepath)
+
 	t.PipelineCache.Set(common.CacheCommandHelmPath, helmpath)
 	t.PipelineCache.Set(common.CacheCommandMinikubePath, minikubepath)
 	t.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
