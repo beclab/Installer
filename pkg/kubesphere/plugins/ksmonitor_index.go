@@ -1,6 +1,6 @@
 package plugins
 
-// ! Y  ./ks-monitor/files/federated   --> notification-manager 依赖
+// ! Y  ./ks-monitor/files/federated   --> notification-manager
 // ~ N  ./ks-monitor/files/gpu-monitoring
 // ~ Y  ./ks-monitor/files/ks-istio-monitoring
 // ! Y      ./ks-monitor/files/monitoring-dashboard

@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"path"
 	"strconv"
 
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -49,7 +50,12 @@ type GetMasterNum struct {
 }
 
 func (p *GetMasterNum) PreCheck(runtime connector.Runtime) (bool, error) {
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get node | awk '{if(NR>1){print $3}}' | grep master | wc -l")
+	var kubectlpath, _ = p.PipelineCache.GetMustString(CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(BinDir, CommandKubectl)
+	}
+
+	var cmd = fmt.Sprintf("%s get node | awk '{if(NR>1){print $3}}' | grep master | wc -l", kubectlpath)
 	var stdout, err = runtime.GetRunner().SudoCmd(cmd, false, false)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get master num failed")
@@ -68,7 +74,12 @@ type GetNodeNum struct {
 }
 
 func (p *GetNodeNum) PreCheck(runtime connector.Runtime) (bool, error) {
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get node | wc -l")
+	var kubectlpath, _ = p.PipelineCache.GetMustString(CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(BinDir, CommandKubectl)
+	}
+
+	var cmd = fmt.Sprintf("%s get node | wc -l", kubectlpath)
 	var stdout, err = runtime.GetRunner().SudoCmd(cmd, false, false)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get node num failed")

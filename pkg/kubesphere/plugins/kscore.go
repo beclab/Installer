@@ -21,7 +21,13 @@ type CreateKsCore struct {
 }
 
 func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl  get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", common.NamespaceKubesphereSystem)
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
+	var cmd = fmt.Sprintf("%s  get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", kubectlpath,
+		common.NamespaceKubesphereSystem)
 	rphase, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
 	if rphase != "Running" {
 		return fmt.Errorf("Redis State %s", rphase)

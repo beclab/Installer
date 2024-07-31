@@ -52,7 +52,7 @@ func (c *ClusterDNSModule) Init() {
 		Hosts: c.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			&CoreDNSExist{Not: true}, // todo 这里会检查 coredns 运行情况
+			&CoreDNSExist{Not: true},
 		},
 		Action: &action.Template{
 			Name:     "GenerateCoreDNSSvc",

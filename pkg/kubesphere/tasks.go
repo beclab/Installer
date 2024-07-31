@@ -66,7 +66,12 @@ type CreateNamespace struct {
 }
 
 func (c *CreateNamespace) Execute(runtime connector.Runtime) error {
-	_, err := runtime.GetRunner().SudoCmd(`cat <<EOF | /usr/local/bin/kubectl apply -f -
+	var kubectl, ok = c.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if !ok || kubectl == "" {
+		kubectl = path.Join(common.BinDir, "kubectl")
+	}
+
+	var cmd = fmt.Sprintf(`cat <<EOF | %s apply -f -
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -76,8 +81,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kubesphere-monitoring-system
-EOF
-`, false, true)
+EOF`, kubectl)
+	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "create namespace: kubesphere-system and kubesphere-monitoring-system")
 	}
@@ -92,6 +97,16 @@ type Setup struct {
 func (s *Setup) Execute(runtime connector.Runtime) error {
 	nodeIp, _ := s.PipelineCache.GetMustString(common.CacheMinikubeNodeIp)
 	filePath := filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name())
+
+	var minikubepath, ok = s.PipelineCache.GetMustString(common.CacheCommandMinikubePath)
+	if !ok || minikubepath == "" {
+		minikubepath = path.Join(common.BinDir, common.CommandMinikube)
+	}
+
+	kubectlpath, ok := s.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if !ok || kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
 
 	var addrList []string
 	var tlsDisable bool
@@ -127,7 +142,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 
 		for _, certfile := range certfiles {
 			var cfile = path.Join(common.MinikubeEtcdCertDir, certfile)
-			var cmd = fmt.Sprintf("minikube -p %s ssh sudo chmod 644 %s && minikube -p %s cp %s:%s %s",
+			var cmd = fmt.Sprintf("%s -p %s ssh sudo chmod 644 %s && minikube -p %s cp %s:%s %s", minikubepath,
 				runtime.GetRunner().Host.GetMinikubeProfile(), cfile,
 				runtime.GetRunner().Host.GetMinikubeProfile(), runtime.GetRunner().Host.GetMinikubeProfile(),
 				cfile, path.Join(etcdPath, certfile))
@@ -142,10 +157,10 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 
 		addrList = append(addrList, nodeIp)
 		if output, err := runtime.GetRunner().SudoCmdExt(
-			fmt.Sprintf("/usr/local/bin/kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs "+
+			fmt.Sprintf("%s -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs "+
 				"--from-file=%s "+
 				"--from-file=%s "+
-				"--from-file=%s", caFile, certFile, keyFile), false, false); err != nil {
+				"--from-file=%s", kubectlpath, caFile, certFile, keyFile), false, false); err != nil {
 			if !strings.Contains(output, "already exists") {
 				return err
 			}
@@ -248,7 +263,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	_, ok := kubesphere.CNSource[s.KubeConf.Cluster.KubeSphere.Version]
+	_, ok = kubesphere.CNSource[s.KubeConf.Cluster.KubeSphere.Version]
 	if ok && (os.Getenv("KKZONE") == "cn" || s.KubeConf.Cluster.Registry.PrivateRegistry == "registry.cn-beijing.aliyuncs.com") {
 		if _, err := runtime.GetRunner().SudoCmd(
 			fmt.Sprintf("%s '/zone/s/\\:.*/\\: %s/g' %s", sedCommand, "cn", filePath),
@@ -284,12 +299,17 @@ type Apply struct {
 }
 
 func (a *Apply) Execute(runtime connector.Runtime) error {
+	var kubectlpath, ok = a.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if !ok || kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	filePath := filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name())
 	if runtime.GetRunner().Host.GetMinikube() {
 		filePath = path.Join(common.TmpDir, filePath)
 	}
 
-	deployKubesphereCmd := fmt.Sprintf("/usr/local/bin/kubectl apply -f %s --force", filePath)
+	deployKubesphereCmd := fmt.Sprintf("%s apply -f %s --force", kubectlpath, filePath)
 	if _, err := runtime.GetRunner().Host.CmdExt(deployKubesphereCmd, false, true); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "deploy %s failed", filePath)
 	}
@@ -302,10 +322,15 @@ type Check struct {
 }
 
 func (c *Check) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = c.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var labels = []string{"app=ks-apiserver", "component=kube-apiserver"}
 
 	for _, label := range labels {
-		var cmd = fmt.Sprintf("/usr/local/bin/kubectl  get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", common.NamespaceKubesphereSystem, label)
+		var cmd = fmt.Sprintf("%s  get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", kubectlpath, common.NamespaceKubesphereSystem, label)
 		rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
 		if rphase == "Running" {
 			return nil

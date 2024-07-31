@@ -162,6 +162,10 @@ const (
 	CommandDocker    = "docker"
 	CommandHelm      = "helm"
 	CommandMinikube  = "minikube"
+
+	CacheCommandHelmPath     = "helm_bin_path"
+	CacheCommandKubectlPath  = "kubectl_bin_path"
+	CacheCommandMinikubePath = "minikube_bin_path"
 )
 
 const (

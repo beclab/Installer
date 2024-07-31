@@ -17,24 +17,23 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
 )
 
-// + 这里是正式的代码
 func InstallTerminusPipeline(args common.Argument) error {
-	runtime, err := common.NewKubeRuntime(common.AllInOne, args) // 后续拆解 install_cmd.sh，会用到 KubeRuntime
+	runtime, err := common.NewKubeRuntime(common.AllInOne, args) //
 	if err != nil {
 		return err
 	}
 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
-		&precheck.PreCheckOsModule{}, // * 对应 precheck_os()
-		&patch.InstallDepsModule{},   // * 对应 install_deps
-		&os.ConfigSystemModule{},     // * 对应 config_system
+		&precheck.PreCheckOsModule{}, // precheck_os()
+		&patch.InstallDepsModule{},   // install_deps
+		&os.ConfigSystemModule{},     // config_system
 		// &images.PreloadImagesModule{},
 	}
 
 	var kubeModules []module.Module
 	if runtime.Cluster.Kubernetes.Type == common.K3s {
-		kubeModules = cluster.NewK3sCreateClusterPhase(runtime) // + 这里开发
+		kubeModules = cluster.NewK3sCreateClusterPhase(runtime) // +
 	} else {
 		kubeModules = cluster.NewCreateClusterPhase(runtime)
 	}

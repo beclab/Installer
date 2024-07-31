@@ -39,7 +39,12 @@ func (t *CreatePrometheusComponent) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("file %s not found", f)
 	}
 
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl apply -f %s %s %s", f, t.Force, t.ServerSide)
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
+	var cmd = fmt.Sprintf("%s apply -f %s %s %s", kubectlpath, f, t.Force, t.ServerSide)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("create crd %s failed: %v", f, err)
 		return err
@@ -80,8 +85,13 @@ func (t *CreateOperator) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("walk %s failed: %v", f, err)
 	}
 
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	for _, crd := range crds {
-		var cmd = fmt.Sprintf("/usr/local/bin/kubectl apply -f %s --force-conflicts --server-side", crd)
+		var cmd = fmt.Sprintf("%s apply -f %s --force-conflicts --server-side", kubectlpath, crd)
 		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("create crd %s failed: %v", crd, err)
 			return err
@@ -89,7 +99,7 @@ func (t *CreateOperator) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, res := range ress {
-		var cmd = fmt.Sprintf("/usr/local/bin/kubectl apply -f %s --force-conflicts --server-side", res)
+		var cmd = fmt.Sprintf("%s apply -f %s --force-conflicts --server-side", kubectlpath, res)
 		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("create crd %s failed: %v", res, err)
 			return err

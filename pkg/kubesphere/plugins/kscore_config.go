@@ -160,7 +160,12 @@ func (t *CreateKsRole) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("file %s not found", f)
 	}
 
-	cmd := fmt.Sprintf("/usr/local/bin/kubectl apply -f %s", f)
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
+	cmd := fmt.Sprintf("%s apply -f %s", kubectlpath, f)
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "create ks role failed")
@@ -174,12 +179,16 @@ type PatchKsCoreStatus struct {
 }
 
 func (t *PatchKsCoreStatus) Execute(runtime connector.Runtime) error {
-	// ! todo need test on linux
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var jsonPath = fmt.Sprintf(`{\"status\": {\"core\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
 	if runtime.GetRunner().Host.GetMinikube() {
 		jsonPath = fmt.Sprintf(`{"status": {"core": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
 	}
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl patch cc ks-installer --type merge -p '%s' -n %s", jsonPath, common.NamespaceKubesphereSystem)
+	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPath, common.NamespaceKubesphereSystem)
 
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
@@ -251,13 +260,18 @@ type CreateKsCoreConfigManifests struct {
 }
 
 func (t *CreateKsCoreConfigManifests) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var kscoreConfigCrdsPath = path.Join(runtime.GetFilesDir(), cc.BuildDir, common.ChartNameKsCoreConfig, "crds")
 	filepath.Walk(kscoreConfigCrdsPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
-			_, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("/usr/local/bin/kubectl apply -f %s", path), false, true)
+			_, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, path), false, true)
 			if err != nil {
 				logger.Errorf("failed to apply %s: %v", path, err)
 				return err
@@ -287,13 +301,17 @@ func (t *PacthKsCore) Execute(runtime connector.Runtime) error {
 		crdNum = crdNumIf.(int64)
 	}
 
-	var kubectl = "/usr/local/bin/kubectl"
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	if secretsNum == 0 && crdNum != 0 {
 		for _, item := range kscorecrds {
 			var cmd = fmt.Sprintf("%s -n %s annotate --overwrite %s %s meta.helm.sh/release-name=%s && %s -n %s annotate --overwrite %s %s meta.helm.sh/release-namespace=%s && %s -n %s label --overwrite %s %s app.kubernetes.io/managed-by=Helm",
-				kubectl, item["ns"], item["kind"], item["resource"], item["release"],
-				kubectl, item["ns"], item["kind"], item["resource"], common.NamespaceKubesphereSystem,
-				kubectl, item["ns"], item["kind"], item["resource"])
+				kubectlpath, item["ns"], item["kind"], item["resource"], item["release"],
+				kubectlpath, item["ns"], item["kind"], item["resource"], common.NamespaceKubesphereSystem,
+				kubectlpath, item["ns"], item["kind"], item["resource"])
 
 			if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 				return errors.Wrap(errors.WithStack(err), "patch ks-core crd")

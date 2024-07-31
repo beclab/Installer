@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -48,7 +49,11 @@ type CheckNodeState struct {
 }
 
 func (t *CheckNodeState) Execute(runtime connector.Runtime) error {
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get node --no-headers")
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+	var cmd = fmt.Sprintf("%s get node --no-headers", kubectlpath)
 	stdout, err := runtime.GetRunner().SudoCmd(cmd, false, false)
 
 	if err != nil || stdout == "" {
@@ -78,8 +83,13 @@ type InitNamespace struct {
 }
 
 func (t *InitNamespace) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	for _, ns := range []string{common.NamespaceKubesphereControlsSystem, common.NamespaceKubesphereMonitoringFederated} {
-		if stdout, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("/usr/local/bin/kubectl create ns %s", ns), false, true); err != nil {
+		if stdout, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s create ns %s", kubectlpath, ns), false, true); err != nil {
 			if !strings.Contains(stdout, "already exists") {
 				logger.Errorf("create ns %s failed: %v", ns, err)
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("create namespace %s failed: %v", ns, err))

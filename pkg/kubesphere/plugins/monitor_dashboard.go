@@ -17,8 +17,13 @@ type InstallMonitorDashboardCrd struct {
 }
 
 func (t *InstallMonitorDashboardCrd) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var p = path.Join(runtime.GetFilesDir(), cc.BuildDir, "ks-monitor", "monitoring-dashboard")
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl apply -f %s", p)
+	var cmd = fmt.Sprintf("%s apply -f %s", kubectlpath, p)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return err
 	}

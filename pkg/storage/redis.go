@@ -77,7 +77,7 @@ type ConfigRedis struct {
 }
 
 func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
-	var redisPassword, _ = utils.GeneratePassword(16) // todo 如果多次执行，这里有可能密码会变？
+	var redisPassword, _ = utils.GeneratePassword(16) // todo
 	if !utils.IsExist(RedisRootDir) {
 		utils.Mkdir(RedisConfigDir)
 		utils.Mkdir(RedisDataDir)
@@ -118,7 +118,7 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 
 // ~ InstallRedis
 type InstallRedis struct {
-	common.KubeAction // todo 最好是能加一个检查是否已经安装过的判断
+	common.KubeAction
 }
 
 func (t *InstallRedis) Execute(runtime connector.Runtime) error {

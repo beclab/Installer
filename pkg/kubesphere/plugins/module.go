@@ -32,7 +32,6 @@ type DeployKsPluginsModule struct {
 func (t *DeployKsPluginsModule) Init() {
 	t.Name = "DeployKsPlugins"
 
-	// todo 增加一个对 node 的检查
 	checkNodeState := &task.RemoteTask{
 		Name:  "CheckNodeState",
 		Hosts: t.Runtime.GetHostsByRole(common.Master),

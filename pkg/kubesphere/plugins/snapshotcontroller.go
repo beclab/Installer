@@ -23,8 +23,13 @@ type DeploySnapshotController struct {
 }
 
 func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var scrd = path.Join(runtime.GetFilesDir(), cc.BuildDir, "snapshot-controller", "crds", "snapshot.storage.k8s.io_volumesnapshot.yaml")
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl apply -f %s --force", scrd)
+	var cmd = fmt.Sprintf("%s apply -f %s --force", kubectlpath, scrd)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("Install snapshot controller failed: %v", err)
 	}

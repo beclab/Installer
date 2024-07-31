@@ -79,7 +79,11 @@ type GetMinikubeProfile struct {
 }
 
 func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
-	var cmd = fmt.Sprintf("minikube -p %s profile list -o json --light=false", runtime.GetRunner().Host.GetMinikubeProfile())
+	var minikubecmd, ok = t.PipelineCache.GetMustString(common.CacheCommandMinikubePath)
+	if !ok || minikubecmd == "" {
+		minikubecmd = path.Join(common.BinDir, "minikube")
+	}
+	var cmd = fmt.Sprintf("%s -p %s profile list -o json --light=false", minikubecmd, runtime.GetRunner().Host.GetMinikubeProfile())
 	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
 	if err != nil {
 		return err
@@ -121,6 +125,11 @@ type InitMinikubeNs struct {
 }
 
 func (t *InitMinikubeNs) Execute(runtime connector.Runtime) error {
+	var kubectlcmd, ok = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if !ok || kubectlcmd == "" {
+		kubectlcmd = path.Join(common.BinDir, "kubectl")
+	}
+
 	var allNs = []string{
 		common.NamespaceKubekeySystem,
 		common.NamespaceKubesphereSystem,
@@ -128,7 +137,7 @@ func (t *InitMinikubeNs) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, ns := range allNs {
-		if stdout, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("/usr/local/bin/kubectl create ns %s", ns), false, true); err != nil {
+		if stdout, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s create ns %s", kubectlcmd, ns), false, true); err != nil {
 			if !strings.Contains(stdout, "already exists") {
 				logger.Errorf("create ns %s failed: %v", ns, err)
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("create namespace %s failed: %v", ns, err))
@@ -137,7 +146,7 @@ func (t *InitMinikubeNs) Execute(runtime connector.Runtime) error {
 	}
 
 	filePath := path.Join(common.TmpDir, common.KubeAddonsDir, "clusterconfigurations.yaml")
-	deployKubesphereCmd := fmt.Sprintf("/usr/local/bin/kubectl apply -f %s --force", filePath)
+	deployKubesphereCmd := fmt.Sprintf("%s apply -f %s --force", kubectlcmd, filePath)
 	if _, err := runtime.GetRunner().Host.CmdExt(deployKubesphereCmd, false, true); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "deploy %s failed", filePath)
 	}
@@ -151,17 +160,27 @@ type CheckMacCommandExists struct {
 }
 
 func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
-	if m, err := util.GetCommand(common.CommandMinikube); err != nil || m == "" {
+	var err error
+	var minikubepath string
+	var kubectlpath string
+	var helmpath string
+
+	if minikubepath, err = util.GetCommand(common.CommandMinikube); err != nil || minikubepath == "" {
 		return fmt.Errorf("minikube not found")
 	}
 
-	if d, err := util.GetCommand(common.CommandDocker); err != nil || d == "" {
-		return fmt.Errorf("docker not found")
-	}
-
-	if h, err := util.GetCommand(common.CommandKubectl); err != nil || h == "" {
+	if kubectlpath, err = util.GetCommand(common.CommandKubectl); err != nil || kubectlpath == "" {
 		return fmt.Errorf("kubectl not found")
 	}
+
+	if helmpath, err = util.GetCommand(common.CommandHelm); err != nil || helmpath == "" {
+		return fmt.Errorf("helm not found")
+	}
+
+	t.PipelineCache.Set(common.CacheCommandHelmPath, helmpath)
+	t.PipelineCache.Set(common.CacheCommandMinikubePath, minikubepath)
+	t.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
+
 	return nil
 }
 

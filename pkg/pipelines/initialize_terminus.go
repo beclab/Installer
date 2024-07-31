@@ -97,7 +97,7 @@ Please check the result using the command:
 func getNodeVersion(kubeType string, minikube bool) (string, error) {
 	var ver string
 	if !minikube {
-		switch kubeType { // todo minikube 应该要查一个 node 的信息才对
+		switch kubeType {
 		case common.K8s:
 			ver = common.DefaultK8sVersion
 		case common.K3s:

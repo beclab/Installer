@@ -24,12 +24,17 @@ type CreateRedisSecret struct {
 }
 
 func (t *CreateRedisSecret) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	redisPwd, ok := t.ModuleCache.Get(common.CacheRedisPassword)
 	if !ok {
 		return fmt.Errorf("get redis password from module cache failed")
 	}
 
-	if stdout, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("/usr/local/bin/kubectl -n %s create secret generic redis-secret --from-literal=auth=%s", common.NamespaceKubesphereSystem, redisPwd), false, true); err != nil {
+	if stdout, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s -n %s create secret generic redis-secret --from-literal=auth=%s", kubectlpath, common.NamespaceKubesphereSystem, redisPwd), false, true); err != nil {
 		if err != nil && !strings.Contains(stdout, "already exists") {
 			return errors.Wrap(errors.WithStack(err), "create redis secret failed")
 		}
@@ -44,8 +49,13 @@ type BackupRedisManifests struct {
 }
 
 func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
-	rver, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("/usr/local/bin/kubectl get pod -n %s -l app=%s,tier=database,version=%s-4.0 | wc -l",
-		common.NamespaceKubesphereSystem, common.ChartNameRedis, common.ChartNameRedis), false, false)
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
+	rver, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s get pod -n %s -l app=%s,tier=database,version=%s-4.0 | wc -l",
+		kubectlpath, common.NamespaceKubesphereSystem, common.ChartNameRedis, common.ChartNameRedis), false, false)
 
 	if err != nil || strings.Contains(rver, "No resources found") {
 		return nil
@@ -54,7 +64,8 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 	rver = strings.ReplaceAll(rver, "\r\n", "")
 	rver = strings.ReplaceAll(rver, "\n", "")
 	if rver != "0" {
-		var cmd = fmt.Sprintf("/usr/local/bin/kubectl get svc -n %s %s -o yaml > %s/redis-svc-backup.yaml && /usr/local/bin/kubectl delete svc -n %s %s", common.NamespaceKubesphereSystem, common.ChartNameRedis,
+		var cmd = fmt.Sprintf("%s get svc -n %s %s -o yaml > %s/redis-svc-backup.yaml && /usr/local/bin/kubectl delete svc -n %s %s", kubectlpath,
+			common.NamespaceKubesphereSystem, common.ChartNameRedis,
 			common.KubeManifestDir, common.NamespaceKubesphereSystem,
 			common.ChartNameRedis)
 
@@ -111,6 +122,11 @@ type PatchRedisStatus struct {
 }
 
 func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var jsonPatch = fmt.Sprintf(`{\"status\": {\"redis\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`,
 		time.Now().Format("2006-01-02T15:04:05Z"))
 	if runtime.GetRunner().Host.GetMinikube() {
@@ -118,7 +134,7 @@ func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
 	}
 	// todo fix
 	// var jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl patch cc ks-installer --type merge -p '%s' -n %s", jsonPatch, common.NamespaceKubesphereSystem)
+	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
 
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {

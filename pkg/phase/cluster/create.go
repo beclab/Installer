@@ -51,9 +51,9 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
-		&precheck.PreCheckOsModule{}, // * 对应 precheck_os()
-		&patch.InstallDepsModule{},   // * 对应 install_deps
-		&os.ConfigSystemModule{},     // * 对应 config_system
+		&precheck.PreCheckOsModule{}, // precheck_os()
+		&patch.InstallDepsModule{},   // install_deps
+		&os.ConfigSystemModule{},     // config_system
 		&storage.InitStorageModule{Skip: storageVendor != "true"},
 		&storage.InstallMinioModule{Skip: storageType != "minio"},
 		&storage.InstallRedisModule{},
@@ -70,7 +70,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	if kubeModules == nil {
 	}
 
-	m = append(m, kubeModules...) // ! 暂时取消，主要测试 storage 的安装
+	m = append(m, kubeModules...)
 
 	return &pipeline.Pipeline{
 		Name:    "Install Terminus",

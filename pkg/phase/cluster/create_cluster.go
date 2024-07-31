@@ -127,7 +127,7 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime) []module.Module {
 		&kubernetes.InstallKubeBinariesModule{},
 		&loadbalancer.KubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
 		&kubernetes.InitKubernetesModule{},
-		&dns.ClusterDNSModule{}, // todo 这里面会检查 coredns 服务的运行状态；反复检查多次
+		&dns.ClusterDNSModule{},
 		&kubernetes.StatusModule{},
 		&kubernetes.JoinNodesModule{},
 		&loadbalancer.KubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},

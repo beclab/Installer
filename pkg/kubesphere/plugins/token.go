@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -20,6 +21,11 @@ type GenerateKubeSphereToken struct {
 }
 
 func (t *GenerateKubeSphereToken) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var random, err = utils.GeneratePassword(32)
 	if err != nil {
 		logger.Errorf("failed to generate password: %v", err)
@@ -31,14 +37,14 @@ func (t *GenerateKubeSphereToken) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "create kubesphere token failed")
 	}
 
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get secrets -n %s --no-headers", common.NamespaceKubesphereSystem)
+	var cmd = fmt.Sprintf("%s get secrets -n %s --no-headers", kubectlpath, common.NamespaceKubesphereSystem)
 	stdout, _ := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if strings.Contains(stdout, "kubesphere-secret") {
-		cmd = fmt.Sprintf("/usr/local/bin/kubectl delete secrets -n %s kubesphere-secret", common.NamespaceKubesphereSystem)
+		cmd = fmt.Sprintf("%s delete secrets -n %s kubesphere-secret", kubectlpath, common.NamespaceKubesphereSystem)
 		runtime.GetRunner().SudoCmd(cmd, false, true)
 	}
 
-	cmd = fmt.Sprintf("/usr/local/bin/kubectl create secret generic kubesphere-secret --from-literal=token=%s --from-literal=secret=%s -n %s",
+	cmd = fmt.Sprintf("%s create secret generic kubesphere-secret --from-literal=token=%s --from-literal=secret=%s -n %s", kubectlpath,
 		token, random, common.NamespaceKubesphereSystem)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "create kubesphere token failed")
