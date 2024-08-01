@@ -210,7 +210,7 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 			fileName := filepath.Base(image.Filename)
 			// fileName = strings.ReplaceAll(fileName, ".gz", "")
 			// fmt.Println(">>> ", fileName, HasSuffixI(image.Filename, ".tar.gz", ".tgz"))
-			if HasSuffixI(image.Filename, ".tar.gz", ".tgz") { // +
+			if HasSuffixI(image.Filename, ".tar.gz", ".tgz") {
 				switch kubeConf.Cluster.Kubernetes.ContainerManager {
 				case "crio":
 					loadCmd = "ctr" // BUG
@@ -238,8 +238,7 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 					// return err
 					return fmt.Errorf("%s", fileName)
 				}
-			} else {
-
+			} else if HasSuffixI(image.Filename, ".tar") {
 				switch kubeConf.Cluster.Kubernetes.ContainerManager {
 				case "crio":
 					loadCmd = "ctr" // BUG
@@ -264,6 +263,9 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 				}, 5); err != nil {
 					return fmt.Errorf("%s", fileName)
 				}
+			} else {
+				logger.Debugf("invalid image file name %s, skip ...", image.Filename)
+				return nil
 			}
 		default:
 			continue
