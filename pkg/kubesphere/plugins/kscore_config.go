@@ -328,9 +328,16 @@ type CheckKsCoreExist struct {
 }
 
 func (t *CheckKsCoreExist) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
 	var cmd string
 
-	cmd = fmt.Sprintf("/usr/local/bin/kubectl -n %s get secrets --field-selector=type=helm.sh/release.v1  | grep ks-core |wc -l", common.NamespaceKubesphereSystem)
+	cmd = fmt.Sprintf("%s -n %s get secrets --field-selector=type=helm.sh/release.v1 | grep ks-core |wc -l",
+		kubectlpath,
+		common.NamespaceKubesphereSystem)
 	stdout, _ := runtime.GetRunner().SudoCmd(cmd, false, false)
 
 	secretNum, err := strconv.ParseInt(stdout, 10, 64)
@@ -338,7 +345,7 @@ func (t *CheckKsCoreExist) Execute(runtime connector.Runtime) error {
 		secretNum = 0
 	}
 
-	cmd = "/usr/local/bin/kubectl get crd users.iam.kubesphere.io  | grep 'users.iam.kubesphere.io' |wc -l"
+	cmd = fmt.Sprintf("%s get crd users.iam.kubesphere.io | grep 'users.iam.kubesphere.io' |wc -l", kubectlpath)
 	stdout, _ = runtime.GetRunner().SudoCmd(cmd, false, false)
 
 	usersCrdNum, err := strconv.ParseInt(stdout, 10, 64)
@@ -354,8 +361,7 @@ func (t *CheckKsCoreExist) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// +
-
+// ~ DeployKsCoreConfigModule
 type DeployKsCoreConfigModule struct {
 	common.KubeModule
 }

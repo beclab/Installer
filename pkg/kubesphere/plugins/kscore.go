@@ -26,7 +26,7 @@ func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 
-	var cmd = fmt.Sprintf("%s  get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", kubectlpath,
+	var cmd = fmt.Sprintf("%s get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", kubectlpath,
 		common.NamespaceKubesphereSystem)
 	rphase, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
 	if rphase != "Running" {

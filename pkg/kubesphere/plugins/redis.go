@@ -64,10 +64,12 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 	rver = strings.ReplaceAll(rver, "\r\n", "")
 	rver = strings.ReplaceAll(rver, "\n", "")
 	if rver != "0" {
-		var cmd = fmt.Sprintf("%s get svc -n %s %s -o yaml > %s/redis-svc-backup.yaml && /usr/local/bin/kubectl delete svc -n %s %s", kubectlpath,
+		var cmd = fmt.Sprintf("%s get svc -n %s %s -o yaml > %s/redis-svc-backup.yaml && %s delete svc -n %s %s",
+			kubectlpath,
 			common.NamespaceKubesphereSystem, common.ChartNameRedis,
-			common.KubeManifestDir, common.NamespaceKubesphereSystem,
-			common.ChartNameRedis)
+			common.KubeManifestDir,
+			kubectlpath,
+			common.NamespaceKubesphereSystem, common.ChartNameRedis)
 
 		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("failed to backup %s svc: %v", common.ChartNameRedis, err)
