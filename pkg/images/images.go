@@ -19,6 +19,7 @@ package images
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -105,9 +106,10 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 
 	host := runtime.RemoteHost()
 
-	logger.Debugf("images path: %s", common.KubeImageDir)
-	if util.IsExist(common.KubeImageDir) {
-		filepath.Walk(common.KubeImageDir, func(path string, info os.FileInfo, err error) error {
+	var imagePath = path.Join(runtime.GetRootDir(), "images")
+	logger.Debugf("images path: %s", imagePath)
+	if util.IsExist(imagePath) {
+		filepath.Walk(imagePath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
