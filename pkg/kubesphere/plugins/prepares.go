@@ -18,6 +18,7 @@ package plugins
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -33,7 +34,12 @@ type CheckStorageClass struct {
 }
 
 func (p *CheckStorageClass) PreCheck(runtime connector.Runtime) (bool, error) {
-	var cmd = fmt.Sprintf("/usr/local/bin/kubectl get sc | awk '{if(NR>1){print $1}}'")
+	var kubectlpath, _ = p.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	}
+
+	var cmd = fmt.Sprintf("%s get sc | awk '{if(NR>1){print $1}}'", kubectlpath)
 	stdout, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get storageclass failed")
@@ -42,7 +48,7 @@ func (p *CheckStorageClass) PreCheck(runtime connector.Runtime) (bool, error) {
 		return false, fmt.Errorf("no storageclass found")
 	}
 
-	cmd = fmt.Sprintf("/usr/local/bin/kubectl get sc --no-headers")
+	cmd = fmt.Sprintf("%s get sc --no-headers", kubectlpath)
 	stdout, err = runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get storageclass failed")
