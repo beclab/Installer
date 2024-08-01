@@ -19,7 +19,6 @@ package images
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -106,23 +105,39 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 
 	host := runtime.RemoteHost()
 
-	// todo
-	var imagePath = path.Join(runtime.GetRootDir(), "images")
-	if util.IsExist(imagePath) {
-		filepath.Walk(imagePath, func(path string, info os.FileInfo, err error) error {
+	logger.Debugf("images path: %s", common.KubeImageDir)
+	if util.IsExist(common.KubeImageDir) {
+		filepath.Walk(common.KubeImageDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
+
 			if info.IsDir() {
 				return nil
 			}
-			if !strings.Contains(info.Name(), ".tar.gz") {
+
+			var target string
+			if info.Mode()&os.ModeSymlink != 0 {
+				target, err = os.Readlink(path)
+				if err != nil {
+					return err
+				}
+			} else {
+				target = path
+			}
+
+			if !HasSuffixI(target, ".tar.gz", ".tgz", ".tar") {
 				return nil
 			}
 
-			var cmd = fmt.Sprintf("gunzip -c %s | ctr -n k8s.io images import -", path)
-			if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
-				logger.Errorf("import image %s failed", path)
+			var importCmd = " ctr -n k8s.io images import "
+			if HasSuffixI(target, ".tar.gz", ".tgz") {
+				importCmd = fmt.Sprintf("gunzip -c %s | %s -", target, importCmd)
+			} else {
+				importCmd = fmt.Sprintf("%s %s", importCmd, target)
+			}
+			if _, err = runtime.GetRunner().SudoCmd(importCmd, false, true); err != nil {
+				logger.Errorf("import image %s failed", target)
 				return nil
 			}
 			return nil

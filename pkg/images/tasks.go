@@ -50,15 +50,15 @@ func (t *PreloadK3sImages) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 
-	if err := util.CreateDir(common.PreloadK3sImageDir); err != nil {
-		logger.Errorf("create dir %s failed: %v", common.PreloadK3sImageDir, err)
+	if err := util.CreateDir(common.KubeImageDir); err != nil {
+		logger.Errorf("create dir %s failed: %v", common.KubeImageDir, err)
 		return err
 	}
 
-	var cmd = fmt.Sprintf("rm -rf %s/*", common.PreloadK3sImageDir)
+	var cmd = fmt.Sprintf("rm -rf %s/*", common.KubeImageDir)
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if err != nil {
-		logger.Errorf("delete %s files failed: %v", common.PreloadK3sImageDir, err)
+		logger.Errorf("delete %s files failed: %v", common.KubeImageDir, err)
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (t *PreloadK3sImages) Execute(runtime connector.Runtime) error {
 		}
 		fileName := info.Name()
 		if strings.Contains(fileName, ".tar.gz") {
-			cmd = fmt.Sprintf("ln -s %s %s/%s", filePath, common.PreloadK3sImageDir, fileName)
+			cmd = fmt.Sprintf("ln -s %s %s/%s", filePath, common.KubeImageDir, fileName)
 			if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 				logger.Errorf("link %s failed: %v", fileName, err)
 			}

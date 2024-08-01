@@ -345,16 +345,16 @@ type PreloadImagesService struct {
 }
 
 func (p *PreloadImagesService) Execute(runtime connector.Runtime) error {
-	if utils.IsExist(common.PreloadK3sImageDir) {
-		if err := util.CreateDir(common.PreloadK3sImageDir); err != nil {
-			logger.Errorf("create dir %s failed: %v", common.PreloadK3sImageDir, err)
+	if utils.IsExist(common.KubeImageDir) {
+		if err := util.CreateDir(common.KubeImageDir); err != nil {
+			logger.Errorf("create dir %s failed: %v", common.KubeImageDir, err)
 			return err
 		}
 	}
 
-	fileInfos, err := os.ReadDir(common.PreloadK3sImageDir)
+	fileInfos, err := os.ReadDir(common.KubeImageDir)
 	if err != nil {
-		logger.Errorf("Unable to read images in %s: %v", common.PreloadK3sImageDir, err)
+		logger.Errorf("Unable to read images in %s: %v", common.KubeImageDir, err)
 		return nil
 	}
 
@@ -364,7 +364,7 @@ func (p *PreloadImagesService) Execute(runtime connector.Runtime) error {
 			continue
 		}
 
-		filePath := filepath.Join(common.PreloadK3sImageDir, fileInfo.Name())
+		filePath := filepath.Join(common.KubeImageDir, fileInfo.Name())
 
 		loadingImages = append(loadingImages, images.LocalImage{Filename: filePath})
 	}

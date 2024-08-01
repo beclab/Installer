@@ -54,7 +54,7 @@ const (
 	KubeManifestDir              = "/etc/kubernetes/manifests"
 	KubeScriptDir                = "/usr/local/bin/kube-scripts"
 	KubeletFlexvolumesPluginsDir = "/usr/libexec/kubernetes/kubelet-plugins/volume/exec"
-	PreloadK3sImageDir           = "/var/lib/images"
+	KubeImageDir                 = "/var/lib/images"
 	MinikubeEtcdCertDir          = "/var/lib/minikube/certs/etcd"
 
 	InstallerScriptsDir = "scripts"
