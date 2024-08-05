@@ -470,6 +470,7 @@ rules:
     resources:
       - users
       - users/loginrecords
+      - globalrolebindings
     verbs:
       - get
       - list
