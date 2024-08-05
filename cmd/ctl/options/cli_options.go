@@ -2,7 +2,6 @@ package options
 
 import "github.com/spf13/cobra"
 
-// ~ CliKubeInitializeOptions
 type CliKubeInitializeOptions struct {
 	KubeType        string
 	RegistryMirrors string
@@ -21,7 +20,6 @@ func (o *CliKubeInitializeOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
 }
 
-// ~ CliTerminusUninstallOptions
 type CliTerminusUninstallOptions struct {
 	Proxy string
 }
@@ -34,7 +32,6 @@ func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.Proxy, "proxy", "", "Set proxy address, e.g., 192.168.50.32 or your-proxy-domain")
 }
 
-// ~ CliTerminusInstallOptions
 type CliTerminusInstallOptions struct {
 	KubeType string
 	Proxy    string

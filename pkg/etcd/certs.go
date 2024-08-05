@@ -138,7 +138,6 @@ func (f *FetchCerts) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateCerts
 type GenerateCerts struct {
 	common.KubeAction
 }
@@ -215,7 +214,6 @@ func GenerateAltName(k *common.KubeConf, runtime *connector.Runtime) *cert.AltNa
 	return &altName
 }
 
-// ~ FetchCertsForExternalEtcd
 type FetchCertsForExternalEtcd struct {
 	common.KubeAction
 }

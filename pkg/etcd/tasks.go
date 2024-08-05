@@ -54,7 +54,6 @@ const (
 	ExistCluster = "existing"
 )
 
-// ~ GetStatus
 type GetStatus struct {
 	common.KubeAction
 }
@@ -107,7 +106,6 @@ func (g *GetStatus) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncCertsFile
 type SyncCertsFile struct {
 	common.KubeAction
 }
@@ -133,7 +131,6 @@ func (s *SyncCertsFile) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallETCDBinary
 type InstallETCDBinary struct {
 	common.KubeAction
 }
@@ -166,7 +163,6 @@ func (g *InstallETCDBinary) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateAccessAddress
 type GenerateAccessAddress struct {
 	common.KubeAction
 }
@@ -188,7 +184,6 @@ func (g *GenerateAccessAddress) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ HealthCheck
 type HealthCheck struct {
 	common.KubeAction
 }
@@ -219,7 +214,6 @@ func healthCheck(runtime connector.Runtime, cluster *EtcdCluster) error {
 	return nil
 }
 
-// ~ GenerateConfig
 type GenerateConfig struct {
 	common.KubeAction
 }
@@ -252,7 +246,6 @@ func (g *GenerateConfig) Execute(runtime connector.Runtime) error {
 	}
 }
 
-// ~ RefreshConfig
 type RefreshConfig struct {
 	common.KubeAction
 	ToExisting bool
@@ -320,7 +313,6 @@ func refreshConfig(runtime connector.Runtime, endpoints []string, state, etcdNam
 	return nil
 }
 
-// ~ JoinMember
 type JoinMember struct {
 	common.KubeAction
 }
@@ -351,7 +343,6 @@ func (j *JoinMember) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CheckMember
 type CheckMember struct {
 	common.KubeAction
 }
@@ -378,7 +369,6 @@ func (c *CheckMember) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ RestartETCD
 type RestartETCD struct {
 	common.KubeAction
 }
@@ -390,7 +380,6 @@ func (r *RestartETCD) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ BackupETCD
 type BackupETCD struct {
 	common.KubeAction
 }
@@ -420,7 +409,6 @@ func (b *BackupETCD) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableBackupETCDService
 type EnableBackupETCDService struct {
 	common.KubeAction
 }

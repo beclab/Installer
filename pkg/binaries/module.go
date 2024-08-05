@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ NodeBinariesModule
 type NodeBinariesModule struct {
 	common.KubeModule
 }
@@ -44,7 +43,6 @@ func (n *NodeBinariesModule) Init() {
 	}
 }
 
-// ~ K3sNodeBinariesModule
 type K3sNodeBinariesModule struct {
 	common.KubeModule
 }
@@ -68,7 +66,6 @@ func (k *K3sNodeBinariesModule) Init() {
 	}
 }
 
-// ~ ArtifactBinariesModule
 type ArtifactBinariesModule struct {
 	common.ArtifactModule
 }
@@ -88,7 +85,6 @@ func (a *ArtifactBinariesModule) Init() {
 	}
 }
 
-// ~ K3sArtifactBinariesModule
 type K3sArtifactBinariesModule struct {
 	common.ArtifactModule
 }
@@ -108,7 +104,6 @@ func (a *K3sArtifactBinariesModule) Init() {
 	}
 }
 
-// ~ RegistryPackageModule
 type RegistryPackageModule struct {
 	common.KubeModule
 }
@@ -132,7 +127,6 @@ func (n *RegistryPackageModule) Init() {
 	}
 }
 
-// ~ CriBinariesModule
 type CriBinariesModule struct {
 	common.KubeModule
 }

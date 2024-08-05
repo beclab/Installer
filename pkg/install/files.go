@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ CheckFilesExists
 type CheckFilesExists struct {
 	common.KubeAction
 }
@@ -26,7 +25,6 @@ func (a *CheckFilesExists) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CopyInstallPackage
 type CopyInstallPackage struct {
 	common.KubeAction
 }

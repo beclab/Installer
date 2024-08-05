@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ LocalIpCheck
 type LocalIpCheck struct {
 	prepare.BasePrepare
 }
@@ -52,7 +51,6 @@ func (p *LocalIpCheck) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ OsSupportCheck
 type OsSupportCheck struct {
 	prepare.BasePrepare
 }
@@ -79,7 +77,6 @@ func (p *OsSupportCheck) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 }
 
-// ~ KubeSphereExist
 type KubeSphereExist struct {
 	common.KubePrepare
 }
@@ -95,7 +92,6 @@ func (k *KubeSphereExist) PreCheck(runtime connector.Runtime) (bool, error) {
 	return false, nil
 }
 
-// ~ KubeExist
 type KubeExist struct {
 	common.KubePrepare
 }

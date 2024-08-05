@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ Stop
 type Stop struct {
 	prepare.BasePrepare
 }
@@ -20,7 +19,6 @@ func (p *Stop) PreCheck(runtime connector.Runtime) (bool, error) {
 	// return false, fmt.Errorf("STOP !!!!!!")
 }
 
-// ~ GetCommandKubectl
 type GetCommandKubectl struct {
 	prepare.BasePrepare
 }
@@ -44,7 +42,6 @@ func (p *GetKubeVersion) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ GetMasterNum
 type GetMasterNum struct {
 	prepare.BasePrepare
 }
@@ -68,7 +65,6 @@ func (p *GetMasterNum) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ GetNodeNum
 type GetNodeNum struct {
 	prepare.BasePrepare
 }

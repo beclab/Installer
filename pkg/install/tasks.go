@@ -5,7 +5,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 )
 
-// ~ WizardTask
 type WizardTask struct {
 	common.KubeAction
 }

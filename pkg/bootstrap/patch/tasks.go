@@ -13,7 +13,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
-// ~ PatchTask apt-get install
 type PatchTask struct {
 	common.KubeAction
 }
@@ -63,7 +62,6 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SocatTask
 type SocatTask struct {
 	common.KubeAction
 }
@@ -95,7 +93,6 @@ func (t *SocatTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ConntrackTask
 type ConntrackTask struct {
 	common.KubeAction
 }

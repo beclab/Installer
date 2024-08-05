@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ ChownFileAndDir
 type ChownFileAndDir struct {
 	action.BaseAction
 	Path string
@@ -57,7 +56,6 @@ func (c *ChownFileAndDir) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ LocalTaskChown
 type LocalTaskChown struct {
 	action.BaseAction
 	Path string

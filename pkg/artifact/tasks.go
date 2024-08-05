@@ -33,7 +33,6 @@ import (
 	coreutil "bytetrade.io/web3os/installer/pkg/core/util"
 )
 
-// ~ DownloadISOFile
 type DownloadISOFile struct {
 	common.ArtifactAction
 }
@@ -77,7 +76,6 @@ func (d *DownloadISOFile) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ LocalCopy
 type LocalCopy struct {
 	common.ArtifactAction
 }
@@ -102,7 +100,6 @@ func (l *LocalCopy) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ArchiveDependencies
 type ArchiveDependencies struct {
 	common.ArtifactAction
 }
@@ -120,7 +117,6 @@ func (a *ArchiveDependencies) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UnArchive
 type UnArchive struct {
 	common.KubeAction
 }
@@ -132,7 +128,6 @@ func (u *UnArchive) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ Md5Check
 type Md5Check struct {
 	common.KubeAction
 }
@@ -159,7 +154,6 @@ func (m *Md5Check) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreateMd5File
 type CreateMd5File struct {
 	common.KubeAction
 }

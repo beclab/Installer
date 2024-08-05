@@ -2,7 +2,6 @@ package options
 
 import "github.com/spf13/cobra"
 
-// ~ LoadImageOptions
 type LoadImageOptions struct {
 	KubeType        string
 	RegistryMirrors string

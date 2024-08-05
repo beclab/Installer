@@ -35,7 +35,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
-// ~ InstallHwClock
 type InstallHwClock struct {
 	common.KubeAction
 }
@@ -48,7 +47,6 @@ func (t *InstallHwClock) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ TimeSyncTask
 type TimeSyncTask struct {
 	common.KubeAction
 }
@@ -95,7 +93,6 @@ func (t *TimeSyncTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ConfigProxyTask
 type ConfigProxyTask struct {
 	common.KubeAction
 }
@@ -114,7 +111,6 @@ func (t *ConfigProxyTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ NodeConfigureOS
 type NodeConfigureOS struct {
 	common.KubeAction
 }
@@ -201,7 +197,6 @@ func createDirectories(runtime connector.Runtime, node connector.Host) error {
 	return nil
 }
 
-// ~ NodeExecScript
 type NodeExecScript struct {
 	common.KubeAction
 }
@@ -258,7 +253,6 @@ var (
 	}
 )
 
-// ~ ResetNetworkConfig
 type ResetNetworkConfig struct {
 	common.KubeAction
 }
@@ -270,7 +264,6 @@ func (r *ResetNetworkConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UninstallETCD
 type UninstallETCD struct {
 	common.KubeAction
 }
@@ -283,7 +276,6 @@ func (s *UninstallETCD) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ RemoveNodeFiles
 type RemoveNodeFiles struct {
 	common.KubeAction
 }
@@ -317,7 +309,6 @@ func (r *RemoveNodeFiles) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ RemoveFiles
 type RemoveFiles struct {
 	common.KubeAction
 }
@@ -329,7 +320,6 @@ func (r *RemoveFiles) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DaemonReload
 type DaemonReload struct {
 	common.KubeAction
 }
@@ -344,7 +334,6 @@ func (d *DaemonReload) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GetOSData
 type GetOSData struct {
 	common.KubeAction
 }
@@ -363,7 +352,6 @@ func (g *GetOSData) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncRepositoryFile
 type SyncRepositoryFile struct {
 	common.KubeAction
 }
@@ -391,7 +379,6 @@ func (s *SyncRepositoryFile) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ MountISO
 type MountISO struct {
 	common.KubeAction
 }
@@ -412,7 +399,6 @@ func (m *MountISO) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ NewRepoClient
 type NewRepoClient struct {
 	common.KubeAction
 }
@@ -447,7 +433,6 @@ func (n *NewRepoClient) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ BackupOriginalRepository
 type BackupOriginalRepository struct {
 	common.KubeAction
 }
@@ -467,7 +452,6 @@ func (b *BackupOriginalRepository) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ AddLocalRepository
 type AddLocalRepository struct {
 	common.KubeAction
 }
@@ -490,7 +474,6 @@ func (a *AddLocalRepository) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallPackage
 type InstallPackage struct {
 	common.KubeAction
 }
@@ -516,7 +499,6 @@ func (i *InstallPackage) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ResetRepository
 type ResetRepository struct {
 	common.KubeAction
 }
@@ -545,7 +527,6 @@ func (r *ResetRepository) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UmountISO
 type UmountISO struct {
 	common.KubeAction
 }
@@ -559,7 +540,6 @@ func (u *UmountISO) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ NodeConfigureNtpServer
 type NodeConfigureNtpServer struct {
 	common.KubeAction
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ test for install kk
 type ChmodKk struct {
 	common.KubeAction
 }
@@ -18,7 +17,6 @@ func (a *ChmodKk) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ExecuteKk
 type ExecuteKk struct {
 	common.KubeAction
 }

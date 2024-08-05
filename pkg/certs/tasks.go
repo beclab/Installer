@@ -69,7 +69,6 @@ var (
 	}
 )
 
-// ~ ListClusterCerts
 type ListClusterCerts struct {
 	common.KubeAction
 }
@@ -192,7 +191,6 @@ func ResidualTime(t time.Time) string {
 	return fmt.Sprintf("%dy", int(d.Hours()/24/365))
 }
 
-// ~ DisplayForm
 type DisplayForm struct {
 	common.KubeAction
 }
@@ -248,7 +246,6 @@ func (d *DisplayForm) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ RenewCerts
 type RenewCerts struct {
 	common.KubeAction
 }
@@ -306,7 +303,6 @@ func (r *RenewCerts) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ FetchKubeConfig
 type FetchKubeConfig struct {
 	common.KubeAction
 }
@@ -328,7 +324,6 @@ func (f *FetchKubeConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyneKubeConfigToWorker
 type SyneKubeConfigToWorker struct {
 	common.KubeAction
 }
@@ -387,7 +382,6 @@ func (s *SyneKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableRenewService
 type EnableRenewService struct {
 	common.KubeAction
 }
@@ -401,7 +395,6 @@ func (e *EnableRenewService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UninstallAutoRenewCerts
 type UninstallAutoRenewCerts struct {
 	common.KubeAction
 }

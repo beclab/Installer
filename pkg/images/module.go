@@ -22,7 +22,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ~ PreloadImagesModule
+// ! discard
 type PreloadImagesModule struct {
 	common.KubeModule
 }
@@ -43,7 +43,6 @@ func (p *PreloadImagesModule) Init() {
 	}
 }
 
-// ~ PullModule
 type PullModule struct {
 	common.KubeModule
 	Skip bool
@@ -73,7 +72,6 @@ func (p *PullModule) Init() {
 	}
 }
 
-// ~ CopyImagesToLocalModule
 type CopyImagesToLocalModule struct {
 	common.ArtifactModule
 }

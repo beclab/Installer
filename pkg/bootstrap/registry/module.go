@@ -85,7 +85,6 @@ func (i *RegistryCertsModule) Init() {
 
 }
 
-// ~ InstallRegistryModule
 type InstallRegistryModule struct {
 	common.KubeModule
 }

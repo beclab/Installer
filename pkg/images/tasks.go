@@ -40,7 +40,6 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
-// ~ PreloadK3sImages
 type PreloadK3sImages struct {
 	common.KubeAction
 }
@@ -83,7 +82,6 @@ func (t *PreloadK3sImages) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ PullImage
 type PullImage struct {
 	common.KubeAction
 }
@@ -188,7 +186,6 @@ func GetImage(runtime connector.ModuleRuntime, kubeConf *common.KubeConf, name s
 	return image
 }
 
-// ~ SaveImages
 type SaveImages struct {
 	common.ArtifactAction
 }
@@ -254,7 +251,6 @@ func (s *SaveImages) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CopyImagesToRegistry
 type CopyImagesToRegistry struct {
 	common.KubeAction
 	ImagesPath string
@@ -355,7 +351,6 @@ func (c *CopyImagesToRegistry) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ PushManifest
 type PushManifest struct {
 	common.KubeAction
 }

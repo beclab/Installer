@@ -30,7 +30,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 )
 
-// ~ CheckCertsModule
 type CheckCertsModule struct {
 	common.KubeModule
 }
@@ -52,7 +51,6 @@ func (c *CheckCertsModule) Init() {
 	}
 }
 
-// ~ PrintClusterCertsModule
 type PrintClusterCertsModule struct {
 	common.KubeModule
 }
@@ -72,7 +70,6 @@ func (p *PrintClusterCertsModule) Init() {
 	}
 }
 
-// ~ RenewCertsModule
 type RenewCertsModule struct {
 	common.KubeModule
 }
@@ -128,7 +125,6 @@ func (r *RenewCertsModule) Init() {
 	}
 }
 
-// ~ AutoRenewCertsModule
 type AutoRenewCertsModule struct {
 	common.KubeModule
 	Skip bool
@@ -197,7 +193,6 @@ func (a *AutoRenewCertsModule) Init() {
 	}
 }
 
-// ~ UninstallAutoRenewCertsModule
 type UninstallAutoRenewCertsModule struct {
 	common.KubeModule
 }

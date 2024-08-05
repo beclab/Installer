@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ SyncCertsFile
 type SyncCertsFile struct {
 	common.KubeAction
 }
@@ -54,7 +53,6 @@ func (s *SyncCertsFile) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncCertsToAllNodes
 type SyncCertsToAllNodes struct {
 	common.KubeAction
 }
@@ -98,7 +96,6 @@ func (s *SyncCertsToAllNodes) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallRegistryBinary
 type InstallRegistryBinary struct {
 	common.KubeAction
 }
@@ -131,7 +128,6 @@ func (g *InstallRegistryBinary) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ StartRegistryService
 type StartRegistryService struct {
 	common.KubeAction
 }
@@ -149,7 +145,6 @@ func (g *StartRegistryService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallDockerCompose
 type InstallDockerCompose struct {
 	common.KubeAction
 }
@@ -183,7 +178,6 @@ func (g *InstallDockerCompose) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncHarborPackage
 type SyncHarborPackage struct {
 	common.KubeAction
 }
@@ -217,7 +211,6 @@ func (g *SyncHarborPackage) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ StartHarbor
 type StartHarbor struct {
 	common.KubeAction
 }

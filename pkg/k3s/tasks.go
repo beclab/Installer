@@ -45,7 +45,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// ~ GetClusterStatus
 type GetClusterStatus struct {
 	common.KubeAction
 }
@@ -90,7 +89,6 @@ func (g *GetClusterStatus) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncKubeBinary
 type SyncKubeBinary struct {
 	common.KubeAction
 }
@@ -156,7 +154,6 @@ func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.K
 	return nil
 }
 
-// ~ ChmodScript
 type ChmodScript struct {
 	common.KubeAction
 }
@@ -176,7 +173,6 @@ func (c *ChmodScript) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateK3sService
 type GenerateK3sService struct {
 	common.KubeAction
 }
@@ -254,7 +250,6 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateK3sServiceEnv
 type GenerateK3sServiceEnv struct {
 	common.KubeAction
 }
@@ -326,7 +321,6 @@ func (g *GenerateK3sServiceEnv) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableK3sService
 type EnableK3sService struct {
 	common.KubeAction
 }
@@ -339,7 +333,6 @@ func (e *EnableK3sService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ PreloadImagesService
 type PreloadImagesService struct {
 	common.KubeAction
 }
@@ -375,7 +368,6 @@ func (p *PreloadImagesService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CopyK3sKubeConfig
 type CopyK3sKubeConfig struct {
 	common.KubeAction
 }
@@ -420,7 +412,6 @@ func (c *CopyK3sKubeConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ AddMasterTaint
 type AddMasterTaint struct {
 	common.KubeAction
 }
@@ -438,7 +429,6 @@ func (a *AddMasterTaint) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ AddWorkerLabel
 type AddWorkerLabel struct {
 	common.KubeAction
 }
@@ -459,7 +449,6 @@ func (a *AddWorkerLabel) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncKubeConfigToWorker
 type SyncKubeConfigToWorker struct {
 	common.KubeAction
 }
@@ -516,7 +505,6 @@ func (s *SyncKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ExecUninstallScript
 type ExecUninstallScript struct {
 	common.KubeAction
 }
@@ -533,7 +521,6 @@ func (e *ExecUninstallScript) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SaveKubeConfig
 type SaveKubeConfig struct {
 	common.KubeAction
 }
@@ -593,7 +580,6 @@ func (s *SaveKubeConfig) Execute(_ connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateK3sRegistryConfig
 type GenerateK3sRegistryConfig struct {
 	common.KubeAction
 }

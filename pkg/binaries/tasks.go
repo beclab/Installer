@@ -29,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ InstallAppArmorTask
 type InstallAppArmorTask struct {
 	common.KubeAction
 }
@@ -49,7 +48,6 @@ func (t *InstallAppArmorTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ AppArmorInstall
 type AppArmorInstall struct {
 	common.KubeAction
 }
@@ -59,7 +57,6 @@ func (t *AppArmorInstall) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ Download
 type Download struct {
 	common.KubeAction
 }
@@ -95,7 +92,6 @@ func (d *Download) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ K3sDownload
 type K3sDownload struct {
 	common.KubeAction
 }
@@ -130,7 +126,6 @@ func (k *K3sDownload) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ArtifactDownload
 type ArtifactDownload struct {
 	common.ArtifactAction
 }
@@ -176,7 +171,6 @@ func (a *ArtifactDownload) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ K3sArtifactDownload
 type K3sArtifactDownload struct {
 	common.ArtifactAction
 }
@@ -222,7 +216,6 @@ func (a *K3sArtifactDownload) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ RegistryPackageDownload
 type RegistryPackageDownload struct {
 	common.KubeAction
 }
@@ -236,7 +229,6 @@ func (k *RegistryPackageDownload) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CriDownload
 type CriDownload struct {
 	common.KubeAction
 }

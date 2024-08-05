@@ -33,7 +33,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 )
 
-// ~ InstallContainerModule
 type InstallContainerModule struct {
 	common.KubeModule
 	Skip bool

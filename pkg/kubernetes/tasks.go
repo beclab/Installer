@@ -53,7 +53,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
-// ~ GetClusterStatus
 type GetClusterStatus struct {
 	common.KubeAction
 }
@@ -99,7 +98,6 @@ func (g *GetClusterStatus) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncKubeBinary
 type SyncKubeBinary struct {
 	common.KubeAction
 }
@@ -157,7 +155,6 @@ func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.K
 	return nil
 }
 
-// ~ SyncKubelet
 type SyncKubelet struct {
 	common.KubeAction
 }
@@ -169,7 +166,6 @@ func (s *SyncKubelet) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableKubelet
 type EnableKubelet struct {
 	common.KubeAction
 }
@@ -183,7 +179,6 @@ func (e *EnableKubelet) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateKubeletEnv
 type GenerateKubeletEnv struct {
 	common.KubeAction
 }
@@ -208,7 +203,6 @@ func (g *GenerateKubeletEnv) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateKubeadmConfig
 type GenerateKubeadmConfig struct {
 	common.KubeAction
 	IsInitConfiguration     bool
@@ -324,7 +318,6 @@ func (g *GenerateKubeadmConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ KubeadmInit
 type KubeadmInit struct {
 	common.KubeAction
 }
@@ -348,7 +341,6 @@ func (k *KubeadmInit) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CopyKubeConfigForControlPlane
 type CopyKubeConfigForControlPlane struct {
 	common.KubeAction
 }
@@ -392,7 +384,6 @@ func (c *CopyKubeConfigForControlPlane) Execute(runtime connector.Runtime) error
 	return nil
 }
 
-// ~ RemoveMasterTaint
 type RemoveMasterTaint struct {
 	common.KubeAction
 }
@@ -411,7 +402,6 @@ func (r *RemoveMasterTaint) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ AddWorkerLabel
 type AddWorkerLabel struct {
 	common.KubeAction
 }
@@ -425,7 +415,6 @@ func (a *AddWorkerLabel) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ JoinNode
 type JoinNode struct {
 	common.KubeAction
 }
@@ -443,7 +432,6 @@ func (j *JoinNode) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncKubeConfigToWorker
 type SyncKubeConfigToWorker struct {
 	common.KubeAction
 }
@@ -494,7 +482,6 @@ func (s *SyncKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ KubeadmReset
 type KubeadmReset struct {
 	common.KubeAction
 }
@@ -508,7 +495,6 @@ func (k *KubeadmReset) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ FindNode
 type FindNode struct {
 	common.KubeAction
 }
@@ -552,7 +538,6 @@ func (f *FindNode) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DrainNode
 type DrainNode struct {
 	common.KubeAction
 }
@@ -570,7 +555,6 @@ func (d *DrainNode) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ KubectlDeleteNode
 type KubectlDeleteNode struct {
 	common.KubeAction
 }
@@ -588,7 +572,6 @@ func (k *KubectlDeleteNode) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SetUpgradePlan
 type SetUpgradePlan struct {
 	common.KubeAction
 	Step UpgradeStep
@@ -629,7 +612,6 @@ func (s *SetUpgradePlan) Execute(_ connector.Runtime) error {
 	return nil
 }
 
-// ~ CalculateNextVersion
 type CalculateNextVersion struct {
 	common.KubeAction
 }
@@ -677,7 +659,6 @@ func calculateNextStr(currentVersion, desiredVersion string) string {
 	}
 }
 
-// ~ UpgradeKubeMaster
 type UpgradeKubeMaster struct {
 	common.KubeAction
 	ModuleName string
@@ -704,7 +685,6 @@ func (u *UpgradeKubeMaster) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UpgradeKubeWorker
 type UpgradeKubeWorker struct {
 	common.KubeAction
 	ModuleName string
@@ -772,7 +752,6 @@ func KubeadmUpgradeTasks(runtime connector.Runtime, u *UpgradeKubeMaster) error 
 	return nil
 }
 
-// ~ KubeadmUpgrade
 type KubeadmUpgrade struct {
 	common.KubeAction
 }
@@ -859,7 +838,6 @@ func SyncKubeConfigTask(runtime connector.Runtime, kubeAction common.KubeAction)
 	return nil
 }
 
-// ~ ReconfigureDNS
 type ReconfigureDNS struct {
 	common.KubeAction
 	ModuleName string
@@ -995,7 +973,6 @@ func OverrideCoreDNSService(runtime connector.Runtime, kubeAction common.KubeAct
 	return nil
 }
 
-// ~ SetCurrentK8sVersion
 type SetCurrentK8sVersion struct {
 	common.KubeAction
 }
@@ -1005,7 +982,6 @@ func (s *SetCurrentK8sVersion) Execute(_ connector.Runtime) error {
 	return nil
 }
 
-// ~ SaveKubeConfig
 type SaveKubeConfig struct {
 	common.KubeAction
 }
@@ -1091,7 +1067,6 @@ func (s *SaveKubeConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ConfigureKubernetes
 type ConfigureKubernetes struct {
 	common.KubeAction
 }
@@ -1109,7 +1084,6 @@ func (c *ConfigureKubernetes) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EtcdSecurityEnhancemenAction
 type EtcdSecurityEnhancemenAction struct {
 	common.KubeAction
 	ModuleName string
@@ -1135,7 +1109,6 @@ func (s *EtcdSecurityEnhancemenAction) Execute(runtime connector.Runtime) error 
 	return nil
 }
 
-// ~ MasterSecurityEnhancemenAction
 type MasterSecurityEnhancemenAction struct {
 	common.KubeAction
 	ModuleName string
@@ -1198,7 +1171,6 @@ func (k *MasterSecurityEnhancemenAction) Execute(runtime connector.Runtime) erro
 	return nil
 }
 
-// ~ NodesSecurityEnhancemenAction
 type NodesSecurityEnhancemenAction struct {
 	common.KubeAction
 	ModuleName string

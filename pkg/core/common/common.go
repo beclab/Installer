@@ -20,7 +20,6 @@ const (
 	// KubeKey = "kubekey"
 	KubeKey           = "pkg"
 	Pkg               = "pkg"
-	Packages          = "packages"
 	InstallDir        = "install-wizard"
 	ImagesDir         = "images"
 	ScriptsDir        = "scripts"

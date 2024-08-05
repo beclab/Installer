@@ -22,7 +22,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ~ InstallConfirmModule
 type InstallConfirmModule struct {
 	common.KubeModule
 	Skip bool
@@ -47,7 +46,6 @@ func (i *InstallConfirmModule) Init() {
 	}
 }
 
-// ~ DeleteClusterConfirmModule
 type DeleteClusterConfirmModule struct {
 	common.KubeModule
 }
@@ -67,7 +65,6 @@ func (d *DeleteClusterConfirmModule) Init() {
 	}
 }
 
-// ~ DeleteNodeConfirmModule
 type DeleteNodeConfirmModule struct {
 	common.KubeModule
 }
@@ -87,7 +84,6 @@ func (d *DeleteNodeConfirmModule) Init() {
 	}
 }
 
-// ~ UpgradeConfirmModule
 type UpgradeConfirmModule struct {
 	common.KubeModule
 	Skip bool
@@ -112,7 +108,6 @@ func (u *UpgradeConfirmModule) Init() {
 	}
 }
 
-// ~ CheckFileExistModule
 type CheckFileExistModule struct {
 	module.BaseTaskModule
 	FileName string
@@ -133,7 +128,6 @@ func (c *CheckFileExistModule) Init() {
 	}
 }
 
-// ~ MigrateCriConfirmModule
 type MigrateCriConfirmModule struct {
 	common.KubeModule
 }

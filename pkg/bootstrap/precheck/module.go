@@ -26,7 +26,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ~ GetStorageKeyModule
 type GetStorageKeyModule struct {
 	common.KubeModule
 }
@@ -56,12 +55,10 @@ func (m *GetStorageKeyModule) Init() {
 	}
 }
 
-// ~ GetKubeVersionModule
 type GetKubeVersionModule struct {
 	module.BaseTaskModule
 }
 
-// ~ GetSysInfoModel
 type GetSysInfoModel struct {
 	module.BaseTaskModule
 }
@@ -84,7 +81,6 @@ func (m *GetSysInfoModel) Init() {
 
 }
 
-// ~ PrecheckOs
 type PreCheckOsModule struct {
 	common.KubeModule
 }
@@ -135,7 +131,6 @@ func (m *PreCheckOsModule) Init() {
 	}
 }
 
-// ~ GreetingsModule
 type GreetingsModule struct {
 	module.BaseTaskModule
 }
@@ -165,7 +160,6 @@ func (h *GreetingsModule) Init() {
 	}
 }
 
-// ~ NodePreCheckModule
 type NodePreCheckModule struct {
 	common.KubeModule
 	Skip bool
@@ -200,7 +194,6 @@ func (n *NodePreCheckModule) Init() {
 	}
 }
 
-// ~ ClusterPreCheckModule
 type ClusterPreCheckModule struct {
 	common.KubeModule
 }

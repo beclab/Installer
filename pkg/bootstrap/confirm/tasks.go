@@ -55,7 +55,6 @@ type PreCheckResults struct {
 	Time       string `table:"time"`
 }
 
-// ~ InstallationConfirm
 type InstallationConfirm struct {
 	common.KubeAction
 }
@@ -147,7 +146,6 @@ func (i *InstallationConfirm) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeleteConfirm
 type DeleteConfirm struct {
 	common.KubeAction
 	Content string
@@ -178,7 +176,6 @@ func (d *DeleteConfirm) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UpgradeConfirm
 type UpgradeConfirm struct {
 	common.KubeAction
 }
@@ -313,7 +310,6 @@ func RefineDockerVersion(version string) (string, error) {
 	return strings.Join(newVersionComponents, "."), nil
 }
 
-// ~ CheckFile
 type CheckFile struct {
 	action.BaseAction
 	FileName string
@@ -344,7 +340,6 @@ func (c *CheckFile) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ MigrateCri
 type MigrateCri struct {
 	common.KubeAction
 }
