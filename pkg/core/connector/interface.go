@@ -46,6 +46,7 @@ type ModuleRuntime interface {
 	SetObjName(name string)
 	GenerateWorkDir() error
 	GetHostWorkDir() string
+	GetHomeDir() string
 	GetRootDir() string
 	GetWorkDir() string
 	GetFilesDir() string

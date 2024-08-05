@@ -19,6 +19,7 @@ package connector
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ type BaseRuntime struct {
 	connector       Connector
 	runner          *Runner
 	storage         storage.Provider
+	homeDir         string
 	rootDir         string
 	workDir         string
 	filesDir        string
@@ -111,6 +113,13 @@ func (b *BaseRuntime) SetConnector(c Connector) {
 }
 
 func (b *BaseRuntime) GenerateWorkDir() error {
+	usr, err := user.Current()
+	if err != nil {
+		return errors.Wrap(err, "get current user failed")
+	}
+	homeDir := usr.HomeDir
+	b.homeDir = homeDir
+
 	currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		return errors.Wrap(err, "get current dir failed")
@@ -144,6 +153,10 @@ func (b *BaseRuntime) GetHostWorkDir() string {
 
 func (b *BaseRuntime) GetRootDir() string {
 	return b.rootDir
+}
+
+func (b *BaseRuntime) GetHomeDir() string {
+	return b.homeDir
 }
 
 func (b *BaseRuntime) GetWorkDir() string {

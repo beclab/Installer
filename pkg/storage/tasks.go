@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ MkStorageDir
 type MkStorageDir struct {
 	common.KubeAction
 }
@@ -43,7 +42,6 @@ func (t *MkStorageDir) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DownloadStorageCli
 type DownloadStorageCli struct {
 	common.KubeAction
 }
@@ -97,7 +95,6 @@ func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UnMountS3
 type UnMountS3 struct {
 	common.KubeAction
 }
@@ -138,7 +135,6 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UnMountOSS
 type UnMountOSS struct {
 	common.KubeAction
 }
@@ -180,7 +176,6 @@ func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ StopJuiceFS
 type StopJuiceFS struct {
 	common.KubeAction
 }
@@ -193,7 +188,6 @@ func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ StopMinio
 type StopMinio struct {
 	common.KubeAction
 }
@@ -203,7 +197,6 @@ func (t *StopMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ StopMinioOperator
 type StopMinioOperator struct {
 	common.KubeAction
 }
@@ -214,7 +207,6 @@ func (t *StopMinioOperator) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ StopRedis
 type StopRedis struct {
 	common.KubeAction
 }
@@ -228,7 +220,6 @@ func (t *StopRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ RemoveTerminusFiles
 type RemoveTerminusFiles struct {
 	common.KubeAction
 }

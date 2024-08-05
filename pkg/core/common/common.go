@@ -17,6 +17,7 @@
 package common
 
 const (
+	TerminusKey = ".terminus"
 	// KubeKey = "kubekey"
 	KubeKey           = "pkg"
 	Pkg               = "pkg"
