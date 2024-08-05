@@ -278,3 +278,19 @@ func CopyEmbed(assets http.FileSystem, embeddedDir, dst string) error {
 		return ioutil.WriteFile(targetPath, data, os.ModePerm)
 	})
 }
+
+func GetRealPath(p string) (string, error) {
+	ok, err := IsSymLink(p)
+	if err != nil {
+		return p, err
+	}
+	if !ok {
+		return p, nil
+	}
+
+	target, err := os.Readlink(p)
+	if err != nil {
+		return p, err
+	}
+	return target, nil
+}
