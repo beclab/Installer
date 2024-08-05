@@ -1,1 +1,0 @@
-CC=x86_64-linux-musl-gcc CGO_CFLAGS="-I/usr/local/include" CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -ldflags "-w -s -linkmode external -extldflags -static" -v -o ./installer ./cmd/main.go
