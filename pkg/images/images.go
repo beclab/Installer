@@ -177,8 +177,8 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 			})
 
 			if found == "" {
-				fmt.Printf("image %s file %s.* not found\n", imageRepoTag, imageFileNamePrefix)
-				logger.Infof("image %s file %s.* not found ", imageRepoTag, imageFileNamePrefix)
+				fmt.Printf("image %s(hash:%s) not found\n", imageRepoTag, imageFileNamePrefix)
+				logger.Infof("image %s(hash:%s) not found ", imageRepoTag, imageFileNamePrefix)
 			}
 		}
 	}
@@ -216,29 +216,7 @@ type LocalImages []LocalImage
 
 func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.KubeConf) error {
 	loadCmd := "docker"
-
 	host := runtime.RemoteHost()
-
-	// todo
-	// var decompressDir = path.Join(common.TmpDir, "images")
-	// if !util.IsExist(decompressDir) {
-	// 	util.Mkdir(decompressDir)
-	// }
-
-	// for _, image := range i {
-	// 	var dst = strings.ReplaceAll(image.Filename, ".gz", "")
-	// 	var dstFile = filepath.Base(dst)
-	// 	var dstName = path.Join(decompressDir, dstFile)
-	// 	var cmd = fmt.Sprintf("gunzip -c %s > %s", image.Filename, dstName)
-	// 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
-	// 		logger.Infof("gunzip image %s failed %v", err)
-	// 		return err
-	// 	}
-	// 	logger.Debugf("gunzip %s successed", image.Filename)
-	// 	image.Filename = dstName
-	// 	time.Sleep(1 * time.Second)
-	// }
-
 	retry := func(f func() error, times int) (err error) {
 		for i := 0; i < times; i++ {
 			err = f()
@@ -286,9 +264,6 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 					}
 					return nil
 				}, 5); err != nil {
-					// logger.Errorf("load %s failed: %v in %s", fileName, err, time.Since(start))
-					// os.Exit(1)
-					// return err
 					return fmt.Errorf("%s", fileName)
 				}
 			} else if HasSuffixI(image.Filename, ".tar") {
