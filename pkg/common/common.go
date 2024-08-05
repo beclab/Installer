@@ -152,6 +152,10 @@ const (
 )
 
 const (
+	ManifestImageList = "images.mf"
+)
+
+const (
 	CommandIptables  = "iptables"
 	CommandGPG       = "gpg"
 	CommandSocat     = "socat"

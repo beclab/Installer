@@ -17,6 +17,7 @@
 package images
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path"
@@ -29,6 +30,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
 
@@ -106,47 +108,81 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 
 	host := runtime.RemoteHost()
 
-	var imagePath = path.Join(runtime.GetRootDir(), "images")
+	// TODO Will back up image files locally in the future
+	var imagePath, err = utils.GetRealPath(path.Join(runtime.GetRootDir(), "images"))
+	if err != nil {
+		return err
+	}
 	logger.Debugf("images path: %s", imagePath)
 	if util.IsExist(imagePath) {
-		filepath.Walk(imagePath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
+		var manifestPath = path.Join(imagePath, common.ManifestImageList)
+		realManifestPath, err := utils.GetRealPath(manifestPath)
+		if err != nil {
+			logger.Errorf("get manifest file error %v, path: %s", err, manifestPath)
+			return err
+		}
+		mf, _ := readImageManifest(realManifestPath)
+		if mf == nil {
+			logger.Debugf("image manifest not found, skip")
+			return nil
+		}
 
-			if info.IsDir() {
-				return nil
+		for _, imageRepoTag := range mf {
+			var inspect = fmt.Sprintf("%s inspecti -q %s", pullCmd, imageRepoTag)
+			_, err := runtime.GetRunner().SudoCmdExt(inspect, false, false)
+			if err == nil {
+				continue
 			}
-
-			var target string
-			if info.Mode()&os.ModeSymlink != 0 {
-				target, err = os.Readlink(path)
+			var imageFileNamePrefix = utils.MD5(imageRepoTag)
+			var found string
+			filepath.Walk(imagePath, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err
 				}
-			} else {
-				target = path
-			}
 
-			if !HasSuffixI(target, ".tar.gz", ".tgz", ".tar") {
-				return nil
-			}
+				if info.IsDir() {
+					return nil
+				}
 
-			var importCmd = " ctr -n k8s.io images import "
-			if HasSuffixI(target, ".tar.gz", ".tgz") {
-				importCmd = fmt.Sprintf("gunzip -c %s | %s -", target, importCmd)
-			} else {
-				importCmd = fmt.Sprintf("%s %s", importCmd, target)
+				if !strings.HasPrefix(info.Name(), imageFileNamePrefix) {
+					return nil
+				}
+
+				realImagePath, err := utils.GetRealPath(path)
+				if err != nil {
+					return nil
+				}
+
+				if !HasSuffixI(info.Name(), ".tar.gz", ".tgz", ".tar") {
+					// logger.Debugf("image file %s name is not standardized. Supported file formats include .tar.gz, .tgz, .tar", info.Name())
+					return nil
+				}
+
+				found = info.Name()
+
+				var importCmd = " ctr -n k8s.io images import "
+				if HasSuffixI(realImagePath, ".tar.gz", ".tgz") {
+					importCmd = fmt.Sprintf("gunzip -c %s | %s -", realImagePath, importCmd)
+				} else {
+					importCmd = fmt.Sprintf("%s %s", importCmd, realImagePath)
+				}
+
+				var ts = time.Now()
+				if _, err = runtime.GetRunner().SudoCmdExt(importCmd, false, false); err != nil {
+					return fmt.Errorf("import image %s %s failed", imageRepoTag, realImagePath)
+				}
+
+				fmt.Printf("unpacking %s done(%s)\n", imageRepoTag, util.ShortDur(time.Since(ts)))
+				return filepath.SkipDir
+			})
+
+			if found == "" {
+				fmt.Printf("image %s file %s.* not found\n", imageRepoTag, imageFileNamePrefix)
+				logger.Infof("image %s file %s.* not found ", imageRepoTag, imageFileNamePrefix)
 			}
-			if _, err = runtime.GetRunner().SudoCmd(importCmd, false, true); err != nil {
-				logger.Errorf("import image %s failed", target)
-				return nil
-			}
-			return nil
-		})
+		}
 	}
 
-	// todo
 	for _, image := range images.Images {
 		switch {
 		case host.IsRole(common.Master) && image.Group == kubekeyapiv1alpha2.Master && image.Enable,
@@ -310,4 +346,28 @@ func HasSuffixI(s string, suffixes ...string) bool {
 		}
 	}
 	return false
+}
+
+func readImageManifest(mfPath string) ([]string, error) {
+	if !util.IsExist(mfPath) {
+		return nil, nil
+	}
+
+	file, err := os.Open(mfPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var res []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		res = append(res, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
