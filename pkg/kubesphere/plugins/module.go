@@ -8,6 +8,23 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
+type GenerateCachedModule struct {
+	common.KubeModule
+}
+
+func (m *GenerateCachedModule) Init() {
+	m.Name = "GenerateCachedDir"
+
+	cachedManifest := &task.LocalTask{
+		Name:   "GenerateCachedDir",
+		Action: new(CachedManifest),
+	}
+
+	m.Tasks = []task.Interface{
+		cachedManifest,
+	}
+}
+
 type CopyEmbed struct {
 	common.KubeModule
 }

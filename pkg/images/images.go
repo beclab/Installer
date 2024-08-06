@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -30,7 +29,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
 
@@ -107,82 +105,6 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 	}
 
 	host := runtime.RemoteHost()
-
-	// TODO Will back up image files locally in the future
-	var imagePath, err = utils.GetRealPath(path.Join(runtime.GetRootDir(), "images"))
-	if err != nil {
-		return err
-	}
-	logger.Debugf("images path: %s", imagePath)
-	if util.IsExist(imagePath) {
-		var manifestPath = path.Join(imagePath, common.ManifestImageList)
-		realManifestPath, err := utils.GetRealPath(manifestPath)
-		if err != nil {
-			logger.Errorf("get manifest file error %v, path: %s", err, manifestPath)
-			return err
-		}
-		mf, _ := readImageManifest(realManifestPath)
-		if mf == nil {
-			logger.Debugf("image manifest not found, skip")
-			return nil
-		}
-
-		for _, imageRepoTag := range mf {
-			var inspect = fmt.Sprintf("%s inspecti -q %s", pullCmd, imageRepoTag)
-			_, err := runtime.GetRunner().SudoCmdExt(inspect, false, false)
-			if err == nil {
-				continue
-			}
-			var imageFileNamePrefix = utils.MD5(imageRepoTag)
-			var found string
-			filepath.Walk(imagePath, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-
-				if info.IsDir() {
-					return nil
-				}
-
-				if !strings.HasPrefix(info.Name(), imageFileNamePrefix) {
-					return nil
-				}
-
-				realImagePath, err := utils.GetRealPath(path)
-				if err != nil {
-					return nil
-				}
-
-				if !HasSuffixI(info.Name(), ".tar.gz", ".tgz", ".tar") {
-					// logger.Debugf("image file %s name is not standardized. Supported file formats include .tar.gz, .tgz, .tar", info.Name())
-					return nil
-				}
-
-				found = info.Name()
-
-				var importCmd = " ctr -n k8s.io images import "
-				if HasSuffixI(realImagePath, ".tar.gz", ".tgz") {
-					importCmd = fmt.Sprintf("gunzip -c %s | %s -", realImagePath, importCmd)
-				} else {
-					importCmd = fmt.Sprintf("%s %s", importCmd, realImagePath)
-				}
-
-				var ts = time.Now()
-				if _, err = runtime.GetRunner().SudoCmdExt(importCmd, false, false); err != nil {
-					return fmt.Errorf("import image %s %s failed", imageRepoTag, realImagePath)
-				}
-
-				fmt.Printf("unpacking %s done(%s)\n", imageRepoTag, util.ShortDur(time.Since(ts)))
-				return filepath.SkipDir
-			})
-
-			if found == "" {
-				fmt.Printf("image %s(hash:%s) not found\n", imageRepoTag, imageFileNamePrefix)
-				logger.Infof("image %s(hash:%s) not found ", imageRepoTag, imageFileNamePrefix)
-			}
-		}
-	}
-
 	for _, image := range images.Images {
 		switch {
 		case host.IsRole(common.Master) && image.Group == kubekeyapiv1alpha2.Master && image.Enable,
@@ -196,7 +118,7 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 			}
 
 			// fmt.Printf("%s downloading image %s\n", pullCmd, image.ImageName())
-			logger.Debugf("%s downloading image: %s - %s", host.GetName(), image.ImageName(), runtime.RemoteHost().GetName())
+			logger.Debugf("%s pull image: %s - %s", host.GetName(), image.ImageName(), runtime.RemoteHost().GetName())
 			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s pull %s", pullCmd, image.ImageName()), false, false); err != nil {
 				return errors.Wrap(err, "pull image failed")
 			}

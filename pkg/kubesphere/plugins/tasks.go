@@ -12,18 +12,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ CopyEmbedFiles
 type CopyEmbedFiles struct {
 	common.KubeAction
 }
 
 func (t *CopyEmbedFiles) Execute(runtime connector.Runtime) error {
 	return utils.CopyEmbed(assets, ".", runtime.GetFilesDir())
-
 }
 
 // ! moved to prepares
-// // ~ CheckMasterNum
 // type CheckMasterNum struct {
 // 	common.KubeAction
 // }
@@ -43,7 +40,6 @@ func (t *CopyEmbedFiles) Execute(runtime connector.Runtime) error {
 // 	return nil
 // }
 
-// ~ CheckNodeState
 type CheckNodeState struct {
 	common.KubeAction
 }
@@ -77,7 +73,6 @@ func (t *CheckNodeState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InitNamespace
 type InitNamespace struct {
 	common.KubeAction
 }

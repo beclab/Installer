@@ -22,18 +22,25 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ! discard
 type PreloadImagesModule struct {
 	common.KubeModule
+	Skip bool
+}
+
+func (p *PreloadImagesModule) IsSkip() bool {
+	return p.Skip
 }
 
 func (p *PreloadImagesModule) Init() {
 	p.Name = "PreloadImages"
 
 	preload := &task.RemoteTask{
-		Name:     "PreloadK3sImages",
-		Hosts:    p.Runtime.GetHostsByRole(common.Master),
-		Action:   new(PreloadK3sImages),
+		Name:  "PreloadImages",
+		Hosts: p.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&MasterPullImages{Not: true},
+		},
+		Action:   new(LoadImages),
 		Parallel: false,
 		Retry:    0,
 	}

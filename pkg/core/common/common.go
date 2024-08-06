@@ -17,7 +17,11 @@
 package common
 
 const (
-	TerminusKey = ".terminus"
+	TerminusKey   = ".terminus"
+	ManifestDir   = "manifest"
+	ImageCacheDir = "images"
+	DepsCacheDir  = "components"
+
 	// KubeKey = "kubekey"
 	KubeKey           = "pkg"
 	Pkg               = "pkg"
@@ -35,6 +39,10 @@ const (
 	UninstallOsScript = "uninstall_cmd.sh"
 
 	DefaultDomainName = "myterminus.com"
+
+	ManifestImage     = "images.mf"
+	ManifestImageNode = "images.node.mf"
+	ManifestDeps      = "dependencies.mf"
 
 	Pipeline = "Pipeline"
 	Module   = "Module"

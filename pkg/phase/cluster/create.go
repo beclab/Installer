@@ -17,12 +17,12 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
+		&plugins.GenerateCachedModule{},
 	}
 
 	var kubeModules []module.Module
-
 	if args.Minikube {
-		kubeModules = NewDarwinClusterPhase(runtime) // macos
+		kubeModules = NewDarwinClusterPhase(runtime)
 	} else {
 		if runtime.Cluster.Kubernetes.Type == common.K3s {
 			kubeModules = NewK3sCreateClusterPhase(runtime)
@@ -30,7 +30,6 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 			kubeModules = NewCreateClusterPhase(runtime)
 		}
 	}
-
 	m = append(m, kubeModules...)
 
 	return &pipeline.Pipeline{
