@@ -28,7 +28,6 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
-// ~ CheckStorageClass
 type CheckStorageClass struct {
 	common.KubePrepare
 }
@@ -65,7 +64,6 @@ func (p *CheckStorageClass) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ GenerateRedisPassword
 type GenerateRedisPassword struct {
 	common.KubePrepare
 }
@@ -83,7 +81,6 @@ func (p *GenerateRedisPassword) PreCheck(runtime connector.Runtime) (bool, error
 	return true, nil
 }
 
-// ~ VersionBelowV3
 type VersionBelowV3 struct {
 	common.KubePrepare
 }
@@ -101,7 +98,6 @@ func (v *VersionBelowV3) PreCheck(runtime connector.Runtime) (bool, error) {
 	return false, nil
 }
 
-// ~ NotEqualDesiredVersion
 type NotEqualDesiredVersion struct {
 	common.KubePrepare
 }

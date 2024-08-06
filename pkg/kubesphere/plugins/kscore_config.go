@@ -149,7 +149,6 @@ var kscorecrds = []map[string]string{
 	},
 }
 
-// ~ CreateKsRole
 type CreateKsRole struct {
 	common.KubeAction
 }
@@ -173,7 +172,6 @@ func (t *CreateKsRole) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ PatchKsCoreStatus
 type PatchKsCoreStatus struct {
 	common.KubeAction
 }
@@ -198,7 +196,6 @@ func (t *PatchKsCoreStatus) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreateKsCoreConfig
 type CreateKsCoreConfig struct {
 	common.KubeAction
 }
@@ -254,7 +251,6 @@ func (t *CreateKsCoreConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreateKsCoreManifests
 type CreateKsCoreConfigManifests struct {
 	common.KubeAction
 }
@@ -283,7 +279,6 @@ func (t *CreateKsCoreConfigManifests) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ PacthKsCore
 type PacthKsCore struct {
 	common.KubeAction
 }
@@ -322,7 +317,6 @@ func (t *PacthKsCore) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CheckKsCoreExist
 type CheckKsCoreExist struct {
 	common.KubeAction
 }
@@ -361,7 +355,6 @@ func (t *CheckKsCoreExist) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployKsCoreConfigModule
 type DeployKsCoreConfigModule struct {
 	common.KubeModule
 }

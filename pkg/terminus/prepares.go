@@ -22,7 +22,6 @@ func (p *CheckAwsHost) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ NotEqualDesiredVersion
 type NotEqualDesiredVersion struct {
 	common.KubePrepare
 }

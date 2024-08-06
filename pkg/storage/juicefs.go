@@ -72,7 +72,6 @@ func (m *InstallJuiceFsModule) Init() {
 	}
 }
 
-// ~ CheckJuiceFsExists
 type CheckJuiceFsExists struct {
 	common.KubePrepare
 }
@@ -89,7 +88,6 @@ func (p *CheckJuiceFsExists) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ DownloadJuiceFs
 type DownloadJuiceFs struct {
 	common.KubeAction
 }
@@ -124,7 +122,6 @@ func (t *DownloadJuiceFs) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallJuiceFs
 type InstallJuiceFs struct {
 	common.KubeAction
 }
@@ -156,7 +153,6 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableJuiceFsService
 type EnableJuiceFsService struct {
 	common.KubeAction
 }
@@ -194,7 +190,6 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CheckJuiceFsState
 type CheckJuiceFsState struct {
 	common.KubeAction
 }

@@ -31,7 +31,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ GetChecksum
 type GetChecksum struct {
 	common.KubeAction
 }
@@ -76,7 +75,6 @@ func (g *GenerateHaproxyManifest) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UpdateK3s
 type UpdateK3s struct {
 	common.KubeAction
 }
@@ -91,7 +89,6 @@ func (u *UpdateK3s) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UpdateKubelet
 type UpdateKubelet struct {
 	common.KubeAction
 }
@@ -108,7 +105,6 @@ func (u *UpdateKubelet) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UpdateKubeProxy
 type UpdateKubeProxy struct {
 	common.KubeAction
 }
@@ -133,7 +129,6 @@ func (u *UpdateKubeProxy) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ UpdateHosts
 type UpdateHosts struct {
 	common.KubeAction
 }
@@ -146,7 +141,6 @@ func (u *UpdateHosts) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CheckVIPAddress
 type CheckVIPAddress struct {
 	common.KubeAction
 }
@@ -159,7 +153,6 @@ func (c *CheckVIPAddress) Execute(runtime connector.Runtime) error {
 	}
 }
 
-// ~ GetInterfaceName
 type GetInterfaceName struct {
 	common.KubeAction
 }
@@ -185,7 +178,6 @@ func (g *GetInterfaceName) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateKubevipManifest
 type GenerateKubevipManifest struct {
 	common.KubeAction
 }
@@ -227,7 +219,6 @@ func (g *GenerateKubevipManifest) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateK3sHaproxyManifest
 type GenerateK3sHaproxyManifest struct {
 	common.KubeAction
 }
@@ -257,7 +248,6 @@ func (g *GenerateK3sHaproxyManifest) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreateManifestsFolder
 type CreateManifestsFolder struct {
 	action.BaseAction
 }
@@ -270,7 +260,6 @@ func (h *CreateManifestsFolder) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateK3sKubevipDaemonset
 type GenerateK3sKubevipDaemonset struct {
 	common.KubeAction
 }
@@ -313,7 +302,6 @@ func (g *GenerateK3sKubevipDaemonset) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeleteVIP
 type DeleteVIP struct {
 	common.KubeAction
 }

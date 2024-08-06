@@ -16,7 +16,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
-// ~ EnableKsMonitorStatus
 type EnableKsMonitorStatus struct {
 	common.KubeAction
 }
@@ -25,7 +24,6 @@ func (t *EnableKsMonitorStatus) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreatePrometheusComponent
 type CreatePrometheusComponent struct {
 	common.KubeAction
 	Component  string
@@ -53,7 +51,6 @@ func (t *CreatePrometheusComponent) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreateOperator
 type CreateOperator struct {
 	common.KubeAction
 }
@@ -109,7 +106,6 @@ func (t *CreateOperator) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployPrometheusModule
 type DeployPrometheusModule struct {
 	common.KubeModule
 }

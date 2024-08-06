@@ -11,7 +11,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ~ InstallMonitorDashboardCrd
 type InstallMonitorDashboardCrd struct {
 	common.KubeAction
 }
@@ -30,9 +29,6 @@ func (t *InstallMonitorDashboardCrd) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// +
-
-// ~ CreateMonitorDashboardModule
 type CreateMonitorDashboardModule struct {
 	common.KubeModule
 }

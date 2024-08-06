@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ Download
 type Download struct {
 	common.KubeAction
 }
@@ -52,7 +51,6 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DownloadMinikubeBinaries
 type DownloadMinikubeBinaries struct {
 	common.KubeModule
 }
@@ -73,7 +71,6 @@ func (m *DownloadMinikubeBinaries) Init() {
 	}
 }
 
-// ~ GetMinikubeProfile
 type GetMinikubeProfile struct {
 	common.KubeAction
 }
@@ -119,7 +116,6 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 
 }
 
-// ~ InitMinikubeNs
 type InitMinikubeNs struct {
 	common.KubeAction
 }
@@ -154,7 +150,6 @@ func (t *InitMinikubeNs) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CheckMacCommandExists
 type CheckMacCommandExists struct {
 	common.KubeAction
 }
@@ -188,7 +183,6 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployMiniKubeModule
 type DeployMiniKubeModule struct {
 	common.KubeModule
 }

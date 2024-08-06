@@ -8,7 +8,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ~ InstallDepsModule
 type InstallDepsModule struct {
 	common.KubeModule
 }

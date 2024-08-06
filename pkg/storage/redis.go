@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ CheckRedisServiceState
 type CheckRedisServiceState struct {
 	common.KubeAction
 }
@@ -36,7 +35,6 @@ func (t *CheckRedisServiceState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableRedisService
 type EnableRedisService struct {
 	common.KubeAction
 }
@@ -71,7 +69,6 @@ func (t *EnableRedisService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ConfigRedis
 type ConfigRedis struct {
 	common.KubeAction
 }
@@ -116,7 +113,6 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallRedis
 type InstallRedis struct {
 	common.KubeAction
 }
@@ -161,7 +157,6 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// - InstallRedisModule
 type InstallRedisModule struct {
 	common.KubeModule
 }

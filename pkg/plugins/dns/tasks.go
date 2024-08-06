@@ -31,7 +31,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ SetProxyNameServer
 type SetProxyNameServer struct {
 	common.KubeAction
 }
@@ -57,7 +56,6 @@ func (s *SetProxyNameServer) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ OverrideCoreDNS
 type OverrideCoreDNS struct {
 	common.KubeAction
 }
@@ -75,7 +73,6 @@ func (o *OverrideCoreDNS) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployNodeLocalDNS
 type DeployNodeLocalDNS struct {
 	common.KubeAction
 }
@@ -87,7 +84,6 @@ func (d *DeployNodeLocalDNS) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateNodeLocalDNSConfigMap
 type GenerateNodeLocalDNSConfigMap struct {
 	common.KubeAction
 }
@@ -119,7 +115,6 @@ func (g *GenerateNodeLocalDNSConfigMap) Execute(runtime connector.Runtime) error
 	return nil
 }
 
-// ~ ApplyNodeLocalDNSConfigMap
 type ApplyNodeLocalDNSConfigMap struct {
 	common.KubeAction
 }

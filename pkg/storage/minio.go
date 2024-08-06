@@ -20,7 +20,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
-// ~ CheckMinioState
 type CheckMinioState struct {
 	common.KubeAction
 }
@@ -37,7 +36,6 @@ func (t *CheckMinioState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ EnableMinio
 type EnableMinio struct {
 	common.KubeAction
 }
@@ -60,7 +58,6 @@ func (t *EnableMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ConfigMinio
 type ConfigMinio struct {
 	common.KubeAction
 }
@@ -99,7 +96,6 @@ func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ InstallMinio
 type InstallMinio struct {
 	common.KubeAction
 }
@@ -139,7 +135,6 @@ func (t *InstallMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CheckMinioExists
 type CheckMinioExists struct {
 	common.KubePrepare
 }

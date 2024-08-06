@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// - InstallMinioClusterModule
 type InstallMinioClusterModule struct {
 	common.KubeModule
 }
@@ -23,7 +22,6 @@ func (m *InstallMinioClusterModule) Init() {
 	m.Name = "InstallMinioCluster"
 }
 
-// ~ InstallMinioOperator
 type InstallMinioOperator struct {
 	common.KubeAction
 }

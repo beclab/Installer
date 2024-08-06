@@ -36,7 +36,6 @@ import (
 //go:embed cilium-1.11.6.tgz
 var f embed.FS
 
-// ~ ReleaseCiliumChart
 type ReleaseCiliumChart struct {
 	common.KubeAction
 }
@@ -60,7 +59,6 @@ func (r *ReleaseCiliumChart) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ SyncCiliumChart
 type SyncCiliumChart struct {
 	common.KubeAction
 }
@@ -77,7 +75,6 @@ func (s *SyncCiliumChart) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployCilium
 type DeployCilium struct {
 	common.KubeAction
 }
@@ -102,7 +99,6 @@ func (d *DeployCilium) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployNetworkPlugin
 type DeployNetworkPlugin struct {
 	common.KubeAction
 }
@@ -115,7 +111,6 @@ func (d *DeployNetworkPlugin) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployKubeovnPlugin
 type DeployKubeovnPlugin struct {
 	common.KubeAction
 }
@@ -136,7 +131,6 @@ func (d *DeployKubeovnPlugin) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployNetworkMultusPlugin
 type DeployNetworkMultusPlugin struct {
 	common.KubeAction
 }
@@ -149,7 +143,6 @@ func (d *DeployNetworkMultusPlugin) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ LabelNode
 type LabelNode struct {
 	common.KubeAction
 }
@@ -164,7 +157,6 @@ func (l *LabelNode) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateSSL
 type GenerateSSL struct {
 	common.KubeAction
 }
@@ -205,7 +197,6 @@ func (g *GenerateSSL) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ GenerateKubeOVN
 type GenerateKubeOVN struct {
 	common.KubeAction
 }
@@ -305,7 +296,6 @@ func (g *GenerateKubeOVN) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ChmodKubectlKo
 type ChmodKubectlKo struct {
 	common.KubeAction
 }

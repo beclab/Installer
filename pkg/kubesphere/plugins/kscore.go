@@ -66,7 +66,6 @@ func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployKsCoreModule
 type DeployKsCoreModule struct {
 	common.KubeModule
 }

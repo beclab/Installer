@@ -17,7 +17,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// ~ DeploySnapshotController
 type DeploySnapshotController struct {
 	common.KubeAction
 }
@@ -63,7 +62,6 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeploySnapshotControllerModule
 type DeploySnapshotControllerModule struct {
 	common.KubeModule
 }

@@ -15,7 +15,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// ~ CreateMonitorNotification
 type CreateMonitorNotification struct {
 	common.KubeAction
 }
@@ -64,7 +63,6 @@ func (t *CreateMonitorNotification) Execute(runtime connector.Runtime) error {
 
 // +
 
-// ~ CreateNotificationModule
 type CreateNotificationModule struct {
 	common.KubeModule
 }

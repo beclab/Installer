@@ -6,7 +6,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-// ~ InitStorageModule
 type InitStorageModule struct {
 	common.KubeModule
 	Skip bool
@@ -35,7 +34,6 @@ func (m *InitStorageModule) Init() {
 	}
 }
 
-// ~ RemoveMountModule
 type RemoveMountModule struct {
 	common.KubeModule
 }
@@ -88,7 +86,6 @@ func (m *RemoveMountModule) Init() {
 	}
 }
 
-// ~ RemoveStorage
 type RemoveStorageModule struct {
 	common.KubeModule
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ~ GenerateKubeSphereToken
 type GenerateKubeSphereToken struct {
 	common.KubeAction
 }
@@ -57,7 +56,6 @@ func (t *GenerateKubeSphereToken) Execute(runtime connector.Runtime) error {
 
 // +++++
 
-// ~ CreateKubeSphereSecretModule
 type CreateKubeSphereSecretModule struct {
 	common.KubeModule
 }

@@ -39,7 +39,6 @@ import (
 	yamlV2 "gopkg.in/yaml.v2"
 )
 
-// ~ AddInstallerConfig
 type AddInstallerConfig struct {
 	common.KubeAction
 }
@@ -60,7 +59,6 @@ func (a *AddInstallerConfig) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ CreateNamespace
 type CreateNamespace struct {
 	common.KubeAction
 }
@@ -89,7 +87,6 @@ EOF`, kubectl)
 	return nil
 }
 
-// ~ Setup
 type Setup struct {
 	common.KubeAction
 }
@@ -293,7 +290,6 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ Apply
 type Apply struct {
 	common.KubeAction
 }
@@ -316,7 +312,6 @@ func (a *Apply) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ Check
 type Check struct {
 	common.KubeAction
 }
@@ -470,7 +465,6 @@ func CheckKubeSphereStatus(ctx context.Context, runtime connector.Runtime, stopC
 	}
 }
 
-// ~ CleanCC
 type CleanCC struct {
 	common.KubeAction
 }
@@ -480,7 +474,6 @@ func (c *CleanCC) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ ConvertV2ToV3
 type ConvertV2ToV3 struct {
 	common.KubeAction
 }

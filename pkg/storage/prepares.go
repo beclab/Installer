@@ -10,7 +10,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
-// ~ CheckEtcdSSL
 type CheckEtcdSSL struct {
 	common.KubePrepare
 }
@@ -29,7 +28,6 @@ func (p *CheckEtcdSSL) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ CheckStorageType
 type CheckStorageType struct {
 	common.KubePrepare
 	StorageType string
@@ -43,7 +41,6 @@ func (p *CheckStorageType) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ CheckStorageVendor
 type CheckStorageVendor struct {
 	common.KubePrepare
 }
@@ -65,7 +62,6 @@ func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-// ~ CreateJuiceFsDataPath
 type CreateJuiceFsDataPath struct {
 	common.KubePrepare
 }

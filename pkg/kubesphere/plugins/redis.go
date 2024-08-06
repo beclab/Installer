@@ -18,7 +18,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// ~ CreateRedisSecret
 type CreateRedisSecret struct {
 	common.KubeAction
 }
@@ -43,7 +42,6 @@ func (t *CreateRedisSecret) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ BackupRedisManifests
 type BackupRedisManifests struct {
 	common.KubeAction
 }
@@ -79,7 +77,6 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployRedisHA
 type DeployRedisHA struct {
 	common.KubeAction
 }
@@ -89,7 +86,6 @@ func (t *DeployRedisHA) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ DeployRedis
 type DeployRedis struct {
 	common.KubeAction
 }
@@ -118,7 +114,6 @@ func (t *DeployRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-// ~ PatchRedisStatus
 type PatchRedisStatus struct {
 	common.KubeAction
 }
@@ -148,7 +143,6 @@ func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
 
 // +++++
 
-// ~ DeployRedisModule
 type DeployRedisModule struct {
 	common.KubeModule
 }

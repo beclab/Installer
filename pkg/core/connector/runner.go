@@ -72,7 +72,6 @@ func (r *Runner) Cmd(cmd string, printOutput bool, printLine bool) (string, erro
 	return stdout, nil
 }
 
-// ~ Extension
 func (r *Runner) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
 	if !r.Host.GetMinikube() {
 		if r.Conn == nil {
@@ -105,7 +104,6 @@ func (r *Runner) SudoCmd(cmd string, printOutput bool, printLine bool) (string, 
 	return r.Cmd(cmd, printOutput, printLine)
 }
 
-// ~ Extension
 func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
 	if !r.Host.GetMinikube() {
 		if r.Conn == nil {

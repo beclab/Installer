@@ -11,7 +11,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
-// ~ Greeting
 type Greeting struct {
 	action.BaseAction
 }

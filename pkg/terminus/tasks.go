@@ -9,7 +9,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
-// ~ SetUserInfo
 type SetUserInfo struct {
 	common.KubeAction
 }
