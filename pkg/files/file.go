@@ -70,16 +70,6 @@ const (
 	miniooperator = "minio-operator"
 	redis         = "redis"
 	juicefs       = "juicefs"
-
-	kubekey = "kubekey"
-
-	file1 = "file1"
-	file2 = "file2"
-	file3 = "file3"
-
-	pkg     = "package"
-	fullpkg = "full-package"
-	minipkg = "mini-package" //
 )
 
 // KubeBinary Type field const
@@ -112,8 +102,6 @@ type KubeBinary struct {
 	CheckSum            bool
 	PrintOutput         bool
 	OverWrite           bool
-	LessTransferLog     bool
-	LessTransferLogSeed float64
 	WriteDownloadingLog bool
 	Provider            storage.Provider
 }
@@ -240,7 +228,7 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		if component.Zone == "cn" {
 			component.Url = fmt.Sprintf(RunUrlCN, version, arch)
 		}
-	case awscli: // + component
+	case awscli: // * component
 		component.Type = COMPONENT
 		component.FileName = "awscli-exe-linux-x86_64.zip"
 		component.Url = AWSCliUrl
@@ -276,7 +264,7 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf(JuiceFsUrl, version, version, arch)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
-	case apparmor: // + patch
+	case apparmor: // * patch
 		component.Type = PATCH
 		component.FileName = fmt.Sprintf("apparmor_%s-0ubuntu1_%s.deb", version, arch)
 		switch arch {
@@ -310,32 +298,6 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf("https://github.com/fqrouter/conntrack-tools/archive/refs/tags/conntrack-tools-%s.tar.gz", version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
-	case file1:
-		component.Type = INSTALLER
-		component.FileName = fmt.Sprintf("file1_%s_v%s.tar.gz", arch, version)
-		component.Url = ""
-	case file2:
-		component.Type = INSTALLER
-		component.FileName = fmt.Sprintf("file2_%s_v%s.tar.gz", arch, version)
-		component.Url = ""
-	case file3:
-		component.Type = INSTALLER
-		component.FileName = fmt.Sprintf("file3_%s_v%s.tar.gz", arch, version)
-		component.Url = ""
-	case kubekey: // debug
-		component.Type = INSTALLER
-		component.FileName = fmt.Sprintf("kubekey-ext-v%s-linux-%s.tar.gz", version, arch)
-		component.Url = ""
-	case fullpkg: // debug
-		component.Type = INSTALLER
-		component.FileName = fmt.Sprintf("install-wizard-full.tar.gz")
-		component.Url = ""
-		component.CheckSum = false
-		component.BaseDir = filepath.Join(prePath) // /packages/...
-		component.OverWrite = false
-		component.PrintOutput = true
-		component.LessTransferLog = false
-		component.LessTransferLogSeed = 0.2
 	default:
 		logger.Fatalf("unsupported kube binaries %s", name)
 	}
@@ -401,9 +363,6 @@ func (b *KubeBinary) GetTarCmd() string {
 			cmd = fmt.Sprintf("cd %s && tar -zxf helm-%s-%s-%s.tar.gz && mv %s-%s/helm . && rm -rf ./%s-%s/ && cp ./helm /usr/local/bin/",
 				b.BaseDir, b.Version, b.Os, b.Arch, b.Os, b.Arch, b.Os, b.Arch)
 		}
-	case kubekey: // debug
-		cmd = fmt.Sprintf("cd %s && tar -zxf kubekey-ext-v%s-linux-%s.tar.gz",
-			b.BaseDir, b.Version, b.Arch)
 	case awscli:
 		cmd = fmt.Sprintf("cd %s && unzip -q %s && ./aws/install --update", b.BaseDir, b.FileName)
 	case ossutil:
@@ -994,11 +953,6 @@ var (
 			amd64: {
 				"v2.4.1": "cfd799c150b59353aefb34835f3a2e859763cb2e91966cd3ffeb1b6ceaa19841",
 				"v2.5.3": "c536eaf5dcb35a1f2a5b1c4278380bde254a288700aa2ba59c1fd464bf2fcbf1",
-			},
-		},
-		kubekey: {
-			amd64: {
-				"0.1.20": "609c20044dce0df0ac54e6e6d46ec2fa98ff196119d8f334c76a2d3f7e4a8c59",
 			},
 		},
 	}

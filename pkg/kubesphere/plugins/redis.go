@@ -65,7 +65,7 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 		var cmd = fmt.Sprintf("%s get svc -n %s %s -o yaml > %s/redis-svc-backup.yaml && %s delete svc -n %s %s",
 			kubectlpath,
 			common.NamespaceKubesphereSystem, common.ChartNameRedis,
-			common.KubeManifestDir,
+			common.KubeManifestDir, // todo need fix cross platforms
 			kubectlpath,
 			common.NamespaceKubesphereSystem, common.ChartNameRedis)
 
@@ -97,7 +97,7 @@ func (t *DeployRedis) Execute(runtime connector.Runtime) error {
 	}
 
 	var appName = common.ChartNameRedis
-	var appPath = path.Join(runtime.GetFilesDir(), cc.BuildDir, appName)
+	var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appName)
 
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubesphereSystem)
 	if err != nil {
@@ -129,8 +129,6 @@ func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
 	if runtime.GetRunner().Host.GetMinikube() {
 		jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
 	}
-	// todo fix
-	// var jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
 	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
 
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)

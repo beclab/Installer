@@ -45,7 +45,7 @@ func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
 	}
 
 	var appKsCoreName = common.ChartNameKsCore
-	var appPath = path.Join(runtime.GetFilesDir(), cc.BuildDir, appKsCoreName)
+	var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appKsCoreName)
 
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubesphereSystem)
 	if err != nil {

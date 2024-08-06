@@ -18,14 +18,30 @@ type CachedManifest struct {
 }
 
 func (t *CachedManifest) Execute(runtime connector.Runtime) error {
+	maniDir := path.Join(runtime.GetRootDir(), fmt.Sprintf(".%s", cc.ManifestDir))
+	if !util.IsExist(maniDir) {
+		fmt.Println(".manifest directory not exists !!!")
+		os.Exit(1)
+	}
+
 	cachedDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir)
 	if !util.IsExist(cachedDir) {
 		util.Mkdir(cachedDir)
 	}
 
-	maniDir := path.Join(runtime.GetRootDir(), fmt.Sprintf(".%s", cc.ManifestDir))
-	if !util.IsExist(maniDir) {
-		panic(".manifest not found")
+	cachedImageDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ImageCacheDir)
+	if !util.IsExist(cachedImageDir) {
+		util.Mkdir(cachedImageDir)
+	}
+
+	cachedPkgDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	if !util.IsExist(cachedPkgDir) {
+		util.Mkdir(cachedPkgDir)
+	}
+
+	cachedBuildFilesDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir)
+	if !util.IsExist(cachedBuildFilesDir) {
+		util.Mkdir(cachedBuildFilesDir)
 	}
 
 	filepath.Walk(maniDir, func(path string, info os.FileInfo, err error) error {

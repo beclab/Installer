@@ -154,7 +154,7 @@ type CreateKsRole struct {
 }
 
 func (t *CreateKsRole) Execute(runtime connector.Runtime) error {
-	var f = path.Join(runtime.GetFilesDir(), cc.BuildDir, "ks-init", "role-templates.yaml")
+	var f = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "ks-init", "role-templates.yaml")
 	if !utils.IsExist(f) {
 		return fmt.Errorf("file %s not found", f)
 	}
@@ -217,7 +217,7 @@ func (t *CreateKsCoreConfig) Execute(runtime connector.Runtime) error {
 	}
 
 	var appKsCoreConfigName = common.ChartNameKsCoreConfig
-	var appPath = path.Join(runtime.GetFilesDir(), cc.BuildDir, appKsCoreConfigName)
+	var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appKsCoreConfigName)
 
 	// create ks-core-config
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubesphereSystem)
@@ -237,7 +237,7 @@ func (t *CreateKsCoreConfig) Execute(runtime connector.Runtime) error {
 
 	// create ks-config
 	var appKsConfigName = common.ChartNameKsConfig
-	appPath = path.Join(runtime.GetFilesDir(), cc.BuildDir, appKsConfigName)
+	appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appKsConfigName)
 	values = make(map[string]interface{})
 	values["Release"] = map[string]string{
 		"JwtSecret": jwtSecretIf.(string),
@@ -261,7 +261,8 @@ func (t *CreateKsCoreConfigManifests) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 
-	var kscoreConfigCrdsPath = path.Join(runtime.GetFilesDir(), cc.BuildDir, common.ChartNameKsCoreConfig, "crds")
+	var kscoreConfigCrdsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, common.ChartNameKsCoreConfig, "crds")
+
 	filepath.Walk(kscoreConfigCrdsPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

@@ -39,6 +39,7 @@ func (p *PreloadImagesModule) Init() {
 		Hosts: p.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			&MasterPullImages{Not: true},
+			&CheckImageManifest{},
 		},
 		Action:   new(LoadImages),
 		Parallel: false,

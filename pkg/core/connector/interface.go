@@ -49,7 +49,6 @@ type ModuleRuntime interface {
 	GetHomeDir() string
 	GetRootDir() string
 	GetWorkDir() string
-	GetFilesDir() string
 	GetIgnoreErr() bool
 	GetAllHosts() []Host
 	SetAllHosts([]Host)

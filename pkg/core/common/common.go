@@ -17,10 +17,13 @@
 package common
 
 const (
-	TerminusKey   = ".terminus"
-	ManifestDir   = "manifest"
-	ImageCacheDir = "images"
-	DepsCacheDir  = "components"
+	TerminusKey        = ".terminus"
+	ManifestDir        = "manifest"
+	ImageCacheDir      = "images"
+	DepsCacheDir       = "components"
+	PackageCacheDir    = "pkg"
+	BuildFilesCacheDir = "files"
+	BuildDir           = "build"
 
 	// KubeKey = "kubekey"
 	KubeKey           = "pkg"
@@ -28,8 +31,6 @@ const (
 	InstallDir        = "install-wizard"
 	ImagesDir         = "images"
 	ScriptsDir        = "scripts"
-	FilesDir          = "files"
-	BuildDir          = "build"
 	WizardDir         = "wizard"
 	DeployDir         = "deploy"
 	TerminusDir       = "terminus"

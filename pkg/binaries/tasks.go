@@ -18,11 +18,13 @@ package binaries
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	mapset "github.com/deckarep/golang-set"
@@ -83,8 +85,9 @@ func (d *Download) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	for arch := range archMap {
-		if err := K8sFilesDownloadHTTP(d.KubeConf, runtime.GetWorkDir(), kubeVersion, arch, d.PipelineCache); err != nil {
+		if err := K8sFilesDownloadHTTP(d.KubeConf, prePath, kubeVersion, arch, d.PipelineCache); err != nil {
 			return err
 		}
 	}
@@ -118,8 +121,9 @@ func (k *K3sDownload) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	for arch := range archMap {
-		if err := K3sFilesDownloadHTTP(k.KubeConf, runtime.GetWorkDir(), kubeVersion, arch, k.PipelineCache); err != nil {
+		if err := K3sFilesDownloadHTTP(k.KubeConf, prePath, kubeVersion, arch, k.PipelineCache); err != nil {
 			return err
 		}
 	}

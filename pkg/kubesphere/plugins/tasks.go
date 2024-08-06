@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/utils"
@@ -17,7 +18,8 @@ type CopyEmbedFiles struct {
 }
 
 func (t *CopyEmbedFiles) Execute(runtime connector.Runtime) error {
-	return utils.CopyEmbed(assets, ".", runtime.GetFilesDir())
+	var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir)
+	return utils.CopyEmbed(assets, ".", dst)
 }
 
 // ! moved to prepares

@@ -39,6 +39,20 @@ type dockerImageOptions struct {
 	SkipTLSVerify  bool
 }
 
+type ImageInspect struct {
+	Status ImageInspectStatus `json:"status"`
+}
+
+type ImageInspectStatus struct {
+	Id          string   `json:"id"`
+	RepoTags    []string `json:"repoTags"`
+	RepoDigests []string `json:"repoDigests"`
+	Size        string   `json:"size"`
+	Uid         struct{} `json:"uid"`
+	Username    string   `json:"username"`
+	Spec        struct{} `json:"spec"`
+}
+
 func (d *dockerImageOptions) systemContext() *types.SystemContext {
 	ctx := &types.SystemContext{
 		ArchitectureChoice:          d.arch,

@@ -2,6 +2,7 @@ package images
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -70,7 +71,19 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 		return
 	}
 
+	// var i = 0
 	for _, imageRepoTag := range mf {
+		// i++
+
+		// if i > 1 {
+		// 	break
+		// }
+		logger.Debugf("preloading %s", imageRepoTag)
+		if inspectImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager, imageRepoTag) == nil {
+			logger.Infof("%s exists, skip", imageRepoTag)
+			continue
+		}
+
 		var start = time.Now()
 		var imageHashTag = utils.MD5(imageRepoTag)
 		var imageFileName string
@@ -83,6 +96,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 			if info.IsDir() {
 				return nil
 			}
+
 			if !strings.HasPrefix(info.Name(), imageHashTag) ||
 				!HasSuffixI(info.Name(), ".tar.gz", ".tgz", ".tar") {
 				return nil
@@ -99,6 +113,14 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 
 		if !found {
 			imageFileName = fmt.Sprintf("%s.tar.gz", imageHashTag)
+			if err := pullImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager,
+				imageRepoTag, imageHashTag, imagesDir); err == nil {
+				continue
+			} else {
+				if !strings.Contains(err.Error(), "toomanyrequests") {
+					logger.Debugf("pull error %v", err)
+				}
+			}
 			if err := downloadImageFile(host.GetArch(), imageRepoTag, imageFileName, imagesDir); err != nil {
 				logger.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
 				continue
@@ -109,7 +131,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 		var loadCmd string
 		switch kubeConf.Cluster.Kubernetes.ContainerManager {
 		case "crio":
-			loadCmd = "ctr" // ! BUG
+			loadCmd = "ctr" // not implement
 		case "containerd":
 			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
 				loadCmd = "env PATH=$PATH gunzip -c %s | ctr -n k8s.io images import -"
@@ -117,7 +139,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 				loadCmd = "env PATH=$PATH ctr -n k8s.io images import %s"
 			}
 		case "isula":
-			loadCmd = "isula"
+			loadCmd = "isula" // not implement
 		default:
 			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
 				loadCmd = "docker load"
@@ -127,18 +149,37 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 		}
 
 		if err := retry(func() error {
-			fmt.Printf("import image %s(%s)\n", imageRepoTag, imgFileName)
-			logger.Infof("import image %s(%s)", imageRepoTag, imgFileName)
 			if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf(loadCmd, imageFileName), false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
-				fmt.Printf("unpacking %s(hash:%s) in %s\n", imageRepoTag, imageHashTag, time.Since(start))
+				// fmt.Printf("unpacking %s(hash:%s) in %s\n", imageRepoTag, imageHashTag, time.Since(start))
 				logger.Infof("unpacking %s(hash:%s) in %s", imageRepoTag, imageHashTag, time.Since(start))
 			}
 			return nil
 		}, MAX_IMPORT_RETRY); err != nil {
 			return fmt.Errorf("%s(%s)", imageRepoTag, imgFileName)
 		}
+	}
+
+	return nil
+}
+
+func inspectImage(runner *connector.Runner, containerManager, imageRepoTag string) error {
+	var inspectCmd string = "docker"
+	switch containerManager {
+	case "crio": //  not implement
+		inspectCmd = "ctr"
+	case "containerd":
+		inspectCmd = "crictl inspecti -q %s"
+	case "isula": // not implement
+		inspectCmd = "isula"
+	default:
+		inspectCmd = "docker image inspect %s"
+	}
+
+	var cmd = fmt.Sprintf(inspectCmd, imageRepoTag)
+	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
+		return fmt.Errorf("inspect %s error %v", imageRepoTag, err)
 	}
 
 	return nil
@@ -192,13 +233,63 @@ func downloadImageFile(arch, imageRepoTag, imageFileName, dst string) error {
 		}
 
 		if err = resp.Err(); err != nil {
-			logger.Errorf("download %s failed: %v", url, err)
+			logger.Infof("download %s error %v", imageFileName, err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
 	}
 
 	return err
+}
+
+func pullImage(runner *connector.Runner, containerManager, imageRepoTag, imageHashTag, dst string) error {
+	var pullCmd string = "docker"
+	var inspectCmd string = "docker"
+	var exportCmd string = "docker"
+	switch containerManager {
+	case "crio": // not implement
+		pullCmd = "ctr"
+		inspectCmd = "ctr"
+		exportCmd = "ctr"
+	case "containerd":
+		pullCmd = "crictl pull %s"
+		inspectCmd = "crictl inspecti -q %s"
+		exportCmd = "ctr -n k8s.io image export %s %s && gzip %s"
+	case "isula": // not implement
+		pullCmd = "isula"
+		inspectCmd = "isula"
+		exportCmd = "isula"
+	default:
+		pullCmd = "docker pull %s"
+		exportCmd = "docker save -o %s %s && gzip %s"
+	}
+
+	var cmd = fmt.Sprintf(pullCmd, imageRepoTag)
+	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
+		return fmt.Errorf("pull %s error %v", imageRepoTag, err)
+	}
+
+	var repoTag = imageRepoTag
+	if containerManager == "containerd" {
+		cmd = fmt.Sprintf(inspectCmd, imageRepoTag)
+		stdout, err := runner.SudoCmdExt(cmd, false, false)
+		if err != nil {
+			return fmt.Errorf("inspect %s error %v", imageRepoTag, err)
+		}
+		var ii ImageInspect
+		if err = json.Unmarshal([]byte(stdout), &ii); err != nil {
+			return fmt.Errorf("unmarshal %s error %v", imageRepoTag, err)
+		}
+		repoTag = ii.Status.RepoTags[0]
+	}
+
+	var dstFile = path.Join(dst, fmt.Sprintf("%s.tar", imageHashTag))
+	cmd = fmt.Sprintf(exportCmd, dstFile, repoTag, dstFile)
+	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
+		return fmt.Errorf("export %s error: %v", imageRepoTag, err)
+	}
+
+	return nil
 }
 
 func getImageFileSize(url string) (int64, error) {
