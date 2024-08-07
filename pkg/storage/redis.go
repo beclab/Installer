@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"os/exec"
+	"path"
 	"strings"
 	"time"
 
@@ -118,7 +119,8 @@ type InstallRedis struct {
 }
 
 func (t *InstallRedis) Execute(runtime connector.Runtime) error {
-	binary := files.NewKubeBinary("redis", constants.OsArch, kubekeyapiv1alpha2.DefaultRedisVersion, runtime.GetWorkDir())
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	binary := files.NewKubeBinary("redis", constants.OsArch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

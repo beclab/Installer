@@ -62,4 +62,6 @@ ExecStart=/usr/local/bin/k3s $K3S_ROLE $K3S_ARGS $K3S_EXTRA_ARGS $K3S_SERVER_ARG
 kind: KubeletConfiguration
 maxPods: {{ .MaxPods }}
 		`)))
+
+	// * --kubelet-arg=image-gc-high-threshold=85 --kubelet-arg=image-gc-low-threshold=70
 )

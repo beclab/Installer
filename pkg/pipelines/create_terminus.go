@@ -2,7 +2,6 @@ package pipelines
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -21,8 +20,8 @@ func CliInstallTerminusPipeline(kubeType string, proxy string) error {
 
 	var userParms = phase.UserParameters()
 	var storageParms = phase.StorageParameters()
-	var sp, _ = json.Marshal(storageParms)
-	fmt.Printf("STORAGE: %s\n", string(sp))
+	// var sp, _ = json.Marshal(storageParms)
+	// fmt.Printf("STORAGE: %s\n", string(sp))
 
 	arg := common.Argument{
 		KsEnable:         true,

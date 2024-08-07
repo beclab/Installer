@@ -58,6 +58,8 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&storage.InstallMinioModule{Skip: storageType != "minio"},
 		&storage.InstallRedisModule{},
 		&storage.InstallJuiceFsModule{},
+		&plugins.GenerateCachedModule{},
+		&plugins.CopyEmbed{},
 	}
 
 	var kubeModules []module.Module

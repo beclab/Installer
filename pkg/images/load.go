@@ -40,7 +40,7 @@ type LoadImages struct {
 	common.KubeAction
 }
 
-func (t *LoadImages) Execute(runtime connector.Runtime) error {
+func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 	var kubeConf = t.KubeConf
 	var host = runtime.RemoteHost()
 	var imageManifest = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
@@ -61,9 +61,10 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 			if err == nil {
 				return nil
 			}
+
 			var dur = 5 + (i+1)*10
-			fmt.Printf("import image %s failed, wait for %d seconds(%d times)\n", err, dur, i+1)
-			logger.Infof("import image %s failed, wait for %d seconds(%d times)", err, dur, i+1)
+			// fmt.Printf("import %s failed, wait for %d seconds(%d times)\n", err, dur, i+1)
+			logger.Errorf("import error %v, wait for %d seconds(%d times)", err, dur, i+1)
 			if (i + 1) < times {
 				time.Sleep(time.Duration(dur) * time.Second)
 			}
@@ -77,7 +78,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 		// if i > 1 {
 		// 	break
 		// }
-
+		reserr = nil
 		if inspectImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager, imageRepoTag) == nil {
 			logger.Debugf("%s already exists", imageRepoTag)
 			continue
@@ -113,17 +114,10 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 
 		if !found {
 			imageFileName = path.Join(imagesDir, fmt.Sprintf("%s.tar.gz", imageHashTag))
-			// if err := pullImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager,
-			// 	imageRepoTag, imageHashTag, imagesDir); err == nil {
-			// 	continue
-			// } else {
-			// 	if !strings.Contains(err.Error(), "toomanyrequests") {
-			// 		logger.Debugf("pull error %v", err)
-			// 	}
-			// }
 			if err := downloadImageFile(host.GetArch(), imageRepoTag, imageFileName); err != nil {
-				logger.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
-				continue
+				// logger.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
+				reserr = fmt.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
+				break
 			} else {
 				logger.Debugf("download %s success", imageRepoTag)
 			}
@@ -154,16 +148,15 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 			if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf(loadCmd, imageFileName), false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
-				// fmt.Printf("unpacking %s(hash:%s) in %s\n", imageRepoTag, imageHashTag, time.Since(start))
 				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
 			}
 			return nil
 		}, MAX_IMPORT_RETRY); err != nil {
-			return fmt.Errorf("%s(%s)", imageRepoTag, imgFileName)
+			reserr = fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
+			break
 		}
 	}
-
-	return nil
+	return
 }
 
 func inspectImage(runner *connector.Runner, containerManager, imageRepoTag string) error {

@@ -20,8 +20,8 @@ type CachedManifest struct {
 func (t *CachedManifest) Execute(runtime connector.Runtime) error {
 	maniDir := path.Join(runtime.GetRootDir(), fmt.Sprintf(".%s", cc.ManifestDir))
 	if !util.IsExist(maniDir) {
-		fmt.Println(".manifest directory not exists !!!")
-		os.Exit(1)
+		// fmt.Println(".manifest directory not exists !!!")
+		return fmt.Errorf(".manifest directory not exists !!!")
 	}
 
 	cachedDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir)

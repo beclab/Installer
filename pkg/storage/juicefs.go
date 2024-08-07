@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"os/exec"
+	"path"
 	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -93,7 +94,8 @@ type DownloadJuiceFs struct {
 }
 
 func (t *DownloadJuiceFs) Execute(runtime connector.Runtime) error {
-	binary := files.NewKubeBinary("juicefs", constants.OsArch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, runtime.GetWorkDir())
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	binary := files.NewKubeBinary("juicefs", constants.OsArch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

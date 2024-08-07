@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"os/exec"
+	"path"
 	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -102,7 +103,8 @@ type InstallMinio struct {
 
 func (t *InstallMinio) Execute(runtime connector.Runtime) error {
 	var arch = constants.OsArch
-	binary := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, runtime.GetWorkDir())
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	binary := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

@@ -43,7 +43,7 @@ func (p *PreloadImagesModule) Init() {
 		},
 		Action:   new(LoadImages),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	p.Tasks = []task.Interface{

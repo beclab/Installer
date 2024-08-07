@@ -443,7 +443,8 @@ func (a *AddWorkerLabel) Execute(runtime connector.Runtime) error {
 	var out string
 	var err error
 	if out, err = runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
-		return errors.Wrap(errors.WithStack(err), "add master NoSchedule taint failed")
+		return fmt.Errorf("waiting for node ready")
+		// return errors.Wrap(errors.WithStack(err), "add master NoSchedule taint failed")
 	}
 	logger.Debugf("AddWorkerLabel successed: %s", out)
 	return nil
