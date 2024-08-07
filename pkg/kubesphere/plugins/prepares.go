@@ -28,6 +28,23 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
+type IsCloudInstance struct {
+	common.KubePrepare
+	Not bool
+}
+
+func (p *IsCloudInstance) PreCheck(runtime connector.Runtime) (bool, error) {
+	if runtime.GetRunner().Host.GetOs() == common.Darwin {
+		return true, nil
+	}
+
+	equal := p.KubeConf.Arg.IsCloudInstance
+	if equal {
+		return !p.Not, nil
+	}
+	return p.Not, nil
+}
+
 type CheckStorageClass struct {
 	common.KubePrepare
 }

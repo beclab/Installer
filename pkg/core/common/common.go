@@ -80,3 +80,7 @@ const (
 	Darwin  = "darwin"
 	Windows = "windows"
 )
+
+const (
+	DownloadUrl = "https://dc3p1870nn3cj.cloudfront.net"
+)

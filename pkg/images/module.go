@@ -20,6 +20,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 )
 
 type PreloadImagesModule struct {
@@ -39,6 +40,7 @@ func (p *PreloadImagesModule) Init() {
 		Hosts: p.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			&MasterPullImages{Not: true},
+			&plugins.IsCloudInstance{Not: true},
 			&CheckImageManifest{},
 		},
 		Action:   new(LoadImages),

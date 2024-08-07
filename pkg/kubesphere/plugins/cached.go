@@ -13,17 +13,35 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
-type CachedManifest struct {
+type CopyManifest struct {
 	common.KubeAction
 }
 
-func (t *CachedManifest) Execute(runtime connector.Runtime) error {
+func (t *CopyManifest) Execute(runtime connector.Runtime) error {
+	cachedDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir)
 	maniDir := path.Join(runtime.GetRootDir(), fmt.Sprintf(".%s", cc.ManifestDir))
 	if !util.IsExist(maniDir) {
-		// fmt.Println(".manifest directory not exists !!!")
 		return fmt.Errorf(".manifest directory not exists !!!")
 	}
 
+	filepath.Walk(maniDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		if err := util.CopyFile(path, fmt.Sprintf("%s/%s", cachedDir, info.Name())); err != nil {
+			logger.Errorf("copy %s to %s failed: %v", path, cachedDir, err)
+		}
+		return nil
+	})
+	return nil
+}
+
+type CachedBuilder struct {
+	common.KubeAction
+}
+
+func (t *CachedBuilder) Execute(runtime connector.Runtime) error {
 	cachedDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir)
 	if !util.IsExist(cachedDir) {
 		util.Mkdir(cachedDir)
@@ -43,17 +61,6 @@ func (t *CachedManifest) Execute(runtime connector.Runtime) error {
 	if !util.IsExist(cachedBuildFilesDir) {
 		util.Mkdir(cachedBuildFilesDir)
 	}
-
-	filepath.Walk(maniDir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
-
-		if err := util.CopyFile(path, fmt.Sprintf("%s/%s", cachedDir, info.Name())); err != nil {
-			logger.Errorf("copy %s to %s failed: %v", path, cachedDir, err)
-		}
-		return nil
-	})
 
 	return nil
 }

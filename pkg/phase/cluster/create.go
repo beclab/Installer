@@ -17,8 +17,9 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.GenerateCachedModule{},
+		&plugins.CopyManifestModule{},
 		&plugins.CopyEmbed{},
-		// &images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
+		// &images.PreloadImagesModule{},
 	}
 
 	var kubeModules []module.Module
@@ -59,6 +60,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&storage.InstallRedisModule{},
 		&storage.InstallJuiceFsModule{},
 		&plugins.GenerateCachedModule{},
+		&plugins.CopyManifestModule{},
 		&plugins.CopyEmbed{},
 	}
 

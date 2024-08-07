@@ -136,6 +136,10 @@ const (
 )
 
 const (
+	CloudInstance = "true"
+)
+
+const (
 	OSS   = "oss"
 	S3    = "s3"
 	Minio = "minio"

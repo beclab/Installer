@@ -61,7 +61,6 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 			if err == nil {
 				return nil
 			}
-
 			var dur = 5 + (i+1)*10
 			// fmt.Printf("import %s failed, wait for %d seconds(%d times)\n", err, dur, i+1)
 			logger.Errorf("import error %v, wait for %d seconds(%d times)", err, dur, i+1)
@@ -72,12 +71,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		return
 	}
 
-	// var i = 0
 	for _, imageRepoTag := range mf {
-		// i++
-		// if i > 1 {
-		// 	break
-		// }
 		reserr = nil
 		if inspectImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager, imageRepoTag) == nil {
 			logger.Debugf("%s already exists", imageRepoTag)
@@ -189,7 +183,8 @@ func downloadImageFile(arch, imageRepoTag, imageFilePath string) error {
 	}
 
 	var imageFileName = path.Base(imageFilePath)
-	var url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/%s%s", arch, imageFileName)
+
+	var url = fmt.Sprintf("%s/%s%s", cc.DownloadUrl, arch, imageFileName)
 	for i := 5; i > 0; i-- {
 		totalSize, _ := getImageFileSize(url)
 		if totalSize > 0 {
@@ -198,7 +193,6 @@ func downloadImageFile(arch, imageRepoTag, imageFilePath string) error {
 
 		client := grab.NewClient()
 		req, _ := grab.NewRequest(imageFilePath, url)
-		// req.RateLimiter = NewLimiter(1024 * 1024)
 		req.HTTPRequest = req.HTTPRequest.WithContext(context.Background())
 		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 5*time.Minute)
 		defer cancel()

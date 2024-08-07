@@ -88,6 +88,7 @@ type Argument struct {
 	Params  map[string]interface{}
 	Request any
 
+	IsCloudInstance bool
 	Minikube        bool
 	MinikubeProfile string
 }
