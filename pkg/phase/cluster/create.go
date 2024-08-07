@@ -7,7 +7,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
-	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/storage"
 )
@@ -19,20 +18,20 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 		&precheck.GetSysInfoModel{},
 		&plugins.GenerateCachedModule{},
 		&plugins.CopyEmbed{},
-		&images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
+		// &images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
 	}
 
-	// var kubeModules []module.Module
-	// if args.Minikube {
-	// 	kubeModules = NewDarwinClusterPhase(runtime)
-	// } else {
-	// 	if runtime.Cluster.Kubernetes.Type == common.K3s {
-	// 		kubeModules = NewK3sCreateClusterPhase(runtime)
-	// 	} else {
-	// 		kubeModules = NewCreateClusterPhase(runtime)
-	// 	}
-	// }
-	// m = append(m, kubeModules...)
+	var kubeModules []module.Module
+	if args.Minikube {
+		kubeModules = NewDarwinClusterPhase(runtime)
+	} else {
+		if runtime.Cluster.Kubernetes.Type == common.K3s {
+			kubeModules = NewK3sCreateClusterPhase(runtime)
+		} else {
+			kubeModules = NewCreateClusterPhase(runtime)
+		}
+	}
+	m = append(m, kubeModules...)
 
 	return &pipeline.Pipeline{
 		Name:    "Initialize KubeSphere",

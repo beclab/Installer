@@ -74,16 +74,16 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 	// var i = 0
 	for _, imageRepoTag := range mf {
 		// i++
-
 		// if i > 1 {
 		// 	break
 		// }
-		logger.Debugf("preloading %s", imageRepoTag)
+
 		if inspectImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager, imageRepoTag) == nil {
-			logger.Infof("%s exists, skip", imageRepoTag)
+			logger.Debugf("%s already exists", imageRepoTag)
 			continue
 		}
 
+		// logger.Debugf("preloading %s", imageRepoTag)
 		var start = time.Now()
 		var imageHashTag = utils.MD5(imageRepoTag)
 		var imageFileName string
@@ -112,18 +112,20 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 		})
 
 		if !found {
-			imageFileName = fmt.Sprintf("%s.tar.gz", imageHashTag)
-			if err := pullImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager,
-				imageRepoTag, imageHashTag, imagesDir); err == nil {
-				continue
-			} else {
-				if !strings.Contains(err.Error(), "toomanyrequests") {
-					logger.Debugf("pull error %v", err)
-				}
-			}
-			if err := downloadImageFile(host.GetArch(), imageRepoTag, imageFileName, imagesDir); err != nil {
+			imageFileName = path.Join(imagesDir, fmt.Sprintf("%s.tar.gz", imageHashTag))
+			// if err := pullImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager,
+			// 	imageRepoTag, imageHashTag, imagesDir); err == nil {
+			// 	continue
+			// } else {
+			// 	if !strings.Contains(err.Error(), "toomanyrequests") {
+			// 		logger.Debugf("pull error %v", err)
+			// 	}
+			// }
+			if err := downloadImageFile(host.GetArch(), imageRepoTag, imageFileName); err != nil {
 				logger.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
 				continue
+			} else {
+				logger.Debugf("download %s success", imageRepoTag)
 			}
 		}
 
@@ -153,7 +155,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) error {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
 				// fmt.Printf("unpacking %s(hash:%s) in %s\n", imageRepoTag, imageHashTag, time.Since(start))
-				logger.Infof("unpacking %s(hash:%s) in %s", imageRepoTag, imageHashTag, time.Since(start))
+				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
 			}
 			return nil
 		}, MAX_IMPORT_RETRY); err != nil {
@@ -185,13 +187,15 @@ func inspectImage(runner *connector.Runner, containerManager, imageRepoTag strin
 	return nil
 }
 
-func downloadImageFile(arch, imageRepoTag, imageFileName, dst string) error {
+func downloadImageFile(arch, imageRepoTag, imageFilePath string) error {
 	var err error
 	if arch == common.Amd64 {
 		arch = ""
 	} else {
 		arch = arch + "/"
 	}
+
+	var imageFileName = path.Base(imageFilePath)
 	var url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/%s%s", arch, imageFileName)
 	for i := 5; i > 0; i-- {
 		totalSize, _ := getImageFileSize(url)
@@ -200,7 +204,7 @@ func downloadImageFile(arch, imageRepoTag, imageFileName, dst string) error {
 		}
 
 		client := grab.NewClient()
-		req, _ := grab.NewRequest(path.Join(dst, imageFileName), url)
+		req, _ := grab.NewRequest(imageFilePath, url)
 		// req.RateLimiter = NewLimiter(1024 * 1024)
 		req.HTTPRequest = req.HTTPRequest.WithContext(context.Background())
 		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 5*time.Minute)
@@ -254,14 +258,14 @@ func pullImage(runner *connector.Runner, containerManager, imageRepoTag, imageHa
 	case "containerd":
 		pullCmd = "crictl pull %s"
 		inspectCmd = "crictl inspecti -q %s"
-		exportCmd = "ctr -n k8s.io image export %s %s && gzip %s"
+		exportCmd = "ctr -n k8s.io image export %s %s"
 	case "isula": // not implement
 		pullCmd = "isula"
 		inspectCmd = "isula"
 		exportCmd = "isula"
 	default:
 		pullCmd = "docker pull %s"
-		exportCmd = "docker save -o %s %s && gzip %s"
+		exportCmd = "docker save -o %s %s"
 	}
 
 	var cmd = fmt.Sprintf(pullCmd, imageRepoTag)
@@ -284,9 +288,12 @@ func pullImage(runner *connector.Runner, containerManager, imageRepoTag, imageHa
 	}
 
 	var dstFile = path.Join(dst, fmt.Sprintf("%s.tar", imageHashTag))
-	cmd = fmt.Sprintf(exportCmd, dstFile, repoTag, dstFile)
+	cmd = fmt.Sprintf(exportCmd, dstFile, repoTag)
 	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
 		return fmt.Errorf("export %s error: %v", imageRepoTag, err)
+	}
+	if _, err := runner.SudoCmdExt(fmt.Sprintf("gzip %s", dstFile), false, false); err != nil {
+		return fmt.Errorf("gzip %s error: %v", dstFile, err)
 	}
 
 	return nil

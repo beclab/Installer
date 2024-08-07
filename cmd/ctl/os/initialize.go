@@ -39,8 +39,8 @@ func NewCmdInitializeOs() *cobra.Command {
 				o.InitializeOptions.MiniKubeProfile,
 				o.InitializeOptions.RegistryMirrors,
 			); err != nil {
+				logger.Errorf("initialize kube error: %v", err)
 				os.Exit(1)
-				logger.Errorf("initialize kube error %v", err)
 			}
 		},
 	}

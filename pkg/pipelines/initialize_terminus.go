@@ -18,8 +18,8 @@ import (
 )
 
 func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfileName, registryMirrors string) error {
-	if minikube && len(minikubeProfileName) == 0 {
-		return fmt.Errorf("minikube profile name cannot be empty")
+	if err := checkMacOSParams(minikube, minikubeProfileName); err != nil {
+		return err
 	}
 
 	var ksVersion, err = getNodeVersion(kubeType, minikube)
@@ -71,6 +71,17 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 		}
 	}
 
+	return nil
+}
+
+func checkMacOSParams(minikube bool, minikubeProfileName string) error {
+	if constants.OsPlatform == common.Darwin && !minikube {
+		return fmt.Errorf("MacOS startup parameter error, need to specify parameters --minikube --profile PROFILE_NAME")
+	}
+
+	if minikube && len(minikubeProfileName) == 0 {
+		return fmt.Errorf("minikube profile name cannot be empty")
+	}
 	return nil
 }
 
