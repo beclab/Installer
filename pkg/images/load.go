@@ -147,7 +147,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 
 		if err := retry(func() error {
-			if _, err := runtime.GetRunner().SudoCmdExt(loadCmd, false, true); err != nil {
+			if _, err := runtime.GetRunner().SudoCmdExt(loadCmd, false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
 				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
