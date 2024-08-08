@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -41,11 +42,13 @@ type LoadImages struct {
 }
 
 func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
+	var minikubepath = getMinikubePath(t.PipelineCache)
+	var minikubeprofile = t.KubeConf.Arg.MinikubeProfile
 	var containerManager = t.KubeConf.Cluster.Kubernetes.ContainerManager
 	var host = runtime.RemoteHost()
 	var imageManifest = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
-	mf, _ := readImageManifest(imageManifest)
-	if mf == nil {
+	manifests, _ := readImageManifest(imageManifest)
+	if manifests == nil {
 		logger.Debugf("image manifest is empty, skip load images")
 		return nil
 	}
@@ -71,6 +74,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		return
 	}
 
+	var mf = filterMinikubeImages(runtime.GetRunner(), host.GetOs(), minikubepath, manifests, minikubeprofile)
 	for _, imageRepoTag := range mf {
 		reserr = nil
 		if inspectImage(runtime.GetRunner(), containerManager, imageRepoTag) == nil {
@@ -122,9 +126,9 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 
 		if runtime.GetRunner().Host.GetOs() == common.Darwin {
 			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
-				loadCmd = fmt.Sprintf("env PATH=$PATH gunzip -c %s | minikube -p %s image load -", imageFileName, t.KubeConf.Arg.MinikubeProfile)
+				loadCmd = fmt.Sprintf("gunzip -c %s | %s -p %s image load -", imageFileName, minikubepath, minikubeprofile)
 			} else {
-				loadCmd = fmt.Sprintf("env PATH=$PATH  minikube -p %s image load %s", t.KubeConf.Arg.MinikubeProfile, imageFileName)
+				loadCmd = fmt.Sprintf("%s -p %s image load %s", minikubepath, minikubeprofile, imageFileName)
 			}
 		} else {
 			switch containerManager {
@@ -143,7 +147,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 
 		if err := retry(func() error {
-			if _, err := runtime.GetRunner().SudoCmdExt(loadCmd, false, false); err != nil {
+			if _, err := runtime.GetRunner().SudoCmdExt(loadCmd, false, true); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
 				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
@@ -155,6 +159,45 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 	}
 	return
+}
+
+func filterMinikubeImages(runner *connector.Runner, osType string, minikubepath string, imagesManifest []string, minikubeProfile string) []string {
+	if !strings.EqualFold(osType, common.Darwin) {
+		return imagesManifest
+	}
+
+	stdout, err := runner.SudoCmdExt(fmt.Sprintf("%s -p %s image ls", minikubepath, minikubeProfile), false, false)
+	if err != nil {
+		return imagesManifest
+	}
+
+	injectedImages := strings.Split(stdout, "\n")
+	if injectedImages == nil || len(injectedImages) == 0 {
+		return imagesManifest
+	}
+
+	injectedImagesMap := make(map[string]string)
+	for _, injected := range injectedImages {
+		injectedImagesMap[injected] = injected
+	}
+
+	var mf []string
+	for _, im := range imagesManifest {
+		if _, ok := injectedImagesMap[im]; ok {
+			continue
+		}
+		mf = append(mf, im)
+	}
+
+	return mf
+}
+
+func getMinikubePath(pipelineCache *cache.Cache) string {
+	minikubepath, _ := pipelineCache.GetMustString(common.CacheCommandMinikubePath)
+	if minikubepath == "" {
+		minikubepath = common.CommandMinikube
+	}
+	return minikubepath
 }
 
 func inspectImage(runner *connector.Runner, containerManager, imageRepoTag string) error {
