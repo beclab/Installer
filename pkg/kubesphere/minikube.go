@@ -159,6 +159,7 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 	var minikubepath string
 	var kubectlpath string
 	var helmpath string
+	var dockerpath string
 
 	if minikubepath, err = util.GetCommand(common.CommandMinikube); err != nil || minikubepath == "" {
 		return fmt.Errorf("minikube not found")
@@ -172,15 +173,38 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("helm not found")
 	}
 
+	if dockerpath, err = util.GetCommand(common.CommandDocker); err != nil || dockerpath == "" {
+		return fmt.Errorf("docker not found")
+	}
+
 	fmt.Println("helm path:", helmpath)
 	fmt.Println("kubectl path:", kubectlpath)
 	fmt.Println("minikube path:", minikubepath)
+	fmt.Println("docker path:", dockerpath)
 
 	t.PipelineCache.Set(common.CacheCommandHelmPath, helmpath)
 	t.PipelineCache.Set(common.CacheCommandMinikubePath, minikubepath)
 	t.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
+	t.PipelineCache.Set(common.CacheCommandDockerPath, dockerpath)
 
 	return nil
+}
+
+type CheckMacOsCommandModule struct {
+	common.KubeModule
+}
+
+func (m *CheckMacOsCommandModule) Init() {
+	m.Name = "CheckCommandPath"
+
+	checkMacCommandExists := &task.LocalTask{
+		Name:   "CheckMiniKubeExists",
+		Action: new(CheckMacCommandExists),
+	}
+
+	m.Tasks = []task.Interface{
+		checkMacCommandExists,
+	}
 }
 
 type DeployMiniKubeModule struct {
@@ -189,11 +213,6 @@ type DeployMiniKubeModule struct {
 
 func (m *DeployMiniKubeModule) Init() {
 	m.Name = "DeployMiniKube"
-
-	checkMacCommandExists := &task.LocalTask{
-		Name:   "CheckMiniKubeExists",
-		Action: new(CheckMacCommandExists),
-	}
 
 	getMinikubeProfile := &task.RemoteTask{
 		Name:     "GetMinikubeProfile",
@@ -222,7 +241,6 @@ func (m *DeployMiniKubeModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		checkMacCommandExists,
 		getMinikubeProfile,
 		generateManifests,
 		initMinikubeNs,

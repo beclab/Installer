@@ -41,7 +41,7 @@ type LoadImages struct {
 }
 
 func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
-	var kubeConf = t.KubeConf
+	var containerManager = t.KubeConf.Cluster.Kubernetes.ContainerManager
 	var host = runtime.RemoteHost()
 	var imageManifest = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
 	mf, _ := readImageManifest(imageManifest)
@@ -73,7 +73,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 
 	for _, imageRepoTag := range mf {
 		reserr = nil
-		if inspectImage(runtime.GetRunner(), kubeConf.Cluster.Kubernetes.ContainerManager, imageRepoTag) == nil {
+		if inspectImage(runtime.GetRunner(), containerManager, imageRepoTag) == nil {
 			logger.Debugf("%s already exists", imageRepoTag)
 			continue
 		}
@@ -119,27 +119,31 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 
 		var imgFileName = filepath.Base(imageFileName)
 		var loadCmd string
-		switch kubeConf.Cluster.Kubernetes.ContainerManager {
-		case "crio":
-			loadCmd = "ctr" // not implement
-		case "containerd":
+
+		if runtime.GetRunner().Host.GetOs() == common.Darwin {
 			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
-				loadCmd = "env PATH=$PATH gunzip -c %s | ctr -n k8s.io images import -"
+				loadCmd = fmt.Sprintf("env PATH=$PATH gunzip -c %s | minikube -p %s image load -", imageFileName, t.KubeConf.Arg.MinikubeProfile)
 			} else {
-				loadCmd = "env PATH=$PATH ctr -n k8s.io images import %s"
+				loadCmd = fmt.Sprintf("env PATH=$PATH  minikube -p %s image load %s", t.KubeConf.Arg.MinikubeProfile, imageFileName)
 			}
-		case "isula":
-			loadCmd = "isula" // not implement
-		default:
-			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
-				loadCmd = "docker load"
-			} else {
-				loadCmd = "docker load -i"
+		} else {
+			switch containerManager {
+			case "crio":
+				loadCmd = "ctr" // not implement
+			case "containerd":
+				if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
+					loadCmd = fmt.Sprintf("env PATH=$PATH gunzip -c %s | ctr -n k8s.io images import -", imageFileName)
+				} else {
+					loadCmd = fmt.Sprintf("env PATH=$PATH ctr -n k8s.io images import %s", imageFileName)
+				}
+			case "isula":
+				loadCmd = "isula" // not implement
+			default:
 			}
 		}
 
 		if err := retry(func() error {
-			if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf(loadCmd, imageFileName), false, false); err != nil {
+			if _, err := runtime.GetRunner().SudoCmdExt(loadCmd, false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
 				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
@@ -154,16 +158,21 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 }
 
 func inspectImage(runner *connector.Runner, containerManager, imageRepoTag string) error {
-	var inspectCmd string = "docker"
-	switch containerManager {
-	case "crio": //  not implement
-		inspectCmd = "ctr"
-	case "containerd":
-		inspectCmd = "crictl inspecti -q %s"
-	case "isula": // not implement
-		inspectCmd = "isula"
-	default:
-		inspectCmd = "docker image inspect %s"
+	if runner.Host.GetOs() == common.Darwin {
+		return fmt.Errorf("skip inspect")
+	}
+
+	var inspectCmd string = "docker image inspect %s"
+	if runner.Host.GetOs() != common.Darwin {
+		switch containerManager {
+		case "crio": //  not implement
+			inspectCmd = "ctr"
+		case "containerd":
+			inspectCmd = "crictl inspecti -q %s"
+		case "isula": // not implement
+			inspectCmd = "isula"
+		default:
+		}
 	}
 
 	var cmd = fmt.Sprintf(inspectCmd, imageRepoTag)
