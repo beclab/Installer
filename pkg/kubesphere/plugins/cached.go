@@ -19,9 +19,9 @@ type CopyManifest struct {
 
 func (t *CopyManifest) Execute(runtime connector.Runtime) error {
 	cachedDir := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir)
-	maniDir := path.Join(runtime.GetRootDir(), fmt.Sprintf(".%s", cc.ManifestDir))
+	maniDir := path.Join(runtime.GetRootDir(), cc.ImagesDir)
 	if !util.IsExist(maniDir) {
-		return fmt.Errorf(".manifest directory not exists !!!")
+		return fmt.Errorf("images manifest directory not exists !!!")
 	}
 
 	filepath.Walk(maniDir, func(path string, info os.FileInfo, err error) error {
