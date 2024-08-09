@@ -159,6 +159,9 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 		"/usr/bin/crictl",
 		"/usr/bin/containerd*",
 		"/usr/bin/ctr",
+		"/usr/local/bin/crictl",      // cloud version
+		"/usr/local/bin/containerd*", // cloud version
+		"/usr/local/bin/ctr",         // cloud version
 		filepath.Join("/etc/systemd/system", templates.ContainerdService.Name()),
 		filepath.Join("/etc/containerd", templates.ContainerdConfig.Name()),
 		filepath.Join("/etc", templates.CrictlConfig.Name()),

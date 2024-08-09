@@ -74,7 +74,7 @@ func readDeleteCacheInput() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 LOOP:
-	fmt.Printf("\nDelete caches? [yes/no]:")
+	fmt.Printf("\nDelete terminus caches? [yes/no]:")
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
