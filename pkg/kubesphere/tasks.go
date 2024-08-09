@@ -28,6 +28,7 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -38,6 +39,19 @@ import (
 	"github.com/pkg/errors"
 	yamlV2 "gopkg.in/yaml.v2"
 )
+
+type DeleteCache struct {
+	common.KubeAction
+}
+
+func (t *DeleteCache) Execute(runtime connector.Runtime) error {
+	var cacheDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey)
+	if err := util.RemoveDir(cacheDir); err != nil {
+		return err
+	}
+	logger.Debugf("delete caches success")
+	return nil
+}
 
 type AddInstallerConfig struct {
 	common.KubeAction

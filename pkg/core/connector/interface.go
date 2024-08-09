@@ -17,6 +17,7 @@
 package connector
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -110,6 +111,7 @@ type Host interface {
 	Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
 	Cmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExt(cmd string, printOutput bool, printLine bool) (string, error)
+	CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	MkDirAll(path string, mode string) error
 	Scp(local, remote string) error
 }

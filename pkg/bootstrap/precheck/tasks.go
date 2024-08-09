@@ -17,10 +17,12 @@
 package precheck
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -475,8 +477,10 @@ type GetStorageKeyTask struct {
 
 func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	var storageAccessKey, storageSecretKey, storageToken, storageClusterId string
+	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	if stdout, _ := runtime.GetRunner().SudoCmdExt("/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", false, false); stdout == "" {
+	if stdout, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, "/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", false, false); stdout == "" {
 		storageAccessKey = os.Getenv(common.EnvStorageAccessKeyName)
 		if storageAccessKey == "" {
 			logger.Errorf("storage access key not found")
@@ -485,7 +489,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageAccessKey = stdout
 	}
 
-	if stdout, _ := runtime.GetRunner().SudoCmdExt("/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sk}'", false, false); stdout == "" {
+	if stdout, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, "/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sk}'", false, false); stdout == "" {
 		storageSecretKey = os.Getenv(common.EnvStorageSecretKeyName)
 		if storageSecretKey == "" {
 			logger.Errorf("storage secret key not found")
@@ -494,7 +498,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageSecretKey = stdout
 	}
 
-	if stdout, _ := runtime.GetRunner().SudoCmdExt("/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sts}'", false, false); stdout == "" {
+	if stdout, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, "/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sts}'", false, false); stdout == "" {
 		storageToken = os.Getenv(common.EnvStorageTokenName)
 		if storageToken == "" {
 			logger.Errorf("storage token not found")
@@ -503,7 +507,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageToken = stdout
 	}
 
-	if stdout, _ := runtime.GetRunner().SudoCmdExt("/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/cluster-id}'", false, false); stdout == "" {
+	if stdout, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, "/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/cluster-id}'", false, false); stdout == "" {
 		storageClusterId = os.Getenv(common.EnvStorageClusterIdName)
 		if storageClusterId == "" {
 			logger.Errorf("storage cluster id not found")

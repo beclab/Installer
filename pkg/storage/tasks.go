@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"os/exec"
+	"path"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -245,5 +246,17 @@ func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
 		runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf %s", f), false, true)
 	}
 
+	return nil
+}
+
+type DeleteTmp struct {
+	common.KubeAction
+}
+
+func (t *DeleteTmp) Execute(runtime connector.Runtime) error {
+	var tmpPath = path.Join(common.RootDir, "tmp", "install_log")
+	if util.IsExist(tmpPath) {
+		util.RemoveDir(tmpPath)
+	}
 	return nil
 }

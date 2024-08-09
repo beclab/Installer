@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +18,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
 )
 
-func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfileName, registryMirrors, isCloudInstance string) error {
+func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfileName, registryMirrors string) error {
 	if err := checkMacOSParams(minikube, minikubeProfileName); err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 		InstallPackages:   false,
 		SKipPushImages:    false,
 		ContainerManager:  common.Containerd,
-		IsCloudInstance:   strings.EqualFold(isCloudInstance, common.CloudInstance),
+		IsCloudInstance:   strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE),
 		Minikube:          minikube,
 		MinikubeProfile:   minikubeProfileName,
 		KubernetesVersion: ksVersion,

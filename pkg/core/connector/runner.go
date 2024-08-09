@@ -17,6 +17,7 @@
 package connector
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -102,6 +103,32 @@ func (r *Runner) SudoExec(cmd string, printOutput bool, printLine bool) (string,
 
 func (r *Runner) SudoCmd(cmd string, printOutput bool, printLine bool) (string, error) {
 	return r.Cmd(cmd, printOutput, printLine)
+}
+
+func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
+	if !r.Host.GetMinikube() {
+		if r.Conn == nil {
+			return "", errors.New("no ssh connection available")
+		}
+	}
+
+	var stdout string
+	var err error
+
+	if r.Host.GetMinikube() {
+		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
+		stdout, err = r.Host.CmdExtWithContext(ctx, cmd, printOutput, printLine)
+	} else {
+		stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
+	}
+
+	if printOutput {
+		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", r.Host.GetName(), cmd, stdout)
+	}
+
+	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", r.Host.GetName(), cmd, stdout)
+
+	return stdout, err
 }
 
 func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (string, error) {

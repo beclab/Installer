@@ -45,6 +45,7 @@ const (
 
 	KubeBinaries = "KubeBinaries"
 
+	RootDir                      = "/"
 	TmpDir                       = "/tmp/kubekey"
 	BinDir                       = "/usr/local/bin"
 	KubeConfigDir                = "/etc/kubernetes"
@@ -136,7 +137,11 @@ const (
 )
 
 const (
-	CloudInstance = "true"
+	TRUE  = "true"
+	FALSE = "false"
+
+	YES = "yes"
+	NO  = "no"
 )
 
 const (

@@ -1,9 +1,11 @@
 package phase
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -12,7 +14,9 @@ import (
 )
 
 func GetCurrentKubeVersion() string {
-	stdout, _, err := util.Exec("/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'", false, false)
+	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	stdout, _, err := util.ExecWithContext(ctx, "/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'", false, false)
 	if err != nil {
 		goto SKIP
 	}
@@ -37,9 +41,9 @@ SKIP:
 
 func UserParameters() *common.User {
 	var u = &common.User{
-		UserName:   "zhaoyu",
+		UserName:   "test",
 		Password:   "",
-		Email:      "zhaoyu@bytetrade.io",
+		Email:      "test@myterminus.com",
 		DomainName: "myterminus.com",
 	}
 

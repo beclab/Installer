@@ -17,6 +17,7 @@
 package connector
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -210,6 +211,18 @@ func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, er
 
 func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
 	stdout, _, err := util.Exec(cmd, printOutput, printLine)
+
+	if printOutput {
+		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
+	}
+
+	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
+
+	return stdout, err
+}
+
+func (b *BaseHost) CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
+	stdout, _, err := util.ExecWithContext(ctx, cmd, printOutput, printLine)
 
 	if printOutput {
 		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)

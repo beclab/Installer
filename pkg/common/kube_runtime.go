@@ -91,6 +91,7 @@ type Argument struct {
 	IsCloudInstance bool
 	Minikube        bool
 	MinikubeProfile string
+	DeleteCache     bool
 }
 
 type AwsHost struct {

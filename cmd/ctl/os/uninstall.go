@@ -9,7 +9,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
-	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -29,22 +28,12 @@ func NewCmdUninstallOs() *cobra.Command {
 		Use:   "uninstall",
 		Short: "Uninstall Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(constants.Logo)
-
-			workDir, err := utils.WorkDir()
-			if err != nil {
-				fmt.Println("working path error", err)
-				os.Exit(1)
-			}
-
-			constants.WorkDir = workDir
-
-			if err := helper.InitLog(workDir); err != nil {
+			if err := helper.InitLog(constants.WorkDir); err != nil {
 				fmt.Println("init logger failed", err)
 				os.Exit(1)
 			}
 
-			if err := pipelines.UninstallTerminusPipeline(); err != nil {
+			if err := pipelines.UninstallTerminusPipeline(o.UninstallOptions.MiniKube, o.UninstallOptions.DeleteCache); err != nil {
 				logger.Errorf("delete terminus error %v", err)
 			}
 		},

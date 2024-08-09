@@ -50,15 +50,6 @@ func (t *InstallAppArmorTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type AppArmorInstall struct {
-	common.KubeAction
-}
-
-func (t *AppArmorInstall) Execute(runtime connector.Runtime) error {
-	logger.Debugf("[A] AppArmorInstall")
-	return nil
-}
-
 type Download struct {
 	common.KubeAction
 }

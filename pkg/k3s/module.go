@@ -397,3 +397,21 @@ func (s *SaveKubeConfigModule) Init() {
 		save,
 	}
 }
+
+type UninstallK3sModule struct {
+	common.KubeModule
+}
+
+func (m *UninstallK3sModule) Init() {
+	m.Name = "UninstallK3s"
+
+	uninstallK3s := &task.LocalTask{
+		Name:    "UninstallK3s",
+		Prepare: new(CheckK3sUninstallScript),
+		Action:  new(UninstallK3s),
+	}
+
+	m.Tasks = []task.Interface{
+		uninstallK3s,
+	}
+}

@@ -38,7 +38,6 @@ func NewCmdInitializeOs() *cobra.Command {
 				o.InitializeOptions.MiniKube,
 				o.InitializeOptions.MiniKubeProfile,
 				o.InitializeOptions.RegistryMirrors,
-				o.InitializeOptions.IsCloudInstance,
 			); err != nil {
 				logger.Errorf("initialize kube error: %v", err)
 				os.Exit(1)

@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -638,5 +639,15 @@ func (g *GenerateK3sRegistryConfig) Execute(runtime connector.Runtime) error {
 	if err := templateAction.Execute(runtime); err != nil {
 		return err
 	}
+	return nil
+}
+
+type UninstallK3s struct {
+	common.KubeAction
+}
+
+func (t *UninstallK3s) Execute(runtime connector.Runtime) error {
+	var scriptPath = path.Join(common.BinDir, "k3s-uninstall.sh")
+	runtime.GetRunner().SudoCmdExt(scriptPath, false, true)
 	return nil
 }

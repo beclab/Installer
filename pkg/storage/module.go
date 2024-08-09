@@ -6,6 +6,14 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
+type DeleteTmpModule struct {
+	common.KubeModule
+}
+
+func (m *DeleteTmpModule) Init() {
+	m.Name = "DeleteTmp"
+}
+
 type InitStorageModule struct {
 	common.KubeModule
 	Skip bool
@@ -39,7 +47,6 @@ type RemoveMountModule struct {
 }
 
 func (m *RemoveMountModule) Init() {
-	// 如果是云上，则需要下载 oss 或 s3 的工具，进行挂载解绑
 	m.Name = "RemoveMount"
 
 	downloadStorageCli := &task.RemoteTask{

@@ -329,7 +329,7 @@ func (k *KubeadmInit) Execute(runtime connector.Runtime) error {
 		initCmd = initCmd + " --skip-phases=addon/kube-proxy"
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, false); err != nil {
 		// kubeadm reset and then retry
 		resetCmd := "/usr/local/bin/kubeadm reset -f"
 		if k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint != "" {

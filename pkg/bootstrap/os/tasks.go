@@ -240,6 +240,7 @@ var (
 		"/var/lib/rook",
 		"/tmp/kubekey",
 		"/etc/kubekey",
+		"/etc/kke/version",
 	}
 
 	networkResetCmds = []string{

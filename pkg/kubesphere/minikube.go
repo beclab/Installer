@@ -21,6 +21,41 @@ import (
 	"github.com/pkg/errors"
 )
 
+type UninstallMinikube struct {
+	common.KubeAction
+}
+
+func (t *UninstallMinikube) Execute(runtime connector.Runtime) error {
+	var minikubepath string
+	var err error
+	if minikubepath, err = util.GetCommand(common.CommandMinikube); err != nil || minikubepath == "" {
+		return fmt.Errorf("minikube not found")
+	}
+
+	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s stop --all && %s delete --all", minikubepath, minikubepath), false, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type DeleteMinikubeModule struct {
+	common.KubeModule
+}
+
+func (m *DeleteMinikubeModule) Init() {
+	m.Name = "Uninstall"
+
+	uninstallMinikube := &task.LocalTask{
+		Name:   "Uninstall",
+		Action: new(UninstallMinikube),
+	}
+
+	m.Tasks = []task.Interface{
+		uninstallMinikube,
+	}
+}
+
 type Download struct {
 	common.KubeAction
 }

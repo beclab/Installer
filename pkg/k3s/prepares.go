@@ -17,8 +17,11 @@
 package k3s
 
 import (
+	"path"
+
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"github.com/pkg/errors"
 )
 
@@ -67,4 +70,17 @@ type UsePrivateRegstry struct {
 
 func (c *UsePrivateRegstry) PreCheck(_ connector.Runtime) (bool, error) {
 	return c.KubeConf.Cluster.Registry.PrivateRegistry != "", nil
+}
+
+type CheckK3sUninstallScript struct {
+	common.KubePrepare
+}
+
+func (p *CheckK3sUninstallScript) PreCheck(_ connector.Runtime) (bool, error) {
+	var scriptPath = path.Join(common.BinDir, "k3s-uninstall.sh")
+	if util.IsExist(scriptPath) {
+		return true, nil
+	}
+
+	return false, nil
 }
