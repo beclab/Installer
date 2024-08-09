@@ -215,8 +215,8 @@ type StopRedis struct {
 func (t *StopRedis) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop redis-server; systemctl disable redis-server"
 	_, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	_, _ = runtime.GetRunner().SudoCmd("killall -9 redis-server", false, true)
-	_, _ = runtime.GetRunner().SudoCmd("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, true)
+	_, _ = runtime.GetRunner().SudoCmdExt("killall -9 redis-server", false, false)
+	_, _ = runtime.GetRunner().SudoCmdExt("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
 
 	return nil
 }

@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os"
-	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/certs"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container"
@@ -16,7 +15,6 @@ import (
 
 func DeleteMinikubePhase(args common.Argument, runtime *common.KubeRuntime) []module.Module {
 	return []module.Module{
-		&precheck.GreetingsModule{},
 		&kubesphere.DeleteCacheModule{},
 		&kubesphere.DeleteMinikubeModule{},
 	}
@@ -42,7 +40,6 @@ func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 
 func newK8sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	return []module.Module{
-		&precheck.GreetingsModule{},
 		&kubernetes.ResetClusterModule{},
 		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
 		&os.ClearOSEnvironmentModule{},
@@ -53,7 +50,6 @@ func newK8sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 
 func newK3sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	return []module.Module{
-		&precheck.GreetingsModule{},
 		&k3s.DeleteClusterModule{},
 		&os.ClearOSEnvironmentModule{},
 		&certs.UninstallAutoRenewCertsModule{},

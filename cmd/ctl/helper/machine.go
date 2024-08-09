@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -25,7 +26,8 @@ func GetMachineInfo() {
 }
 
 func getWorkDir() {
-	workDir, err := utils.WorkDir()
+	// workDir, err := utils.WorkDir()
+	workDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		fmt.Println("working path error", err)
 		os.Exit(1)

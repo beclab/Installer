@@ -458,6 +458,7 @@ func currentUser() (*user.User, error) {
 			return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
 		}
 	}
+	constants.CurrentUser = u.Name
 	return u, nil
 }
 

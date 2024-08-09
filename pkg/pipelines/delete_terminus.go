@@ -45,7 +45,7 @@ func UninstallTerminusPipeline(minikube bool, deleteCache bool) error {
 		return err
 	}
 
-	var m []module.Module
+	var m = []module.Module{&precheck.GreetingsModule{}, &precheck.GetSysInfoModel{}}
 
 	switch constants.OsType {
 	case common.Darwin:
@@ -74,7 +74,7 @@ func readDeleteCacheInput() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 LOOP:
-	fmt.Printf("\nDelete terminus caches? [yes/no]:")
+	fmt.Printf("\nDelete the local cache files of Terminus? [yes/no]:")
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
