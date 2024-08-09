@@ -38,6 +38,7 @@ func UninstallTerminusPipeline(minikube bool, deleteCache bool) error {
 		ContainerManager:  common.Containerd,
 		Minikube:          minikube,
 		DeleteCache:       strings.EqualFold(input, common.YES),
+		DeleteCRI:         true,
 	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, args)
