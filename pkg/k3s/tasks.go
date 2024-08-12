@@ -101,14 +101,16 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 	}
 	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
 
-	if err := SyncKubeBinaries(runtime, binariesMap); err != nil {
+	if err := SyncKubeBinaries(runtime, binariesMap, s.KubeConf.Arg.K3sContainerRuntimeEndpoint); err != nil {
 		return err
 	}
 	return nil
 }
 
 // SyncKubeBinaries is used to sync kubernetes' binaries to each node.
-func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.KubeBinary) error {
+func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.KubeBinary, k3sContainerRuntimeEndpoint string) error {
+	// exist := checkContainerExists(runtime)
+
 	if err := utils.ResetTmpDir(runtime); err != nil {
 		return err
 	}
@@ -143,7 +145,11 @@ func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.K
 		}
 	}
 
-	binaries := []string{"kubectl", "crictl", "ctr"}
+	var binaries = []string{"kubectl"}
+	if strings.EqualFold(k3sContainerRuntimeEndpoint, "") {
+		binaries = append(binaries, "crictl", "ctr")
+	}
+
 	var createLinkCMDs []string
 	for _, binary := range binaries {
 		createLinkCMDs = append(createLinkCMDs, fmt.Sprintf("ln -snf /usr/local/bin/k3s /usr/local/bin/%s", binary))
@@ -179,6 +185,7 @@ type GenerateK3sService struct {
 }
 
 func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
+	// exist := checkContainerExists(runtime)
 	host := runtime.RemoteHost()
 
 	var server string
@@ -207,26 +214,35 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 	kubeletArgs, _ := util.GetArgs(defaultKubeletArs, g.KubeConf.Cluster.Kubernetes.KubeletArgs)
 	kubeProxyArgs, _ := util.GetArgs(defaultKubeProxyArgs, g.KubeConf.Cluster.Kubernetes.KubeProxyArgs)
 
+	var data = util.Data{
+		"Server":            server,
+		"IsMaster":          host.IsRole(common.Master),
+		"NodeIP":            host.GetInternalAddress(),
+		"HostName":          host.GetName(),
+		"PodSubnet":         g.KubeConf.Cluster.Network.KubePodsCIDR,
+		"ServiceSubnet":     g.KubeConf.Cluster.Network.KubeServiceCIDR,
+		"ClusterDns":        g.KubeConf.Cluster.CorednsClusterIP(),
+		"CertSANs":          g.KubeConf.Cluster.GenerateCertSANs(),
+		"PauseImage":        images.GetImage(runtime, g.KubeConf, "pause").ImageName(),
+		"ApiserverArgs":     kubeApiserverArgs,
+		"ControllerManager": kubeControllerManager,
+		"SchedulerArgs":     kubeSchedulerArgs,
+		"KubeletArgs":       kubeletArgs,
+		"KubeProxyArgs":     kubeProxyArgs,
+		"Container":         "",
+		"CgroupDriver":      "",
+	}
+
+	if !strings.EqualFold(g.KubeConf.Arg.K3sContainerRuntimeEndpoint, "") {
+		data["Container"] = "--container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+		data["CgroupDriver"] = "--kubelet-arg=cgroup-driver=systemd"
+	}
+
 	templateAction := action.Template{
 		Name:     "GenerateK3sService",
 		Template: templates.K3sService,
 		Dst:      filepath.Join("/etc/systemd/system/", templates.K3sService.Name()),
-		Data: util.Data{
-			"Server":            server,
-			"IsMaster":          host.IsRole(common.Master),
-			"NodeIP":            host.GetInternalAddress(),
-			"HostName":          host.GetName(),
-			"PodSubnet":         g.KubeConf.Cluster.Network.KubePodsCIDR,
-			"ServiceSubnet":     g.KubeConf.Cluster.Network.KubeServiceCIDR,
-			"ClusterDns":        g.KubeConf.Cluster.CorednsClusterIP(),
-			"CertSANs":          g.KubeConf.Cluster.GenerateCertSANs(),
-			"PauseImage":        images.GetImage(runtime, g.KubeConf, "pause").ImageName(),
-			"ApiserverArgs":     kubeApiserverArgs,
-			"ControllerManager": kubeControllerManager,
-			"SchedulerArgs":     kubeSchedulerArgs,
-			"KubeletArgs":       kubeletArgs,
-			"KubeProxyArgs":     kubeProxyArgs,
-		},
+		Data:     data,
 	}
 
 	templateAction.Init(nil, nil)

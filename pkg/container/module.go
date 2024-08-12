@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/registry"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -30,7 +31,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/images"
-	"bytetrade.io/web3os/installer/pkg/kubernetes"
 )
 
 type InstallContainerModule struct {

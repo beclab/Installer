@@ -37,7 +37,11 @@ func K3sFilesDownloadHTTP(kubeConf *common.KubeConf, path, version, arch string,
 	helm := files.NewKubeBinary("helm", arch, kubekeyapiv1alpha2.DefaultHelmVersion, path)
 	k3s := files.NewKubeBinary("k3s", arch, version, path)
 
-	binaries := []*files.KubeBinary{k3s, helm, kubecni, etcd}
+	crictl := files.NewKubeBinary("crictl", arch, kubekeyapiv1alpha2.DefaultCrictlVersion, path)
+	containerd := files.NewKubeBinary("containerd", arch, kubekeyapiv1alpha2.DefaultContainerdVersion, path)
+	runc := files.NewKubeBinary("runc", arch, kubekeyapiv1alpha2.DefaultRuncVersion, path)
+
+	binaries := []*files.KubeBinary{k3s, helm, kubecni, etcd, crictl, containerd, runc}
 	binariesMap := make(map[string]*files.KubeBinary)
 	for _, binary := range binaries {
 		if err := binary.CreateBaseDir(); err != nil {

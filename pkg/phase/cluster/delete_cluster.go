@@ -51,6 +51,7 @@ func newK8sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 func newK3sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	return []module.Module{
 		&k3s.DeleteClusterModule{},
+		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
 		&os.ClearOSEnvironmentModule{},
 		&certs.UninstallAutoRenewCertsModule{},
 		&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},

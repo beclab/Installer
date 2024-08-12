@@ -16,7 +16,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
 )
 
-func UninstallTerminusPipeline(minikube bool, deleteCache bool) error {
+func UninstallTerminusPipeline(minikube bool, deleteCache bool, deleteCRI bool) error {
 	var input string
 	var err error
 	var kubeVersion = phase.GetCurrentKubeVersion()
@@ -38,7 +38,7 @@ func UninstallTerminusPipeline(minikube bool, deleteCache bool) error {
 		ContainerManager:  common.Containerd,
 		Minikube:          minikube,
 		DeleteCache:       strings.EqualFold(input, common.YES),
-		DeleteCRI:         true,
+		DeleteCRI:         deleteCRI,
 	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, args)

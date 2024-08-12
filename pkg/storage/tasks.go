@@ -238,7 +238,6 @@ func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
 		"/etc/systemd/system/minio.service",
 		"/etc/systemd/system/minio-operator.service",
 		"/etc/systemd/system/juicefs.service",
-		"/etc/systemd/system/containerd.service",
 		"/terminus/",
 	}
 

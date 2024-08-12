@@ -18,14 +18,148 @@ package k3s
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/container"
+	containertemplates "bytetrade.io/web3os/installer/pkg/container/templates"
 	"bytetrade.io/web3os/installer/pkg/core/action"
+	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/k3s/templates"
+	"bytetrade.io/web3os/installer/pkg/registry"
 )
+
+type InstallContainerModule struct {
+	common.KubeModule
+	Skip bool
+}
+
+func (i *InstallContainerModule) IsSkip() bool {
+	return i.Skip
+}
+
+func (i *InstallContainerModule) Init() {
+	i.Name = "InstallContainerModule"
+	i.Desc = "Install container manager"
+
+	switch i.KubeConf.Cluster.Kubernetes.ContainerManager {
+	case common.Containerd:
+		i.Tasks = InstallContainerd(i)
+	case common.Crio:
+		// TODO: Add the steps of cri-o's installation.
+	case common.Isula:
+		// TODO: Add the steps of iSula's installation.
+	default:
+		logger.Fatalf("Unsupported container runtime: %s", strings.TrimSpace(i.KubeConf.Cluster.Kubernetes.ContainerManager))
+	}
+}
+
+func InstallContainerd(m *InstallContainerModule) []task.Interface {
+	syncContainerd := &task.RemoteTask{
+		Name:  "SyncContainerd",
+		Desc:  "Sync containerd binaries",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+		},
+		Action:   new(container.SyncContainerd),
+		Parallel: true,
+		Retry:    2,
+	}
+
+	syncCrictlBinaries := &task.RemoteTask{
+		Name:  "SyncCrictlBinaries",
+		Desc:  "Sync crictl binaries",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.CrictlExist{Not: true},
+		},
+		Action:   new(container.SyncCrictlBinaries),
+		Parallel: true,
+		Retry:    2,
+	}
+
+	generateContainerdService := &task.RemoteTask{
+		Name:  "GenerateContainerdService",
+		Desc:  "Generate containerd service",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+		},
+		Action: &action.Template{
+			Name:     "GenerateContainerdService",
+			Template: containertemplates.ContainerdService,
+			Dst:      filepath.Join("/etc/systemd/system", containertemplates.ContainerdService.Name()),
+		},
+		Parallel: true,
+	}
+
+	generateContainerdConfig := &task.RemoteTask{
+		Name:  "GenerateContainerdConfig",
+		Desc:  "Generate containerd config",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+		},
+		Action: &action.Template{
+			Name:     "GenerateContainerdConfig",
+			Template: containertemplates.ContainerdConfig,
+			Dst:      filepath.Join("/etc/containerd/", containertemplates.ContainerdConfig.Name()),
+			Data: util.Data{
+				"Mirrors":            containertemplates.Mirrors(m.KubeConf),
+				"InsecureRegistries": m.KubeConf.Cluster.Registry.InsecureRegistries,
+				"SandBoxImage":       images.GetImage(m.Runtime, m.KubeConf, "pause").ImageName(),
+				"Auths":              registry.DockerRegistryAuthEntries(m.KubeConf.Cluster.Registry.Auths),
+				"DataRoot":           containertemplates.DataRoot(m.KubeConf),
+			},
+		},
+		Parallel: true,
+	}
+
+	generateCrictlConfig := &task.RemoteTask{
+		Name:  "GenerateCrictlConfig",
+		Desc:  "Generate crictl config",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+		},
+		Action: &action.Template{
+			Name:     "GenerateCrictlConfig",
+			Template: containertemplates.CrictlConfig,
+			Dst:      filepath.Join("/etc/", containertemplates.CrictlConfig.Name()),
+			Data: util.Data{
+				"Endpoint": m.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint,
+			},
+		},
+		Parallel: true,
+	}
+
+	enableContainerd := &task.RemoteTask{
+		Name:  "EnableContainerd",
+		Desc:  "Enable containerd",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+		},
+		Action:   new(container.EnableContainerd),
+		Parallel: true,
+	}
+
+	return []task.Interface{
+		syncContainerd,
+		syncCrictlBinaries,
+		generateContainerdService,
+		generateContainerdConfig,
+		generateCrictlConfig,
+		enableContainerd,
+	}
+}
 
 type StatusModule struct {
 	common.KubeModule
@@ -414,4 +548,15 @@ func (m *UninstallK3sModule) Init() {
 	m.Tasks = []task.Interface{
 		uninstallK3s,
 	}
+}
+
+func checkContainerExists(runtime connector.Runtime) bool {
+	var cmd = "if [ -z $(which containerd) ] || [ ! -e /run/containerd/containerd.sock ]; " +
+		"then echo 'not exist'; " +
+		"fi"
+	var runner = runtime.GetRunner()
+	if output, err := runner.SudoCmd(cmd, false, false); err != nil || strings.Contains(output, "not exist") {
+		return false
+	}
+	return true
 }

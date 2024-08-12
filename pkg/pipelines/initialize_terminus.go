@@ -18,7 +18,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
 )
 
-func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfileName, registryMirrors string) error {
+func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfileName, registryMirrors, k3sContainerRuntimeEndpoint string) error {
 	if err := checkMacOSParams(minikube, minikubeProfileName); err != nil {
 		return err
 	}
@@ -29,16 +29,17 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 	}
 
 	arg := common.Argument{
-		KsEnable:          true,
-		KsVersion:         common.DefaultKubeSphereVersion,
-		InstallPackages:   false,
-		SKipPushImages:    false,
-		ContainerManager:  common.Containerd,
-		IsCloudInstance:   strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE),
-		Minikube:          minikube,
-		MinikubeProfile:   minikubeProfileName,
-		KubernetesVersion: ksVersion,
-		RegistryMirrors:   registryMirrors,
+		KsEnable:                    true,
+		KsVersion:                   common.DefaultKubeSphereVersion,
+		InstallPackages:             false,
+		SKipPushImages:              false,
+		ContainerManager:            common.Containerd,
+		IsCloudInstance:             strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE),
+		Minikube:                    minikube,
+		MinikubeProfile:             minikubeProfileName,
+		KubernetesVersion:           ksVersion,
+		RegistryMirrors:             registryMirrors,
+		K3sContainerRuntimeEndpoint: formatK3sContainerRuntimeEndpoint(k3sContainerRuntimeEndpoint),
 	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, arg)
@@ -74,6 +75,17 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 	}
 
 	return nil
+}
+
+func formatK3sContainerRuntimeEndpoint(k3sContainerRuntimeEndpoint string) string {
+	endpointEnv := os.Getenv("K3S_CONTAINER_RUNTIME_ENDPOINT")
+	if !strings.EqualFold(endpointEnv, "") {
+		return endpointEnv
+	}
+	if !strings.EqualFold(k3sContainerRuntimeEndpoint, "") {
+		return k3sContainerRuntimeEndpoint
+	}
+	return ""
 }
 
 func checkMacOSParams(minikube bool, minikubeProfileName string) error {
