@@ -31,7 +31,6 @@ func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	kubeModule = append(kubeModule,
 		&kubesphere.DeleteCacheModule{},
 		&storage.RemoveStorageModule{},
-		&storage.RemoveMountModule{},
 		&k3s.UninstallK3sModule{},
 	)
 

@@ -7,6 +7,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
@@ -34,7 +35,7 @@ type CheckStorageType struct {
 }
 
 func (p *CheckStorageType) PreCheck(runtime connector.Runtime) (bool, error) {
-	storageType, _ := p.PipelineCache.GetMustString(common.CacheStorageType)
+	storageType := p.KubeConf.Arg.Storage.StorageType
 	if storageType == "" || storageType != p.StorageType {
 		return false, nil
 	}
@@ -46,17 +47,21 @@ type CheckStorageVendor struct {
 }
 
 func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
-	storageVendor, _ := p.PipelineCache.GetMustString(common.CacheStorageVendor)
-	if storageVendor != "true" {
+	var storageType = p.KubeConf.Arg.Storage.StorageType
+	var storageBucket = p.KubeConf.Arg.Storage.StorageBucket
+
+	if storageType != "s3" && storageType != "oss" {
 		return false, nil
 	}
 
-	if storageType, _ := p.PipelineCache.GetMustString(common.CacheStorageType); storageType != "s3" && storageType != "oss" {
+	if storageBucket == "" {
 		return false, nil
 	}
 
-	if storageBucket, _ := p.PipelineCache.GetMustString(common.CacheStorageBucket); storageBucket == "" {
-		return false, nil
+	if _, err := util.GetCommand("unzip"); err != nil {
+		if _, err := runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, true); err != nil {
+			return false, err
+		}
 	}
 
 	return true, nil

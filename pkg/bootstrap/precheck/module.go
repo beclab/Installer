@@ -41,17 +41,8 @@ func (m *GetStorageKeyModule) Init() {
 		Retry:    0,
 	}
 
-	getStorageVendor := &task.RemoteTask{
-		Name:     "GetStorageVendor",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Action:   new(GetStorageVendor),
-		Parallel: false,
-		Retry:    0,
-	}
-
 	m.Tasks = []task.Interface{
 		getStorageKeyTask,
-		getStorageVendor,
 	}
 }
 

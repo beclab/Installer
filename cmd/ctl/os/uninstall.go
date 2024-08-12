@@ -33,9 +33,10 @@ func NewCmdUninstallOs() *cobra.Command {
 				os.Exit(1)
 			}
 
-			logger.Infof("options: version: %s, minikube: %v, deletecache: %v, deletecri: %v", o.UninstallOptions.MiniKube, o.UninstallOptions.DeleteCache, o.UninstallOptions.DeleteCRI)
+			logger.Infof("options: version: %s, minikube: %v, deletecache: %v, deletecri: %v, storage-type: %s, storage-bucket: %s",
+				o.UninstallOptions.MiniKube, o.UninstallOptions.DeleteCache, o.UninstallOptions.DeleteCRI, o.UninstallOptions.StorageType, o.UninstallOptions.StorageBucket)
 
-			if err := pipelines.UninstallTerminusPipeline(o.UninstallOptions.MiniKube, o.UninstallOptions.DeleteCache, o.UninstallOptions.DeleteCRI); err != nil {
+			if err := pipelines.UninstallTerminusPipeline(o.UninstallOptions); err != nil {
 				logger.Errorf("delete terminus error %v", err)
 			}
 		},

@@ -34,7 +34,7 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 		InstallPackages:             false,
 		SKipPushImages:              false,
 		ContainerManager:            common.Containerd,
-		IsCloudInstance:             strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE),
+		IsCloudInstance:             strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE), // ! 这里的环境根本获取不到啊！
 		Minikube:                    minikube,
 		MinikubeProfile:             minikubeProfileName,
 		KubernetesVersion:           ksVersion,

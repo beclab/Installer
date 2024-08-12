@@ -48,19 +48,16 @@ type DownloadStorageCli struct {
 }
 
 func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
-	storageTypeIf, ok := t.PipelineCache.Get(common.CacheStorageType)
-	if !ok || storageTypeIf == nil {
-		return nil
-	}
+	var storageType = t.KubeConf.Arg.Storage.StorageType
 	var arch = fmt.Sprintf("%s-%s", constants.OsType, constants.OsArch)
 
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	var binary *files.KubeBinary
-	storageType := storageTypeIf.(string)
 	switch storageType {
 	case "s3":
-		binary = files.NewKubeBinary("awscli", arch, "", runtime.GetWorkDir())
+		binary = files.NewKubeBinary("awscli", arch, "", prePath)
 	case "oss":
-		binary = files.NewKubeBinary("ossutil", arch, kubekeyapiv1alpha2.DefaultOssUtilVersion, runtime.GetWorkDir())
+		binary = files.NewKubeBinary("ossutil", arch, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
 	default:
 		return nil
 	}
@@ -104,15 +101,11 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 	// exp https://terminus-os-us-west-1.s3.us-west-1.amazonaws.com
 	// s3  s3://terminus-os-us-west-1
 
-	storageBucket, _ := t.PipelineCache.GetMustString(common.CacheStorageBucket)
-	if storageBucket == "" {
-		return nil
-	}
-
-	storageAccessKey, _ := t.PipelineCache.GetMustString(common.CacheSTSAccessKey)
-	storageSecretKey, _ := t.PipelineCache.GetMustString(common.CacheSTSSecretKey)
-	storageToken, _ := t.PipelineCache.GetMustString(common.CacheSTSToken)
-	storageClusterId, _ := t.PipelineCache.GetMustString(common.CacheSTSClusterId)
+	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
+	storageAccessKey := t.KubeConf.Arg.Storage.StorageAccessKey
+	storageSecretKey := t.KubeConf.Arg.Storage.StorageSecretKey
+	storageToken := t.KubeConf.Arg.Storage.StorageToken
+	storageClusterId := t.KubeConf.Arg.Storage.StorageClusterId
 
 	_, a, f := strings.Cut(storageBucket, "://")
 	if !f {
@@ -131,6 +124,7 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		logger.Errorf("failed to unmount s3 bucket %s: %v", storageBucket, err)
+		return err
 	}
 
 	return nil
@@ -141,14 +135,11 @@ type UnMountOSS struct {
 }
 
 func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
-	storageBucket, _ := t.PipelineCache.GetMustString(common.CacheStorageBucket)
-	if storageBucket == "" {
-		return nil
-	}
-	storageAccessKey, _ := t.PipelineCache.GetMustString(common.CacheSTSAccessKey)
-	storageSecretKey, _ := t.PipelineCache.GetMustString(common.CacheSTSSecretKey)
-	storageToken, _ := t.PipelineCache.GetMustString(common.CacheSTSToken)
-	storageClusterId, _ := t.PipelineCache.GetMustString(common.CacheSTSClusterId)
+	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
+	storageAccessKey := t.KubeConf.Arg.Storage.StorageAccessKey
+	storageSecretKey := t.KubeConf.Arg.Storage.StorageSecretKey
+	storageToken := t.KubeConf.Arg.Storage.StorageToken
+	storageClusterId := t.KubeConf.Arg.Storage.StorageClusterId
 
 	// exp: https://name.area.aliyuncs.com
 	// oss  oss://name

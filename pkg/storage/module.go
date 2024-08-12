@@ -34,7 +34,7 @@ func (m *InitStorageModule) Init() {
 		},
 		Action:   new(MkStorageDir),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
@@ -57,7 +57,7 @@ func (m *RemoveMountModule) Init() {
 		},
 		Action:   new(DownloadStorageCli),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	unMountOSS := &task.RemoteTask{
@@ -70,7 +70,7 @@ func (m *RemoveMountModule) Init() {
 		},
 		Action:   new(UnMountOSS),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	unMountS3 := &task.RemoteTask{
@@ -83,7 +83,7 @@ func (m *RemoveMountModule) Init() {
 		},
 		Action:   new(UnMountS3),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{

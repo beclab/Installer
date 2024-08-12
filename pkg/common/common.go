@@ -188,12 +188,6 @@ const (
 	CacheKubectlKey = "cmd_kubectl"
 
 	CacheStorageVendor = "storage_vendor"
-	CacheStorageType   = "storage_type"
-	CacheStorageBucket = "storage_bucket"
-	CacheSTSAccessKey  = "sts_access_key"
-	CacheSTSSecretKey  = "sts_secret_key"
-	CacheSTSToken      = "sts_token"
-	CacheSTSClusterId  = "sts_cluster_id"
 	CacheProxy         = "proxy"
 
 	CacheEnableHA      = "enable_ha"
@@ -219,6 +213,10 @@ const (
 )
 
 const (
+	EnvDeleteCacheName      = "DELETE_CACHE"
+	EnvCloudInstanceName    = "TERMINUS_IS_CLOUD_VERSION"
+	EnvStorageTypeName      = "STORAGE"
+	EnvStorageBucketName    = "S3_BUCKET"
 	EnvStorageAccessKeyName = "AWS_ACCESS_KEY_ID_SETUP"
 	EnvStorageSecretKeyName = "AWS_SECRET_ACCESS_KEY_SETUP"
 	EnvStorageTokenName     = "AWS_SESSION_TOKEN_SETUP"

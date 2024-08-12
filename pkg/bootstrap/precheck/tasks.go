@@ -507,7 +507,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageToken = stdout
 	}
 
-	if stdout, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, "/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/cluster-id}'", false, false); stdout == "" {
+	if stdout, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, "/usr/local/bin/kubectl get terminus terminus -o jsonpath='{.metadata.labels.bytetrade\\.io/cluster-id}'", false, false); stdout == "" {
 		storageClusterId = os.Getenv(common.EnvStorageClusterIdName)
 		if storageClusterId == "" {
 			logger.Errorf("storage cluster id not found")
@@ -516,27 +516,14 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageClusterId = stdout
 	}
 
-	t.PipelineCache.Set(common.CacheSTSAccessKey, storageAccessKey)
-	t.PipelineCache.Set(common.CacheSTSSecretKey, storageSecretKey)
-	t.PipelineCache.Set(common.CacheSTSToken, storageToken)
-	t.PipelineCache.Set(common.CacheSTSClusterId, storageClusterId)
+	t.KubeConf.Arg.Storage.StorageAccessKey = storageAccessKey
+	t.KubeConf.Arg.Storage.StorageSecretKey = storageSecretKey
+	t.KubeConf.Arg.Storage.StorageToken = storageToken
+	t.KubeConf.Arg.Storage.StorageClusterId = storageClusterId
 
-	return nil
-}
-
-type GetStorageVendor struct {
-	common.KubeAction
-}
-
-func (t *GetStorageVendor) Execute(runtime connector.Runtime) error {
-	// todo
-	storageVendor := os.Getenv("TERMINUS_IS_CLOUD_VERSION")
-	storageType := os.Getenv("STORAGE")
-	storageBucket := os.Getenv("S3_BUCKET")
-
-	t.PipelineCache.Set(common.CacheStorageVendor, storageVendor)
-	t.PipelineCache.Set(common.CacheStorageType, storageType)
-	t.PipelineCache.Set(common.CacheStorageBucket, storageBucket)
+	logger.Infof("storage: cloud: %v, type: %s, bucket: %s, ak: %s, sk: %s, tk: %s, id: %s",
+		t.KubeConf.Arg.IsCloudInstance, t.KubeConf.Arg.Storage.StorageType, t.KubeConf.Arg.Storage.StorageBucket,
+		t.KubeConf.Arg.Storage.StorageAccessKey, t.KubeConf.Arg.Storage.StorageSecretKey, t.KubeConf.Arg.Storage.StorageToken, t.KubeConf.Arg.Storage.StorageClusterId)
 
 	return nil
 }

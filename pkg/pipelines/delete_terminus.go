@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -14,15 +15,17 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
 	"bytetrade.io/web3os/installer/pkg/phase"
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
+	"bytetrade.io/web3os/installer/pkg/storage"
 )
 
-func UninstallTerminusPipeline(minikube bool, deleteCache bool, deleteCRI bool) error {
+func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error { // minikube bool, deleteCache bool, deleteCRI bool
 	var input string
 	var err error
 	var kubeVersion = phase.GetCurrentKubeVersion()
-	var deleteCacheEnv = os.Getenv("DELETE_CACHE")
+	var deleteCacheEnv = os.Getenv(common.EnvDeleteCacheName)
+	var deleteCache bool
 
-	if !deleteCache && strings.EqualFold(deleteCacheEnv, common.TRUE) {
+	if !opt.DeleteCache && strings.EqualFold(deleteCacheEnv, common.TRUE) {
 		deleteCache = true
 	}
 
@@ -36,9 +39,14 @@ func UninstallTerminusPipeline(minikube bool, deleteCache bool, deleteCRI bool) 
 	var args = common.Argument{
 		KubernetesVersion: kubeVersion,
 		ContainerManager:  common.Containerd,
-		Minikube:          minikube,
+		Minikube:          opt.MiniKube,
 		DeleteCache:       strings.EqualFold(input, common.YES),
-		DeleteCRI:         deleteCRI,
+		DeleteCRI:         opt.DeleteCRI,
+		IsCloudInstance:   formatIsCloudInstance(),
+		Storage: &common.Storage{
+			StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
+			StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
+		},
 	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, args)
@@ -52,7 +60,7 @@ func UninstallTerminusPipeline(minikube bool, deleteCache bool, deleteCRI bool) 
 	case common.Darwin:
 		m = append(m, cluster.DeleteMinikubePhase(args, runtime)...)
 	default:
-		m = append(m, &precheck.GetStorageKeyModule{})
+		m = append(m, &precheck.GetStorageKeyModule{}, &storage.RemoveMountModule{})
 		m = append(m, cluster.DeleteClusterPhase(runtime)...)
 	}
 
@@ -86,4 +94,19 @@ LOOP:
 	}
 
 	return input, nil
+}
+
+func formatParms(key, val string) string {
+	valEnv := os.Getenv(key)
+	if !strings.EqualFold(valEnv, "") {
+		return valEnv
+	}
+	if !strings.EqualFold(val, "") {
+		return val
+	}
+	return ""
+}
+
+func formatIsCloudInstance() bool {
+	return strings.EqualFold(os.Getenv(common.EnvCloudInstanceName), common.TRUE)
 }
