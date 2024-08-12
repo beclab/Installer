@@ -34,12 +34,12 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 		InstallPackages:             false,
 		SKipPushImages:              false,
 		ContainerManager:            common.Containerd,
-		IsCloudInstance:             strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE), // ! 这里的环境根本获取不到啊！
+		IsCloudInstance:             strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE),
 		Minikube:                    minikube,
 		MinikubeProfile:             minikubeProfileName,
 		KubernetesVersion:           ksVersion,
 		RegistryMirrors:             registryMirrors,
-		K3sContainerRuntimeEndpoint: formatK3sContainerRuntimeEndpoint(k3sContainerRuntimeEndpoint),
+		K3sContainerRuntimeEndpoint: formatK3sContainerRuntimeEndpoint(kubeType, k3sContainerRuntimeEndpoint),
 	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, arg)
@@ -77,7 +77,10 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 	return nil
 }
 
-func formatK3sContainerRuntimeEndpoint(k3sContainerRuntimeEndpoint string) string {
+func formatK3sContainerRuntimeEndpoint(kubeType, k3sContainerRuntimeEndpoint string) string {
+	if kubeType != common.K3s {
+		return ""
+	}
 	endpointEnv := os.Getenv("K3S_CONTAINER_RUNTIME_ENDPOINT")
 	if !strings.EqualFold(endpointEnv, "") {
 		return endpointEnv
