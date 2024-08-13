@@ -59,7 +59,7 @@ func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	if _, err := util.GetCommand("unzip"); err != nil {
-		if _, err := runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, false); err != nil {
 			return false, err
 		}
 	}

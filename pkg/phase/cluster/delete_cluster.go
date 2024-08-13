@@ -6,6 +6,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
+	"bytetrade.io/web3os/installer/pkg/filesystem"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/kubesphere"
@@ -32,6 +33,7 @@ func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 		&kubesphere.DeleteCacheModule{},
 		&storage.RemoveStorageModule{},
 		&k3s.UninstallK3sModule{},
+		&filesystem.DeleteInstalledModule{},
 	)
 
 	return kubeModule

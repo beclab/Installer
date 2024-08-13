@@ -19,7 +19,9 @@ package filesystem
 import (
 	"fmt"
 	"os/exec"
+	"path"
 
+	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -66,6 +68,18 @@ func (l *LocalTaskChown) Execute(runtime connector.Runtime) error {
 		if err := exec.Command("/bin/sh", "-c", fmt.Sprintf("chown -R ${SUDO_UID}:${SUDO_GID} %s", l.Path)).Run(); err != nil {
 			return errors.Wrapf(errors.WithStack(err), "chown %s failed", l.Path)
 		}
+	}
+	return nil
+}
+
+type DeleteInstalled struct {
+	common.KubeAction
+}
+
+func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
+	var installed = path.Join(runtime.GetRootDir(), ".installed")
+	if util.IsExist(installed) {
+		util.RemoveFile(installed)
 	}
 	return nil
 }
