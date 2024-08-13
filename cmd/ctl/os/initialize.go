@@ -34,16 +34,15 @@ func NewCmdInitializeOs() *cobra.Command {
 				os.Exit(1)
 			}
 
-			logger.Infof("options: version: %s, kube: %s, minikube: %v, minikubeprofile: %s, registry: %s, k3sctr: %s",
+			logger.Infof("options: version: %s, kube: %s, minikube: %v, minikubeprofile: %s, registry: %s",
 				version.VERSION, o.InitializeOptions.KubeType, o.InitializeOptions.MiniKube,
-				o.InitializeOptions.MiniKubeProfile, o.InitializeOptions.RegistryMirrors, o.InitializeOptions.K3sContainerRuntimeEndpoint)
+				o.InitializeOptions.MiniKubeProfile, o.InitializeOptions.RegistryMirrors)
 
 			if err := pipelines.CliInitializeTerminusPipeline(
 				o.InitializeOptions.KubeType,
 				o.InitializeOptions.MiniKube,
 				o.InitializeOptions.MiniKubeProfile,
 				o.InitializeOptions.RegistryMirrors,
-				o.InitializeOptions.K3sContainerRuntimeEndpoint,
 			); err != nil {
 				logger.Errorf("initialize kube error: %v", err)
 				os.Exit(1)

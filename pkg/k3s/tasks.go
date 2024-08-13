@@ -101,16 +101,14 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 	}
 	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
 
-	if err := SyncKubeBinaries(runtime, binariesMap, s.KubeConf.Arg.K3sContainerRuntimeEndpoint); err != nil {
+	if err := SyncKubeBinaries(runtime, binariesMap); err != nil {
 		return err
 	}
 	return nil
 }
 
 // SyncKubeBinaries is used to sync kubernetes' binaries to each node.
-func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.KubeBinary, k3sContainerRuntimeEndpoint string) error {
-	// exist := checkContainerExists(runtime)
-
+func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.KubeBinary) error {
 	if err := utils.ResetTmpDir(runtime); err != nil {
 		return err
 	}
@@ -145,11 +143,7 @@ func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.K
 		}
 	}
 
-	var binaries = []string{"kubectl"}
-	if strings.EqualFold(k3sContainerRuntimeEndpoint, "") {
-		binaries = append(binaries, "crictl", "ctr")
-	}
-
+	binaries := []string{"kubectl"}
 	var createLinkCMDs []string
 	for _, binary := range binaries {
 		createLinkCMDs = append(createLinkCMDs, fmt.Sprintf("ln -snf /usr/local/bin/k3s /usr/local/bin/%s", binary))
@@ -229,13 +223,8 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"SchedulerArgs":     kubeSchedulerArgs,
 		"KubeletArgs":       kubeletArgs,
 		"KubeProxyArgs":     kubeProxyArgs,
-		"Container":         "",
-		"CgroupDriver":      "",
-	}
-
-	if !strings.EqualFold(g.KubeConf.Arg.K3sContainerRuntimeEndpoint, "") {
-		data["Container"] = "--container-runtime-endpoint=unix:///run/containerd/containerd.sock"
-		data["CgroupDriver"] = "--kubelet-arg=cgroup-driver=systemd"
+		"Container":         "--container-runtime-endpoint=unix:///run/containerd/containerd.sock",
+		"CgroupDriver":      "--kubelet-arg=cgroup-driver=systemd",
 	}
 
 	templateAction := action.Template{

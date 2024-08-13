@@ -42,6 +42,7 @@ func (p *PreloadImagesModule) Init() {
 			&MasterPullImages{Not: true},
 			&plugins.IsCloudInstance{Not: true},
 			&CheckImageManifest{},
+			&ContainerdInstalled{},
 		},
 		Action:   new(LoadImages),
 		Parallel: false,

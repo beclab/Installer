@@ -92,8 +92,6 @@ type Argument struct {
 	Minikube        bool
 	MinikubeProfile string
 	DeleteCache     bool
-
-	K3sContainerRuntimeEndpoint string
 }
 
 type AwsHost struct {

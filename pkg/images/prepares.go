@@ -15,6 +15,9 @@
 package images
 
 import (
+	"fmt"
+	"strings"
+
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 )
@@ -32,4 +35,22 @@ func (n *MasterPullImages) PreCheck(runtime connector.Runtime) (bool, error) {
 		return !n.Not, nil
 	}
 	return n.Not, nil
+}
+
+type ContainerdInstalled struct {
+	common.KubePrepare
+}
+
+func (c *ContainerdInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
+	output, err := runtime.GetRunner().SudoCmd(
+		"if [ -z $(which containerd) ] || [ ! -e /run/containerd/containerd.sock ]; "+
+			"then echo 'not exist'; "+
+			"fi", false, false)
+	if err != nil {
+		return false, err
+	}
+	if strings.Contains(output, "not exist") {
+		return false, fmt.Errorf("containerd service not installed")
+	}
+	return true, nil
 }
