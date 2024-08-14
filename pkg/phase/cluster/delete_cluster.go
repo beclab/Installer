@@ -18,6 +18,7 @@ func DeleteMinikubePhase(args common.Argument, runtime *common.KubeRuntime) []mo
 	return []module.Module{
 		&kubesphere.DeleteCacheModule{},
 		&kubesphere.DeleteMinikubeModule{},
+		&filesystem.DeleteInstalledModule{},
 	}
 }
 

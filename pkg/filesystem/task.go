@@ -80,6 +80,7 @@ func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
 	var installed = []string{
 		path.Join(runtime.GetRootDir(), ".installed"),
 		path.Join(common.RunLockDir, ".installed"),
+		path.Join("/usr/local/var/run", ".installed"),
 	}
 
 	for _, f := range installed {
