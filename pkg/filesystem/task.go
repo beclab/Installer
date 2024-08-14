@@ -77,9 +77,16 @@ type DeleteInstalled struct {
 }
 
 func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
-	var installed = path.Join(runtime.GetRootDir(), ".installed")
-	if util.IsExist(installed) {
-		util.RemoveFile(installed)
+	var installed = []string{
+		path.Join(runtime.GetRootDir(), ".installed"),
+		path.Join(common.RunLockDir, ".installed"),
 	}
+
+	for _, f := range installed {
+		if util.IsExist(f) {
+			util.RemoveFile(f)
+		}
+	}
+
 	return nil
 }

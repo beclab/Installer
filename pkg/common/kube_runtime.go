@@ -132,6 +132,14 @@ func NewArgument(proxy string, registryMirrors string) *Argument {
 	}
 }
 
+func (a *Argument) SetDeleteCache(deleteCache bool) {
+	a.DeleteCache = deleteCache
+}
+
+func (a *Argument) SetDeleteCRI(deleteCRI bool) {
+	a.DeleteCRI = deleteCRI
+}
+
 func (a *Argument) SetStorage(storageType, storageBucket, storageAccessKey, storageSecretKey, storageToken string) {
 	a.Storage = &Storage{
 		StorageType:      storageType,

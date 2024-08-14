@@ -57,6 +57,7 @@ const (
 	KubeletFlexvolumesPluginsDir = "/usr/libexec/kubernetes/kubelet-plugins/volume/exec"
 	K3sImageDir                  = "/var/lib/images"
 	MinikubeEtcdCertDir          = "/var/lib/minikube/certs/etcd"
+	RunLockDir                   = "/var/run/lock"
 
 	InstallerScriptsDir = "scripts"
 
