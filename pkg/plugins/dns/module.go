@@ -18,6 +18,7 @@ package dns
 
 import (
 	"path/filepath"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
@@ -72,6 +73,8 @@ func (c *ClusterDNSModule) Init() {
 			&CoreDNSExist{Not: true},
 		},
 		Action:   new(OverrideCoreDNS),
+		Retry:    5,
+		Delay:    5 * time.Second,
 		Parallel: true,
 	}
 

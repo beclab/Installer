@@ -172,6 +172,7 @@ func (m *InstallMinioModule) Init() {
 		Prepare:  &CheckMinioExists{},
 		Action:   &InstallMinio{},
 		Parallel: false,
+		Retry:    1,
 	}
 
 	configMinio := &task.RemoteTask{
@@ -179,6 +180,7 @@ func (m *InstallMinioModule) Init() {
 		Hosts:    m.Runtime.GetAllHosts(),
 		Action:   &ConfigMinio{},
 		Parallel: false,
+		Retry:    1,
 	}
 
 	enableMinio := &task.RemoteTask{
@@ -186,6 +188,7 @@ func (m *InstallMinioModule) Init() {
 		Hosts:    m.Runtime.GetAllHosts(),
 		Action:   &EnableMinio{},
 		Parallel: false,
+		Retry:    1,
 	}
 
 	checkMinioState := &task.RemoteTask{

@@ -152,7 +152,12 @@ func (a *Argument) SetMinikube(minikube bool, profile string) {
 	a.MinikubeProfile = profile
 }
 
-func (a *Argument) SetKubernetesVersion(kubeType string) {
+func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
+	if kubeVersion != "" {
+		a.KubernetesVersion = kubeVersion
+		return
+	}
+
 	switch kubeType {
 	case K8s:
 		a.KubernetesVersion = DefaultK8sVersion
