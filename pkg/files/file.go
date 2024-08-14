@@ -364,7 +364,7 @@ func (b *KubeBinary) GetTarCmd() string {
 				b.BaseDir, b.Version, b.Os, b.Arch, b.Os, b.Arch, b.Os, b.Arch)
 		}
 	case awscli:
-		cmd = fmt.Sprintf("cd %s && unzip -q %s && ./aws/install --update", b.BaseDir, b.FileName)
+		cmd = fmt.Sprintf("cd %s && unzip -q %s && ./aws/install --update && rm -rf ./aws", b.BaseDir, b.FileName)
 	case ossutil:
 		cmd = fmt.Sprintf("cd %s && unzip -q %s && mv ./ossutil-v%s-%s-%s/* /usr/local/sbin/",
 			b.BaseDir, b.FileName, b.Version, b.Os, b.Arch)
