@@ -70,6 +70,7 @@ const (
 	miniooperator = "minio-operator"
 	redis         = "redis"
 	juicefs       = "juicefs"
+	installwizard = "install-wizard"
 )
 
 // KubeBinary Type field const
@@ -83,10 +84,9 @@ const (
 	REGISTRY   = "registry"
 	CONTAINERD = "containerd"
 	RUNC       = "runc"
-	// todo installer package
-	INSTALLER = "installer"
-	COMPONENT = "component"
-	PATCH     = "patch"
+	INSTALL    = "install"
+	COMPONENT  = "component"
+	PATCH      = "patch"
 )
 
 type KubeBinary struct {
@@ -298,6 +298,12 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf("https://github.com/fqrouter/conntrack-tools/archive/refs/tags/conntrack-tools-%s.tar.gz", version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
+	case installwizard:
+		component.Type = INSTALL
+		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
+		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type) // /{HOME}/.terminus/install/*
 	default:
 		logger.Fatalf("unsupported kube binaries %s", name)
 	}
