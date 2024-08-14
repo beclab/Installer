@@ -42,12 +42,7 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 }
 
 func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipeline {
-	var storageVendor = args.Storage.StorageVendor
-	var storageType = args.Storage.StorageType
-
-	if storageType == "" {
-	}
-
+	// TODO: the installation process needs to distinguish between macOS and Linux.
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
@@ -55,8 +50,8 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&precheck.PreCheckOsModule{}, // precheck_os()
 		&patch.InstallDepsModule{},   // install_deps
 		&os.ConfigSystemModule{},     // config_system
-		&storage.InitStorageModule{Skip: storageVendor != "true"},
-		&storage.InstallMinioModule{Skip: storageType != "minio"},
+		&storage.InitStorageModule{Skip: !args.IsCloudInstance},
+		&storage.InstallMinioModule{Skip: args.Storage.StorageType != common.Minio},
 		&storage.InstallRedisModule{},
 		&storage.InstallJuiceFsModule{},
 		&plugins.GenerateCachedModule{},
@@ -69,9 +64,6 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		kubeModules = NewK3sCreateClusterPhase(runtime)
 	} else {
 		kubeModules = NewCreateClusterPhase(runtime)
-	}
-
-	if kubeModules == nil {
 	}
 
 	m = append(m, kubeModules...)

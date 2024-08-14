@@ -106,19 +106,10 @@ func (m *PreCheckOsModule) Init() {
 		Retry:    0,
 	}
 
-	copyPreInstallationDependencyFiles := &task.RemoteTask{
-		Name:     "CopyPreInstallationDependencyFiles",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(CopyPreInstallationDependencyFilesTask),
-		Parallel: false,
-		Retry:    0,
-	}
-
 	m.Tasks = []task.Interface{
 		patchAppArmor,
 		raspbianCheck,
 		disableDNS,
-		copyPreInstallationDependencyFiles,
 	}
 }
 

@@ -17,6 +17,9 @@
 package common
 
 import (
+	"os"
+	"strings"
+
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -114,6 +117,44 @@ type Storage struct {
 	StorageToken     string `json:"storage_token"`
 	StorageClusterId string `json:"storage_cluster_id"`
 	StorageBucket    string `json:"storage_bucket"`
+}
+
+func NewArgument(proxy string, registryMirrors string) *Argument {
+	return &Argument{
+		KsEnable:         true,
+		KsVersion:        DefaultKubeSphereVersion,
+		InstallPackages:  false,
+		SKipPushImages:   false,
+		ContainerManager: Containerd,
+		Proxy:            proxy,
+		RegistryMirrors:  registryMirrors,
+		IsCloudInstance:  strings.EqualFold(os.Getenv(EnvCloudInstanceName), TRUE),
+	}
+}
+
+func (a *Argument) SetStorage(storageType, storageBucket, storageAccessKey, storageSecretKey, storageToken string) {
+	a.Storage = &Storage{
+		StorageType:      storageType,
+		StorageBucket:    storageBucket,
+		StorageAccessKey: storageAccessKey,
+		StorageSecretKey: storageSecretKey,
+		StorageToken:     storageToken,
+		// StorageClusterId: storageClusterId,
+	}
+}
+
+func (a *Argument) SetMinikube(minikube bool, profile string) {
+	a.Minikube = minikube
+	a.MinikubeProfile = profile
+}
+
+func (a *Argument) SetKubernetesVersion(kubeType string) {
+	switch kubeType {
+	case K8s:
+		a.KubernetesVersion = DefaultK8sVersion
+	default:
+		a.KubernetesVersion = DefaultK3sVersion
+	}
 }
 
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {

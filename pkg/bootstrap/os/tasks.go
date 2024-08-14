@@ -270,9 +270,9 @@ type UninstallETCD struct {
 }
 
 func (s *UninstallETCD) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().SudoCmd("systemctl stop etcd && exit 0", false, false)
+	_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop etcd && exit 0", false, false)
 	for _, file := range etcdFiles {
-		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
+		_, _ = runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf %s", file), false, false)
 	}
 	return nil
 }

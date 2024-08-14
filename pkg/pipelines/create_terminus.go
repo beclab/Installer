@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	ctrl "bytetrade.io/web3os/installer/controllers"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -13,43 +14,26 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
 )
 
-func CliInstallTerminusPipeline(kubeType string, proxy string) error {
+func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
-		return fmt.Errorf("Kubernetes %s already installed", kubeVersion)
+		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
 	}
 
 	var userParms = phase.UserParameters()
-	var storageParms = phase.StorageParameters()
-	// var sp, _ = json.Marshal(storageParms)
-	// fmt.Printf("STORAGE: %s\n", string(sp))
 
-	arg := common.Argument{
-		KsEnable:         true,
-		KsVersion:        common.DefaultKubeSphereVersion,
-		InstallPackages:  false,
-		SKipPushImages:   false,
-		ContainerManager: common.Containerd,
-		User:             userParms,
-		Storage:          storageParms,
-	}
+	arg := common.NewArgument(opts.Proxy, opts.RegistryMirrors)
+	arg.SetKubernetesVersion(opts.KubeType)
+	arg.SetStorage(opts.StorageType, opts.StorageBucket, opts.StorageAccessKey, opts.StorageSecretKey, opts.StorageToken)
+	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 
-	if proxy != "" {
-		arg.Proxy = proxy
-	}
+	arg.User = userParms
 
-	switch kubeType {
-	case common.K3s:
-		arg.KubernetesVersion = common.DefaultK3sVersion
-	case common.K8s:
-		arg.KubernetesVersion = common.DefaultK8sVersion
-	}
-
-	runtime, err := common.NewKubeRuntime(common.AllInOne, arg)
+	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return nil
 	}
 
-	var p = cluster.CreateTerminus(arg, runtime)
+	var p = cluster.CreateTerminus(*arg, runtime)
 	if err := p.Start(); err != nil {
 		return fmt.Errorf("create terminus error %v", err)
 	}

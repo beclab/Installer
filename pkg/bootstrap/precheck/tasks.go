@@ -159,17 +159,6 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 	return nil
 }
 
-type CopyPreInstallationDependencyFilesTask struct {
-	action.BaseAction
-}
-
-func (t *CopyPreInstallationDependencyFilesTask) Execute(runtime connector.Runtime) error {
-	if utils.IsExist("/opt/deps/") {
-		// todo copy deps files
-	}
-	return nil
-}
-
 type GetSysInfoTask struct {
 	action.BaseAction
 }
