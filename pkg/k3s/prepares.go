@@ -84,3 +84,16 @@ func (p *CheckK3sUninstallScript) PreCheck(_ connector.Runtime) (bool, error) {
 
 	return false, nil
 }
+
+type CheckK3sKillAllScript struct {
+	common.KubePrepare
+}
+
+func (p *CheckK3sKillAllScript) PreCheck(_ connector.Runtime) (bool, error) {
+	var scriptPath = path.Join(common.BinDir, "k3s-killall.sh")
+	if util.IsExist(scriptPath) {
+		return true, nil
+	}
+
+	return false, nil
+}

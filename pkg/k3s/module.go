@@ -500,15 +500,24 @@ func (d *DeleteClusterModule) Init() {
 	d.Name = "DeleteClusterModule"
 	d.Desc = "Delete k3s cluster"
 
+	killScript := &task.RemoteTask{
+		Name:     "ExecKillAllScript(k3s)",
+		Hosts:    d.Runtime.GetHostsByRole(common.K8s),
+		Prepare:  new(CheckK3sKillAllScript),
+		Action:   new(ExecKillAllScript),
+		Parallel: false,
+	}
+
 	execScript := &task.RemoteTask{
 		Name:     "ExecUninstallScript(k3s)",
-		Desc:     "Exec k3s uninstall script",
 		Hosts:    d.Runtime.GetHostsByRole(common.K8s),
+		Prepare:  new(CheckK3sUninstallScript),
 		Action:   new(ExecUninstallScript),
-		Parallel: true,
+		Parallel: false,
 	}
 
 	d.Tasks = []task.Interface{
+		killScript,
 		execScript,
 	}
 }

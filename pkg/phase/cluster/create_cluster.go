@@ -31,7 +31,6 @@ func NewDarwinClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	m := []module.Module{
 		&kubesphere.CheckMacOsCommandModule{},
 		&images.PreloadImagesModule{Skip: false},
-		// &kubesphere.DownloadMinikubeBinaries{}, // discard
 		&kubesphere.DeployMiniKubeModule{},
 		&kubesphere.DeployModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // todo relative ks-installer
 		&ksplugins.DeployKsPluginsModule{},

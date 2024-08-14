@@ -80,7 +80,7 @@ func readDeleteCacheInput() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 LOOP:
-	fmt.Printf("\nDelete the locally stored image files? The installation system will prioritize loading local image files. [yes/no]:")
+	fmt.Printf("\nDelete the locally stored image files? The installation system will prioritize loading local image files. [yes/no]: ")
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err

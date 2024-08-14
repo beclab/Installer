@@ -350,6 +350,7 @@ func (r *ResetClusterModule) Init() {
 		Name:     "KubeadmReset(k8s)",
 		Desc:     "Reset the cluster using kubeadm",
 		Hosts:    r.Runtime.GetHostsByRole(common.K8s),
+		Prepare:  new(CheckKubeadmExist),
 		Action:   new(KubeadmReset),
 		Parallel: true,
 	}

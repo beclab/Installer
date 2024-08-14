@@ -47,10 +47,10 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
-		&precheck.PreCheckOsModule{}, // precheck_os()
-		&patch.InstallDepsModule{},   // install_deps
-		&os.ConfigSystemModule{},     // config_system
-		&storage.InitStorageModule{Skip: !args.IsCloudInstance},
+		&precheck.PreCheckOsModule{},                            // precheck_os()
+		&patch.InstallDepsModule{},                              // install_deps
+		&os.ConfigSystemModule{},                                // config_system
+		&storage.InitStorageModule{Skip: !args.IsCloudInstance}, // todo skip when WSL
 		&storage.InstallMinioModule{Skip: args.Storage.StorageType != common.Minio},
 		&storage.InstallRedisModule{},
 		&storage.InstallJuiceFsModule{},

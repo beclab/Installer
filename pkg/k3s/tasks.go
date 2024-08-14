@@ -512,15 +512,23 @@ func (s *SyncKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type ExecKillAllScript struct {
+	common.KubeAction
+}
+
+func (t *ExecKillAllScript) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload && /usr/local/bin/k3s-killall.sh",
+		true, false); err != nil {
+		return errors.Wrap(errors.WithStack(err), "add master NoSchedule taint failed")
+	}
+	return nil
+}
+
 type ExecUninstallScript struct {
 	common.KubeAction
 }
 
 func (e *ExecUninstallScript) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload && /usr/local/bin/k3s-killall.sh",
-		true, false); err != nil {
-		return errors.Wrap(errors.WithStack(err), "add master NoSchedule taint failed")
-	}
 	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload && /usr/local/bin/k3s-uninstall.sh",
 		true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "add master NoSchedule taint failed")

@@ -22,39 +22,16 @@ func DeleteMinikubePhase(args common.Argument, runtime *common.KubeRuntime) []mo
 }
 
 func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
-	var kubeModule []module.Module
-	switch runtime.Cluster.Kubernetes.Type {
-	case common.K3s:
-		kubeModule = newK3sDeleteClusterPhase(runtime)
-	case common.Kubernetes:
-		kubeModule = newK8sDeleteClusterPhase(runtime)
-	}
-	kubeModule = append(kubeModule,
-		&kubesphere.DeleteCacheModule{},
-		&storage.RemoveStorageModule{},
-		&k3s.UninstallK3sModule{},
-		&filesystem.DeleteInstalledModule{},
-	)
-
-	return kubeModule
-}
-
-func newK8sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	return []module.Module{
 		&kubernetes.ResetClusterModule{},
-		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
-		&os.ClearOSEnvironmentModule{},
-		&certs.UninstallAutoRenewCertsModule{},
-		&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
-	}
-}
-
-func newK3sDeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
-	return []module.Module{
 		&k3s.DeleteClusterModule{},
 		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
 		&os.ClearOSEnvironmentModule{},
 		&certs.UninstallAutoRenewCertsModule{},
 		&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
+		&kubesphere.DeleteCacheModule{},
+		&storage.RemoveStorageModule{},
+		&k3s.UninstallK3sModule{},
+		&filesystem.DeleteInstalledModule{},
 	}
 }

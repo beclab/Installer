@@ -22,6 +22,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"github.com/pkg/errors"
 )
 
@@ -147,4 +148,15 @@ func (g *GetKubeletVersion) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 	g.PipelineCache.Set(common.CacheKubeletVersion, kubeletVersion)
 	return true, nil
+}
+
+type CheckKubeadmExist struct {
+	common.KubePrepare
+}
+
+func (p *CheckKubeadmExist) PreCheck(runtime connector.Runtime) (bool, error) {
+	if util.IsExist("/usr/local/bin/kubeadm") {
+		return true, nil
+	}
+	return false, nil
 }
