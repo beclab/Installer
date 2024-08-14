@@ -20,11 +20,13 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	var userParms = phase.UserParameters()
+	// var storageParms = phase.StorageParameters()
 
-	arg := common.NewArgument(opts.Proxy, opts.RegistryMirrors)
+	arg := common.NewArgument()
 	arg.SetKubernetesVersion(opts.KubeType)
-	arg.SetStorage(opts.StorageType, opts.StorageBucket, opts.StorageAccessKey, opts.StorageSecretKey, opts.StorageToken)
+	// arg.SetStorage(storageParms) // todo
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
+	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)
 
 	arg.User = userParms
 

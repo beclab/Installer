@@ -18,7 +18,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/storage"
 )
 
-func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error { // minikube bool, deleteCache bool, deleteCRI bool
+func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	var input string
 	var err error
 	var kubeVersion = phase.GetCurrentKubeVersion()
@@ -36,20 +36,17 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		}
 	}
 
-	var args = common.Argument{
-		KubernetesVersion: kubeVersion,
-		ContainerManager:  common.Containerd,
-		Minikube:          opt.MiniKube,
-		DeleteCache:       strings.EqualFold(input, common.YES),
-		DeleteCRI:         opt.DeleteCRI,
-		IsCloudInstance:   formatIsCloudInstance(),
-		Storage: &common.Storage{
-			StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
-			StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
-		},
-	}
+	var arg = common.NewArgument()
+	arg.SetKubernetesVersion(kubeVersion)
+	arg.SetMinikube(opt.MiniKube, "")
+	arg.SetDeleteCRI(opt.DeleteCRI)
+	arg.SetDeleteCache(strings.EqualFold(input, common.YES))
+	arg.SetStorage(&common.Storage{
+		StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
+		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
+	})
 
-	runtime, err := common.NewKubeRuntime(common.AllInOne, args)
+	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return err
 	}
@@ -58,7 +55,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 
 	switch constants.OsType {
 	case common.Darwin:
-		m = append(m, cluster.DeleteMinikubePhase(args, runtime)...)
+		m = append(m, cluster.DeleteMinikubePhase(*arg, runtime)...)
 	default:
 		m = append(m, &precheck.GetStorageKeyModule{}, &storage.RemoveMountModule{})
 		m = append(m, cluster.DeleteClusterPhase(runtime)...)
@@ -83,7 +80,7 @@ func readDeleteCacheInput() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 LOOP:
-	fmt.Printf("\nDelete the local cached image files? [yes/no]:")
+	fmt.Printf("\nDelete the locally stored image files? The installation system will prioritize loading local image files. [yes/no]:")
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err

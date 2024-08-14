@@ -119,17 +119,20 @@ type Storage struct {
 	StorageBucket    string `json:"storage_bucket"`
 }
 
-func NewArgument(proxy string, registryMirrors string) *Argument {
+func NewArgument() *Argument {
 	return &Argument{
 		KsEnable:         true,
 		KsVersion:        DefaultKubeSphereVersion,
 		InstallPackages:  false,
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
-		Proxy:            proxy,
-		RegistryMirrors:  registryMirrors,
 		IsCloudInstance:  strings.EqualFold(os.Getenv(EnvCloudInstanceName), TRUE),
 	}
+}
+
+func (a *Argument) SetProxy(proxy string, registryMirrors string) {
+	a.Proxy = proxy
+	a.RegistryMirrors = registryMirrors
 }
 
 func (a *Argument) SetDeleteCache(deleteCache bool) {
@@ -140,15 +143,8 @@ func (a *Argument) SetDeleteCRI(deleteCRI bool) {
 	a.DeleteCRI = deleteCRI
 }
 
-func (a *Argument) SetStorage(storageType, storageBucket, storageAccessKey, storageSecretKey, storageToken string) {
-	a.Storage = &Storage{
-		StorageType:      storageType,
-		StorageBucket:    storageBucket,
-		StorageAccessKey: storageAccessKey,
-		StorageSecretKey: storageSecretKey,
-		StorageToken:     storageToken,
-		// StorageClusterId: storageClusterId,
-	}
+func (a *Argument) SetStorage(storage *Storage) {
+	a.Storage = storage
 }
 
 func (a *Argument) SetMinikube(minikube bool, profile string) {
