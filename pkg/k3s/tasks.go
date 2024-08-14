@@ -653,6 +653,8 @@ type UninstallK3s struct {
 
 func (t *UninstallK3s) Execute(runtime connector.Runtime) error {
 	var scriptPath = path.Join(common.BinDir, "k3s-uninstall.sh")
-	runtime.GetRunner().SudoCmdExt(scriptPath, false, true)
+	if _, err := runtime.GetRunner().Host.CmdExt(scriptPath, false, true); err != nil {
+		return err
+	}
 	return nil
 }
