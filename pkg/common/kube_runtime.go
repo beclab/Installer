@@ -87,14 +87,14 @@ type Argument struct {
 	// storage
 	Storage *Storage
 	AWS     *AwsHost
-	// request
-	Params  map[string]interface{}
+
 	Request any
 
 	IsCloudInstance bool
+	DeleteCache     bool
+
 	Minikube        bool
 	MinikubeProfile string
-	DeleteCache     bool
 }
 
 type AwsHost struct {

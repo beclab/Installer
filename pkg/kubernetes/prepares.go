@@ -160,3 +160,16 @@ func (p *CheckKubeadmExist) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 	return false, nil
 }
+
+type CheckKubectlExist struct {
+	common.KubePrepare
+}
+
+func (p *CheckKubectlExist) PreCheck(runtime connector.Runtime) (bool, error) {
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil || kubectlpath == "" {
+		return false, fmt.Errorf("kubectl not found")
+	}
+
+	return false, nil
+}

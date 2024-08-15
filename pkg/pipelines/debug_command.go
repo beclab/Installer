@@ -1,29 +1,22 @@
 package pipelines
 
 import (
+	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
-	"bytetrade.io/web3os/installer/pkg/images"
 )
 
 func DebugCommand() error {
-	args := common.Argument{
-		KsEnable:          true,
-		KsVersion:         common.DefaultKubeSphereVersion,
-		KubernetesVersion: common.DefaultK3sVersion,
-		InstallPackages:   false,
-		SKipPushImages:    false,
-		ContainerManager:  common.Containerd,
-	}
+	var arg = common.NewArgument()
 
-	runtime, err := common.NewKubeRuntime(common.AllInOne, args)
+	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return err
 	}
 
 	m := []module.Module{
-		&images.PullModule{},
+		&precheck.GreetingsModule{},
 	}
 
 	p := pipeline.Pipeline{

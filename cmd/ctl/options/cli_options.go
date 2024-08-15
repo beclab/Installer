@@ -72,3 +72,15 @@ func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.StorageSecretKey, "storage-secret-key", "", "This parameter needs to be set when the storage type is S3 or OSS")
 	cmd.Flags().StringVar(&o.StorageToken, "storage-token", "", "This parameter needs to be set when the storage type is S3 or OSS")
 }
+
+type ChangeIPOptions struct {
+	LastIP string
+}
+
+func NewChangeIPOptions() *ChangeIPOptions {
+	return &ChangeIPOptions{}
+}
+
+func (o *ChangeIPOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&o.LastIP, "last-ip", "", "Set last IP")
+}

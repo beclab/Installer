@@ -87,7 +87,6 @@ func InitLog(logDir string) {
 		zapcore.NewCore(zapcore.NewJSONEncoder(fileEncoder), zapcore.AddSync(file), filePriority),
 	)
 	logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.FatalLevel)).Sugar()
-	defer logger.Sync()
 }
 
 func isDirExist(path string) (bool, error) {
@@ -122,6 +121,9 @@ func getLevel(level string) (l zapcore.Level) {
 }
 
 func Sync() error {
+	if logger == nil {
+		return nil
+	}
 	return logger.Sync()
 }
 
