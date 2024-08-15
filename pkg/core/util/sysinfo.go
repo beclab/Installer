@@ -18,8 +18,8 @@ func GetHost() ([]string, error) {
 		return nil, err
 	}
 
-	var res = make([]string, 0, 6)
-	res = append(res, hostInfo.Hostname, hostInfo.HostID, hostInfo.OS, hostInfo.Platform, hostInfo.PlatformVersion, hostInfo.KernelArch)
+	var res = make([]string, 0, 8)
+	res = append(res, hostInfo.Hostname, hostInfo.HostID, hostInfo.OS, hostInfo.Platform, hostInfo.PlatformVersion, hostInfo.KernelArch, hostInfo.VirtualizationRole, hostInfo.VirtualizationSystem)
 
 	return res, nil
 }

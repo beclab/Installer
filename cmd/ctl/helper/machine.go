@@ -47,6 +47,8 @@ func getHost() {
 	constants.OsPlatform = host[3]
 	constants.OsVersion = host[4]
 	constants.OsArch = utils.ArchAlias(host[5]) //host[5]
+	constants.VirtualizationRole = host[6]
+	constants.VirtualizationSystem = host[7]
 }
 
 func getCpu() {

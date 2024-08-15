@@ -171,6 +171,7 @@ func (t *GetSysInfoTask) Execute(runtime connector.Runtime) error {
 	logger.Infof("disk info, total: %s, free: %s", utils.FormatBytes(int64(constants.DiskTotal)), utils.FormatBytes(int64(constants.DiskFree)))
 	logger.Infof("mem info, total: %s, free: %s", utils.FormatBytes(int64(constants.MemTotal)), utils.FormatBytes(int64(constants.MemFree)))
 	logger.Infof("cgroup info, cpu: %d, mem: %d", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
+	logger.Infof("virtualization info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
 
 	return nil
 }
