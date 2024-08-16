@@ -20,10 +20,10 @@ const (
 	TerminusKey        = ".terminus"
 	ManifestDir        = "manifest"
 	ImageCacheDir      = "images"
-	DepsCacheDir       = "components"
 	PackageCacheDir    = "pkg"
 	BuildFilesCacheDir = "files"
 	BuildDir           = "build"
+	GpuDir             = "gpu"
 
 	// KubeKey = "kubekey"
 	KubeKey           = "pkg"

@@ -34,6 +34,12 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 	}
 	m = append(m, kubeModules...)
 
+	m = append(m,
+		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
+	)
+
 	return &pipeline.Pipeline{
 		Name:    "Initialize KubeSphere",
 		Modules: m,

@@ -10,6 +10,7 @@ func NewCmdDebugOs() *cobra.Command {
 		Use:   "debug",
 		Short: "Debug Command",
 		Run: func(cmd *cobra.Command, args []string) {
+
 			pipelines.DebugCommand()
 		},
 	}

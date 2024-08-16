@@ -14,8 +14,23 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
+	k3sGpuTemplates "bytetrade.io/web3os/installer/pkg/gpu/templates"
+	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
+
+type CopyEmbedGpuFiles struct {
+	common.KubeAction
+}
+
+func (t *CopyEmbedGpuFiles) Execute(runtime connector.Runtime) error {
+	var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir)
+	if err := utils.CopyEmbed(assets, ".", dst); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 type InstallCudaDeps struct {
 	common.KubeAction
@@ -124,10 +139,76 @@ func (t *InstallNvidiaContainerToolkit) Execute(runtime connector.Runtime) error
 	return nil
 }
 
-type PatchK3s struct { // patch k3s on wsl
+type PatchK3sDriver struct { // patch k3s on wsl
 	common.KubeAction
 }
 
-func (t *PatchK3s) Execute(runtime connector.Runtime) error {
+func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
+	var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
+	driverPath, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
+	if err != nil {
+		return err
+	}
+
+	if driverPath == "" {
+		logger.Debugf("cuda driver not found")
+		return nil
+	} else {
+		logger.Debugf("cuda driver found: %s", driverPath)
+	}
+
+	templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", k3sGpuTemplates.K3sCudaFixValues.Name()))
+	}
+
+	var fixName = "cuda_lib_fix.sh"
+	var fixPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
+	if err := util.WriteFile(fixPath, []byte(templateStr), cc.FileMode0755); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fixPath))
+	}
+
+	var dstName = path.Join(common.BinDir, fixName)
+	if err := runtime.GetRunner().SudoScp(fixPath, dstName); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fixPath, dstName))
+	}
+
+	cmd = fmt.Sprintf("echo 'ExecStartPre=-/usr/local/bin/%s' >> /etc/systemd/system/k3s.service", fixName)
+	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+		return err
+	}
+
+	if _, err := runtime.GetRunner().SudoCmdExt("systemctl daemon-reload", false, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type RestartContainerd struct {
+	common.KubeAction
+}
+
+func (t *RestartContainerd) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().SudoCmdExt("nvidia-ctk runtime configure --runtime=containerd --set-as-default", false, true); err != nil {
+		return err
+	}
+
+	if _, err := runtime.GetRunner().SudoCmdExt("systemctl restart containerd", false, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+type InstallPlugin struct {
+	common.KubeAction
+}
+
+func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
+	var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir)
+	if err := utils.CopyEmbed(assets, ".", dst); err != nil {
+		return err
+	}
+
 	return nil
 }

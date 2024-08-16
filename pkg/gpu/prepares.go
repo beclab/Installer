@@ -34,3 +34,11 @@ func (p *PatchWslK3s) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 	return false, nil
 }
+
+type GPUSharePrepare struct {
+	common.KubePrepare
+}
+
+func (p *GPUSharePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
+	return p.KubeConf.Arg.GPU.Share, nil
+}

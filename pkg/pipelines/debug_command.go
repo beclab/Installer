@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
@@ -24,9 +23,10 @@ func DebugCommand() error {
 	}
 
 	m := []module.Module{
-		&precheck.GreetingsModule{},
-		&precheck.GetSysInfoModel{},
-		&gpu.InstallDepsModule{},
+		// &precheck.GreetingsModule{},
+		// &precheck.GetSysInfoModel{},
+		// &gpu.InstallDepsModule{},
+		&gpu.InstallPluginModule{Skip: false},
 	}
 
 	p := pipeline.Pipeline{
