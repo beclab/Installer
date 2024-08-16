@@ -21,7 +21,6 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	arg := common.NewArgument()
 	arg.SetKubernetesVersion(opts.KubeType, "")
-	// arg.SetStorage(storageParms) // todo
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 	arg.SetWSL(opts.WSL)
 	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)

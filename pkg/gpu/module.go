@@ -1,6 +1,8 @@
 package gpu
 
 import (
+	"time"
+
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
@@ -18,59 +20,72 @@ func (m *InstallDepsModule) IsSkip() bool {
 func (m *InstallDepsModule) Init() {
 	m.Name = "InstallGPU"
 
-	copyEmbedGpuFiles := &task.LocalTask{
-		Name: "CopyFiles",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	copyEmbedGpuFiles := &task.RemoteTask{
+		Name:  "CopyFiles",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
 		},
-		Action: new(CopyEmbedGpuFiles),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(CopyEmbedGpuFiles),
+		Parallel: false,
+		Retry:    1,
 	}
 
-	installCudaDeps := &task.LocalTask{
-		Name: "InstallCudaKeyRing",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	installCudaDeps := &task.RemoteTask{
+		Name:  "InstallCudaKeyRing",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
+			&common.OsType{
+				OsType: common.Ubuntu, // ! only ubuntu
+			},
+			&common.OsVersion{
+				OsVersion: map[string]bool{
+					"20.04": true,
+					"22.04": true,
+					"24.04": false,
+				},
+			},
 		},
-		Action: new(InstallCudaDeps),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(InstallCudaDeps),
+		Parallel: false,
+		Retry:    1,
 	}
 
-	installCudaDriver := &task.LocalTask{
-		Name: "InstallNvidiaDriver",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	installCudaDriver := &task.RemoteTask{ // not for WSL
+		Name:  "InstallNvidiaDriver",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
+			&common.Skip{
+				Not: !m.KubeConf.Arg.WSL,
+			},
 		},
-		Action: new(InstallCudaDriver),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(InstallCudaDriver),
+		Parallel: false,
+		Retry:    1,
 	}
 
-	updateCudaSource := &task.LocalTask{
-		Name: "UpdateNvidiaToolkitSource",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	updateCudaSource := &task.RemoteTask{
+		Name:  "UpdateNvidiaToolkitSource",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
 		},
-		Action: new(UpdateCudaSource),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(UpdateCudaSource),
+		Parallel: false,
+		Retry:    1,
 	}
 
-	installNvidiaContainerToolkit := &task.LocalTask{
-		Name: "InstallNvidiaToolkit",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	installNvidiaContainerToolkit := &task.RemoteTask{
+		Name:  "InstallNvidiaToolkit",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
 		},
-		Action: new(InstallNvidiaContainerToolkit),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(InstallNvidiaContainerToolkit),
+		Parallel: false,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
@@ -94,16 +109,16 @@ func (m *RestartK3sServiceModule) IsSkip() bool {
 func (m *RestartK3sServiceModule) Init() {
 	m.Name = "RestartK3sService"
 
-	patchK3sDriver := &task.LocalTask{
-		Name: "PatchK3sDriver",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	patchK3sDriver := &task.RemoteTask{
+		Name:  "PatchK3sDriver",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
 			new(PatchWslK3s),
 		},
-		Action: new(PatchK3sDriver),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(PatchK3sDriver),
+		Parallel: false,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
@@ -123,15 +138,15 @@ func (m *RestartContainerdModule) IsSkip() bool {
 func (m *RestartContainerdModule) Init() {
 	m.Name = "RestartContainerd"
 
-	restartContainerd := &task.LocalTask{
-		Name: "RestartContainerd",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	restartContainerd := &task.RemoteTask{
+		Name:  "RestartContainerd",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
 		},
-		Action: new(RestartContainerd),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(RestartContainerd),
+		Parallel: false,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
@@ -151,18 +166,44 @@ func (m *InstallPluginModule) IsSkip() bool {
 func (m *InstallPluginModule) Init() {
 	m.Name = "InstallPlugin"
 
-	installPlugin := &task.LocalTask{
-		Name: "InstallPlugin",
-		// Hosts: m.Runtime.GetHostsByRole(common.Master),
+	installPlugin := &task.RemoteTask{
+		Name:  "InstallPlugin",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			// new(common.OnlyFirstMaster),
+			new(common.OnlyFirstMaster),
 		},
-		Action: new(InstallPlugin),
-		// Parallel: false,
-		Retry: 1,
+		Action:   new(InstallPlugin),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	checkGpuState := &task.RemoteTask{
+		Name:  "CheckGPUState",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+		},
+		Action:   new(CheckGpuStatus),
+		Parallel: false,
+		Retry:    50,
+		Delay:    10 * time.Second,
+	}
+
+	installGPUShared := &task.RemoteTask{
+		Name:  "InstallGPUShared",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			new(GPUSharePrepare),
+		},
+		Action:   new(InstallGPUShared),
+		Parallel: false,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
 		installPlugin,
+		checkGpuState,
+		installGPUShared,
 	}
 }

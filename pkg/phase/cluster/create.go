@@ -31,14 +31,15 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 		} else {
 			kubeModules = NewCreateClusterPhase(runtime)
 		}
+
+		kubeModules = append(kubeModules,
+			&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
+			&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
+			&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
+			&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
+		)
 	}
 	m = append(m, kubeModules...)
-
-	m = append(m,
-		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
-		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
-		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
-	)
 
 	return &pipeline.Pipeline{
 		Name:    "Initialize KubeSphere",
@@ -48,22 +49,8 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 }
 
 func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipeline {
-	var m []module.Module
-
-	m = []module.Module{
-		&precheck.GreetingsModule{},
-		&precheck.GetSysInfoModel{},
-		&gpu.InstallDepsModule{},
-	}
-
-	return &pipeline.Pipeline{
-		Name:    "Install Terminus",
-		Modules: m,
-		Runtime: runtime,
-	}
-
 	// TODO: the installation process needs to distinguish between macOS and Linux.
-	m = []module.Module{
+	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
@@ -85,6 +72,13 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	} else {
 		kubeModules = NewCreateClusterPhase(runtime)
 	}
+
+	kubeModules = append(kubeModules,
+		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
+	)
 
 	m = append(m, kubeModules...)
 

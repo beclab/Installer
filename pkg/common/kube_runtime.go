@@ -134,6 +134,9 @@ func NewArgument() *Argument {
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
 		IsCloudInstance:  strings.EqualFold(os.Getenv(EnvCloudInstanceName), TRUE),
+		Storage: &Storage{
+			StorageType: Minio,
+		},
 	}
 }
 

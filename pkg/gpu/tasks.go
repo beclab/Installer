@@ -205,8 +205,57 @@ type InstallPlugin struct {
 }
 
 func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
-	var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir)
-	if err := utils.CopyEmbed(assets, ".", dst); err != nil {
+	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	var pluginFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvidia-device-plugin.yml")
+
+	var cmd = fmt.Sprintf("%s create -f %s", kubectl, pluginFile)
+	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type CheckGpuStatus struct {
+	common.KubeAction
+}
+
+func (t *CheckGpuStatus) Execute(runtime connector.Runtime) error {
+	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	cmd := fmt.Sprintf("%s get pod  -n gpu-system -l 'app=orionx-container-runtime' -o jsonpath='{.items[*].status.phase}'", kubectl)
+
+	rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if rphase == "Running" {
+		return nil
+	}
+	return fmt.Errorf("GPU Container State is Pending")
+
+}
+
+type InstallGPUShared struct {
+	common.KubeAction
+}
+
+func (t *InstallGPUShared) Execute(runtime connector.Runtime) error {
+	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+
+	fileName := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system.yaml")
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
+		return err
+	}
+
+	fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system-quotas.yaml")
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
+		return err
+	}
+
+	fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "device-plugin.yaml")
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
+		return err
+	}
+
+	fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "scheduler.yaml")
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 

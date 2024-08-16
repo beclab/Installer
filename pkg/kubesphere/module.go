@@ -203,8 +203,21 @@ func (c *CheckResultModule) Init() {
 		Delay:    10 * time.Second,
 	}
 
+	getKubeCommand := &task.RemoteTask{
+		Name:  "GetKubeCommand",
+		Hosts: c.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			new(NotEqualDesiredVersion),
+		},
+		Action:   new(GetKubeCommand),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	c.Tasks = []task.Interface{
 		check,
+		getKubeCommand,
 	}
 }
 

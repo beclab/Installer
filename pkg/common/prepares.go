@@ -11,6 +11,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Skip struct {
+	KubePrepare
+	Not bool
+}
+
+func (p *Skip) PreCheck(runtime connector.Runtime) (bool, error) {
+	return !p.Not, nil
+}
+
 type Stop struct {
 	prepare.BasePrepare
 }
@@ -120,4 +129,25 @@ func (p *OsType) PreCheck(runtime connector.Runtime) (bool, error) {
 		return !isOs, nil
 	}
 	return isOs, nil
+}
+
+type OsVersion struct {
+	KubePrepare
+	OsVersion map[string]bool
+}
+
+func (p *OsVersion) PreCheck(runtime connector.Runtime) (bool, error) {
+	if p.OsVersion == nil || len(p.OsVersion) == 0 {
+		return false, nil
+	}
+
+	var flag = false
+	for k, v := range p.OsVersion {
+		if k == constants.OsVersion {
+			flag = v
+			break
+		}
+	}
+
+	return flag, nil
 }

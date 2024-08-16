@@ -25,7 +25,7 @@ func DebugCommand() error {
 	m := []module.Module{
 		// &precheck.GreetingsModule{},
 		// &precheck.GetSysInfoModel{},
-		// &gpu.InstallDepsModule{},
+		&gpu.InstallDepsModule{},
 		&gpu.InstallPluginModule{Skip: false},
 	}
 
