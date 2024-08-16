@@ -7,6 +7,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
+	"bytetrade.io/web3os/installer/pkg/gpu"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/storage"
 )
@@ -19,7 +20,6 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 		&plugins.GenerateCachedModule{},
 		&plugins.CopyManifestModule{},
 		&plugins.CopyEmbed{},
-		// &images.PreloadImagesModule{},
 	}
 
 	var kubeModules []module.Module
@@ -42,8 +42,22 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 }
 
 func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipeline {
+	var m []module.Module
+
+	m = []module.Module{
+		&precheck.GreetingsModule{},
+		&precheck.GetSysInfoModel{},
+		&gpu.InstallDepsModule{},
+	}
+
+	return &pipeline.Pipeline{
+		Name:    "Install Terminus",
+		Modules: m,
+		Runtime: runtime,
+	}
+
 	// TODO: the installation process needs to distinguish between macOS and Linux.
-	m := []module.Module{
+	m = []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},

@@ -70,6 +70,7 @@ const (
 	miniooperator = "minio-operator"
 	redis         = "redis"
 	juicefs       = "juicefs"
+	cudakeyring   = "cuda-keyring"
 	installwizard = "install-wizard"
 )
 
@@ -87,6 +88,7 @@ const (
 	INSTALL    = "install"
 	COMPONENT  = "component"
 	PATCH      = "patch"
+	GPU        = "gpu"
 )
 
 type KubeBinary struct {
@@ -304,6 +306,12 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type) // /{HOME}/.terminus/install/*
+	case cudakeyring:
+		component.Type = GPU
+		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)
+		component.Url = getCudaKeyringUrl(arch, constants.OsPlatform, version)
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type)
 	default:
 		logger.Fatalf("unsupported kube binaries %s", name)
 	}

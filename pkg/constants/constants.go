@@ -16,6 +16,7 @@ var (
 	OsPlatform           string
 	OsVersion            string
 	OsArch               string
+	OsKernel             string
 	VirtualizationRole   string
 	VirtualizationSystem string
 	CpuModel             string

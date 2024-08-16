@@ -19,16 +19,17 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
 	}
 
-	var userParms = phase.UserParameters()
-	// var storageParms = phase.StorageParameters()
-
 	arg := common.NewArgument()
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	// arg.SetStorage(storageParms) // todo
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
+	arg.SetWSL(opts.WSL)
 	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)
+	arg.SetGPU(opts.GpuEnable, opts.GpuShare)
 
-	arg.User = userParms
+	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
+		return err
+	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {

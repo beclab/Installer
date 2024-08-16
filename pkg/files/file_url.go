@@ -1,5 +1,10 @@
 package files
 
+import (
+	"fmt"
+	"strings"
+)
+
 var (
 	EtcdUrl   = "https://github.com/coreos/etcd/releases/download/%s/etcd-%s-linux-%s.tar.gz"
 	EtcdUrlCN = "https://kubernetes-release.pek3b.qingstor.com/etcd/release/download/%s/etcd-%s-linux-%s.tar.gz"
@@ -61,4 +66,33 @@ var (
 	RedisUrl = "https://download.redis.io/releases/redis-%s.tar.gz"
 
 	JuiceFsUrl = "https://github.com/beclab/juicefs-ext/releases/download/%s/juicefs-%s-linux-%s.tar.gz"
+
+	CudaKeyringUbuntu24Amd64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb"
+	CudaKeyringUbuntu24Arm64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/arm64/cuda-keyring_1.1-1_all.deb"
+
+	// https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+	CudaKeyringUbuntu22Amd64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb"
+	// https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb
+	CudaKeyringUbuntu22Arm64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.0-1_all.deb"
+
+	// https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
+	CudaKeyringUbuntu20Amd64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb"
+	// https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.1-1_all.deb
+	CudaKeyringUbuntu20Arm64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.0-1_all.deb"
+
+	CudaKeyringUrl = "https://developer.download.nvidia.com/compute/cuda/repos/%s/%s/cuda-keyring_%s-1_all.deb" // arm64  x86_64
 )
+
+func getCudaKeyringUrl(arch string, os string, cudaversion string) string {
+	var version string
+
+	if strings.Contains(os, "24.") {
+		version = "ubuntu2404"
+	} else if strings.Contains(os, "22.") {
+		version = "ubuntu2204"
+	} else {
+		version = "ubuntu2004"
+	}
+
+	return fmt.Sprintf(CudaKeyringUrl, version, arch, cudaversion)
+}

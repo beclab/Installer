@@ -347,6 +347,19 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("APIServer State is Pending")
 	}
 
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil || kubectlpath == "" {
+		return fmt.Errorf("kubectl not found")
+	}
+
+	helmpath, err := util.GetCommand(common.CommandHelm)
+	if err != nil || helmpath == "" {
+		return fmt.Errorf("helm not found")
+	}
+
+	c.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
+	c.PipelineCache.Set(common.CacheCommandHelmPath, kubectlpath)
+
 	return nil
 
 	// // var (

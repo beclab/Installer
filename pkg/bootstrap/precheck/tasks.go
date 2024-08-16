@@ -166,12 +166,13 @@ type GetSysInfoTask struct {
 func (t *GetSysInfoTask) Execute(runtime connector.Runtime) error {
 	logger.Infof("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, version: %s, arch: %s",
 		constants.CurrentUser, constants.HostName, constants.HostId, constants.OsType, constants.OsPlatform, constants.OsVersion, constants.OsArch)
+	logger.Infof("kernel info, version: %s", constants.OsKernel)
+	logger.Infof("virtual info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
 	logger.Infof("cpu info, model: %s, logical count: %d, physical count: %d",
 		constants.CpuModel, constants.CpuLogicalCount, constants.CpuPhysicalCount)
 	logger.Infof("disk info, total: %s, free: %s", utils.FormatBytes(int64(constants.DiskTotal)), utils.FormatBytes(int64(constants.DiskFree)))
 	logger.Infof("mem info, total: %s, free: %s", utils.FormatBytes(int64(constants.MemTotal)), utils.FormatBytes(int64(constants.MemFree)))
 	logger.Infof("cgroup info, cpu: %d, mem: %d", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
-	logger.Infof("virtualization info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
 
 	return nil
 }

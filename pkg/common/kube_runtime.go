@@ -17,6 +17,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -59,6 +60,7 @@ type Argument struct {
 	ImagesDir        string
 	Namespace        string
 	DeleteCRI        bool
+	DeleteCache      bool
 	Role             string
 	Type             string
 
@@ -87,14 +89,14 @@ type Argument struct {
 	// storage
 	Storage *Storage
 	AWS     *AwsHost
-	// request
-	Params  map[string]interface{}
+	GPU     *GPU
+
 	Request any
 
 	IsCloudInstance bool
 	Minikube        bool
 	MinikubeProfile string
-	DeleteCache     bool
+	WSL             bool
 }
 
 type AwsHost struct {
@@ -119,6 +121,11 @@ type Storage struct {
 	StorageBucket    string `json:"storage_bucket"`
 }
 
+type GPU struct {
+	Enable bool
+	Share  bool
+}
+
 func NewArgument() *Argument {
 	return &Argument{
 		KsEnable:         true,
@@ -127,6 +134,13 @@ func NewArgument() *Argument {
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
 		IsCloudInstance:  strings.EqualFold(os.Getenv(EnvCloudInstanceName), TRUE),
+	}
+}
+
+func (a *Argument) SetGPU(enable bool, share bool) {
+	a.GPU = &GPU{
+		Enable: enable,
+		Share:  share,
 	}
 }
 
@@ -152,6 +166,10 @@ func (a *Argument) SetMinikube(minikube bool, profile string) {
 	a.MinikubeProfile = profile
 }
 
+func (a *Argument) SetWSL(wsl bool) {
+	a.WSL = wsl
+}
+
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 	if kubeVersion != "" {
 		a.KubernetesVersion = kubeVersion
@@ -164,6 +182,17 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 	default:
 		a.KubernetesVersion = DefaultK3sVersion
 	}
+}
+
+func (a *Argument) ArgValidate() error {
+	if a.Minikube && constants.OsType != Darwin {
+		return fmt.Errorf("arch invalid, only support --minikube for macOS")
+	}
+	if a.WSL && !strings.Contains(constants.OsKernel, "WSL") {
+		return fmt.Errorf("arch invalid, only support --wsl for Windows")
+	}
+
+	return nil
 }
 
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {

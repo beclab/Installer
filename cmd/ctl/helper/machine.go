@@ -49,6 +49,7 @@ func getHost() {
 	constants.OsArch = utils.ArchAlias(host[5]) //host[5]
 	constants.VirtualizationRole = host[6]
 	constants.VirtualizationSystem = host[7]
+	constants.OsKernel = host[8] // maybe with WSL2
 }
 
 func getCpu() {

@@ -16,9 +16,10 @@ func NewCmdOs() *cobra.Command {
 	_ = exec.Command("/bin/bash", "-c", "ulimit -n 65535").Run()
 
 	rootOsCmd.AddCommand(NewCmdInstallOs())
-	// rootOsCmd.AddCommand(NewCmdRestoreOs())
-	rootOsCmd.AddCommand(NewCmdUninstallOs())
-	// rootOsCmd.AddCommand(NewCmdDebugOs())
 	rootOsCmd.AddCommand(NewCmdInitializeOs())
+	rootOsCmd.AddCommand(NewCmdUninstallOs())
+	// rootOsCmd.AddCommand(NewCmdChangeIP())
+	rootOsCmd.AddCommand(NewCmdDebugOs())
+	// rootOsCmd.AddCommand(NewCmdRestoreOs())
 	return rootOsCmd
 }

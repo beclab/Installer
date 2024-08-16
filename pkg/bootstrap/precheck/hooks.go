@@ -34,10 +34,10 @@ func (h *PrintMachineInfoHook) Try() error {
 	fmt.Printf("MACHINE, hostname: %s, cpu: %d, mem: %s, disk: %s, local-ip: %s\n",
 		constants.HostName, constants.CpuPhysicalCount, utils.FormatBytes(int64(constants.MemTotal)),
 		utils.FormatBytes(int64(constants.DiskTotal)), constants.LocalIp)
-	fmt.Printf("SYSTEM, os: %s, platform: %s, arch: %s, version: %s\nCGROUP, cpu-enabled: %d, memory-enabled: %d\n",
-		constants.OsType, constants.OsPlatform, constants.OsArch, constants.OsVersion,
-		constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled,
-	)
+	fmt.Printf("SYSTEM, os: %s, platform: %s, arch: %s, version: %s\nKERNEL: version: %s\n", constants.OsType, constants.OsPlatform, constants.OsArch, constants.OsVersion, constants.OsKernel)
+	fmt.Printf("VIRTUAL, role: %s, system: %s\n", constants.VirtualizationRole, constants.VirtualizationSystem)
+	fmt.Printf("CGROUP, cpu-enabled: %d, memory-enabled: %d\n", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
+
 	if constants.InstalledKubeVersion != "" {
 		fmt.Printf("KUBE, version: %s\n", constants.InstalledKubeVersion)
 	}
