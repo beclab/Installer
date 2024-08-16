@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/registry"
 
@@ -39,6 +40,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/k3s/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v4/net"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	versionutil "k8s.io/apimachinery/pkg/util/version"
@@ -664,5 +666,32 @@ func (t *UninstallK3s) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().Host.CmdExt(scriptPath, false, true); err != nil {
 		return err
 	}
+	return nil
+}
+
+type DeleteCalicoCNI struct {
+	common.KubeAction
+}
+
+func (t *DeleteCalicoCNI) Execute(runtime connector.Runtime) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ifInfo, _ := net.InterfacesWithContext(ctx)
+	if ifInfo == nil {
+		return nil
+	}
+
+	for _, i := range ifInfo {
+		var name = i.Name
+		if len(name) < 5 || name[0:4] != "cali" {
+			continue
+		}
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("ip link delete %s", name), false, false); err != nil {
+			logger.Errorf("delete ip link %s error %v", name, err)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
 	return nil
 }

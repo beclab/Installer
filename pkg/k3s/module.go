@@ -554,8 +554,15 @@ func (m *UninstallK3sModule) Init() {
 		Action:  new(UninstallK3s),
 	}
 
+	deleteCalicoCNI := &task.LocalTask{
+		Name:   "DeleteCalicoCNI",
+		Action: new(DeleteCalicoCNI),
+		Retry:  1,
+	}
+
 	m.Tasks = []task.Interface{
 		uninstallK3s,
+		deleteCalicoCNI,
 	}
 }
 
