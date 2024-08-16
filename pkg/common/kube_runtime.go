@@ -43,6 +43,7 @@ type Argument struct {
 	KubernetesVersion   string
 	KsEnable            bool
 	KsVersion           string
+	TerminusVersion     string
 	Debug               bool
 	IgnoreErr           bool
 	SkipPullImages      bool
@@ -145,6 +146,17 @@ func (a *Argument) SetGPU(enable bool, share bool) {
 		Enable: enable,
 		Share:  share,
 	}
+}
+
+func (a *Argument) SetTerminusVersion(version string) {
+	if version == "" || len(version) <= 2 {
+		return
+	}
+
+	if version[0] == 'v' {
+		version = version[1:]
+	}
+	a.TerminusVersion = version
 }
 
 func (a *Argument) SetProxy(proxy string, registryMirrors string) {

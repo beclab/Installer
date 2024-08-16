@@ -85,7 +85,7 @@ const (
 	REGISTRY   = "registry"
 	CONTAINERD = "containerd"
 	RUNC       = "runc"
-	INSTALL    = "install"
+	WIZARD     = "wizard"
 	COMPONENT  = "component"
 	PATCH      = "patch"
 	GPU        = "gpu"
@@ -301,11 +301,11 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case installwizard:
-		component.Type = INSTALL
+		component.Type = WIZARD
 		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
 		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
 		component.CheckSum = false
-		component.BaseDir = filepath.Join(prePath, component.Type) // /{HOME}/.terminus/install/*
+		component.BaseDir = filepath.Join(prePath, component.Type)
 	case cudakeyring:
 		component.Type = GPU
 		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)

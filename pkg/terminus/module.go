@@ -30,3 +30,22 @@ func (m *SetupWs) Init() {
 		setUserInfo,
 	}
 }
+
+type InstallWizardDownloadModule struct {
+	common.KubeModule
+	Version string
+}
+
+func (m *InstallWizardDownloadModule) Init() {
+	m.Name = "DownloadInstallWizard"
+
+	download := &task.LocalTask{
+		Name:   "DownloadInstallWizard",
+		Action: new(Download),
+		Retry:  1,
+	}
+
+	m.Tasks = []task.Interface{
+		download,
+	}
+}

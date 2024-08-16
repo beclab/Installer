@@ -24,8 +24,8 @@ func DeleteMinikubePhase(args common.Argument, runtime *common.KubeRuntime) []mo
 
 func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	return []module.Module{
-		&kubernetes.ResetClusterModule{},
 		&k3s.DeleteClusterModule{},
+		&kubernetes.ResetClusterModule{},
 		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
 		&os.ClearOSEnvironmentModule{},
 		&certs.UninstallAutoRenewCertsModule{},

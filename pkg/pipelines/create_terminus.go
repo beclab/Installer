@@ -19,8 +19,10 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
 	}
 
+	fmt.Println("---a1---", opts.Version)
 	arg := common.NewArgument()
 	arg.SetKubernetesVersion(opts.KubeType, "")
+	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 	arg.SetWSL(opts.WSL)
 	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)

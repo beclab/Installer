@@ -44,6 +44,7 @@ func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
 }
 
 type CliTerminusInstallOptions struct {
+	Version          string
 	KubeType         string
 	Proxy            string
 	RegistryMirrors  string
@@ -64,6 +65,7 @@ func NewCliTerminusInstallOptions() *CliTerminusInstallOptions {
 }
 
 func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&o.Version, "version", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
 	cmd.Flags().StringVar(&o.KubeType, "kube", "k3s", "Set kube type, e.g., k3s or k8s")
 	cmd.Flags().StringVar(&o.Proxy, "proxy", "", "Set proxy address, e.g., 192.168.50.32 or your-proxy-domain")
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
