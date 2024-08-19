@@ -493,7 +493,7 @@ func (b *KubeBinary) Download() error {
 		if err := resp.Err(); err != nil {
 			logger.Errorf("Download failed: %v", err)
 			if i == 1 {
-				line <- []interface{}{"All download attempts failed", common.StateFail, 0}
+				line <- []interface{}{"All download attempts failed", common.StateFail, float64(0)}
 				logger.Error("All download attempts failed")
 				return err
 			}
@@ -510,7 +510,7 @@ func (b *KubeBinary) Download() error {
 		if err := b.SHA256Check(); err != nil { // ~ checksum
 			logger.Errorf("SHA256 check failed: %v", err)
 			if i == 1 {
-				line <- []interface{}{fmt.Sprintf("SHA256 check failed: %v", err), common.StateFail, 0}
+				line <- []interface{}{fmt.Sprintf("SHA256 check failed: %v", err), common.StateFail, float64(0)}
 				return err
 			}
 			path := b.Path()
