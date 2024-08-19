@@ -18,6 +18,49 @@ import (
 	"github.com/pkg/errors"
 )
 
+type DownloadStorageBinaries struct {
+	common.KubeAction
+}
+
+func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
+	var arch = constants.OsArch
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+
+	minio := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
+	redis := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
+	juicefs := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
+
+	binaries := []*files.KubeBinary{minio, redis, juicefs}
+	for _, binary := range binaries {
+		if err := binary.CreateBaseDir(); err != nil {
+			return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
+		}
+
+		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
+
+		var exists = util.IsExist(binary.Path())
+		if exists {
+			p := binary.Path()
+			if err := binary.SHA256Check(); err != nil {
+				_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
+			} else {
+				continue
+			}
+		}
+
+		if !exists || binary.OverWrite {
+			logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
+			if err := binary.Download(); err != nil {
+				return fmt.Errorf("Failed to download %s binary: %s error: %w ", binary.ID, binary.Url, err)
+			}
+		}
+
+		t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+binary.ID, binary)
+	}
+
+	return nil
+}
+
 type MkStorageDir struct {
 	common.KubeAction
 }
@@ -176,6 +219,10 @@ func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
 	_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop juicefs; systemctl disable juicefs", false, false)
 
 	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /var/jfsCache /terminus/jfscache", false, false)
+
+	_, _ = runtime.GetRunner().SudoCmdExt("umount /terminus/rootfs", false, false)
+
+	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /terminus/rootfs", false, false)
 
 	return nil
 }

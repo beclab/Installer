@@ -114,13 +114,14 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type InstallRedis struct {
+type DownloadRedis struct {
 	common.KubeAction
 }
 
-func (t *InstallRedis) Execute(runtime connector.Runtime) error {
+func (t *DownloadRedis) Execute(runtime connector.Runtime) error {
+	var arch = constants.OsArch
 	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	binary := files.NewKubeBinary("redis", constants.OsArch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
+	binary := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
@@ -141,11 +142,29 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("cd %s && tar xf ./%s", binary.BaseDir, binary.FileName), false, false); err != nil {
+	t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+"redis", binary)
+
+	return nil
+}
+
+type InstallRedis struct {
+	common.KubeAction
+}
+
+func (t *InstallRedis) Execute(runtime connector.Runtime) error {
+	var arch = constants.OsArch
+	redisObj, ok := t.PipelineCache.Get(common.KubeBinaries + "-" + arch + "-" + "redis")
+	if !ok {
+		return errors.New("get Redis Binary by pipeline cache failed")
+	}
+
+	redis := redisObj.(*files.KubeBinary)
+
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("cd %s && tar xf ./%s", redis.BaseDir, redis.FileName), false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "untar redis failed")
 	}
 
-	var cmd = fmt.Sprintf("cd %s/redis-%s && make -j%d && make install && cd .. && rm -rf ./redis-%s", binary.BaseDir, binary.Version, constants.CpuPhysicalCount, binary.Version)
+	var cmd = fmt.Sprintf("cd %s/redis-%s && make -j%d && make install && cd .. && rm -rf ./redis-%s", redis.BaseDir, redis.Version, constants.CpuPhysicalCount, redis.Version)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
 		return err
 	}
@@ -165,6 +184,14 @@ type InstallRedisModule struct {
 
 func (m *InstallRedisModule) Init() {
 	m.Name = "InstallRedis"
+
+	downloadRedis := &task.RemoteTask{
+		Name:     "Download",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Action:   new(DownloadRedis),
+		Parallel: false,
+		Retry:    1,
+	}
 
 	installRedis := &task.RemoteTask{
 		Name:     "Install",
@@ -200,6 +227,7 @@ func (m *InstallRedisModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		downloadRedis,
 		installRedis,
 		configRedis,
 		enableRedisService,

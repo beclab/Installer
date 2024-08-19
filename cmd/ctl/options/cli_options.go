@@ -80,3 +80,15 @@ func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.GpuEnable, "gpu-enable", false, "GPU Enable")
 	cmd.Flags().BoolVar(&o.GpuShare, "gpu-share", false, "GPU Share")
 }
+
+type CliPrepareSystemOptions struct {
+	Version string
+}
+
+func NewCliPrepareSystemOptions() *CliPrepareSystemOptions {
+	return &CliPrepareSystemOptions{}
+}
+
+func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&o.Version, "version", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
+}

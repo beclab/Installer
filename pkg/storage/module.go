@@ -6,6 +6,27 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
+type DownloadStorageBinariesModule struct {
+	common.KubeModule
+}
+
+func (m *DownloadStorageBinariesModule) Init() {
+	m.Name = "DownloadStorageBinaries"
+
+	downloadStorageBinaries := &task.RemoteTask{
+		Name:     "DownloadStorageBinaries",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Action:   new(DownloadStorageBinaries),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		downloadStorageBinaries,
+	}
+
+}
+
 type DeleteTmpModule struct {
 	common.KubeModule
 }

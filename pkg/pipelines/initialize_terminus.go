@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -28,25 +27,17 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 		return err
 	}
 
-	arg := common.Argument{
-		KsEnable:          true,
-		KsVersion:         common.DefaultKubeSphereVersion,
-		InstallPackages:   false,
-		SKipPushImages:    false,
-		ContainerManager:  common.Containerd,
-		IsCloudInstance:   strings.EqualFold(os.Getenv("TERMINUS_IS_CLOUD_VERSION"), common.TRUE),
-		Minikube:          minikube,
-		MinikubeProfile:   minikubeProfileName,
-		KubernetesVersion: ksVersion,
-		RegistryMirrors:   registryMirrors,
-	}
+	var arg = common.NewArgument()
+	arg.RegistryMirrors = registryMirrors
+	arg.SetKubernetesVersion(kubeType, ksVersion)
+	arg.SetMinikube(minikube, minikubeProfileName)
 
-	runtime, err := common.NewKubeRuntime(common.AllInOne, arg)
+	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return err
 	}
 
-	var p = cluster.InitKube(arg, runtime)
+	var p = cluster.InitKube(*arg, runtime)
 	if err := p.Start(); err != nil {
 		return err
 	}

@@ -50,18 +50,18 @@ func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 	var storageType = p.KubeConf.Arg.Storage.StorageType
 	var storageBucket = p.KubeConf.Arg.Storage.StorageBucket
 
+	if _, err := util.GetCommand("unzip"); err != nil {
+		if _, err := runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, false); err != nil {
+			return false, err
+		}
+	}
+
 	if storageType != "s3" && storageType != "oss" {
 		return false, nil
 	}
 
 	if storageBucket == "" {
 		return false, nil
-	}
-
-	if _, err := util.GetCommand("unzip"); err != nil {
-		if _, err := runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, false); err != nil {
-			return false, err
-		}
 	}
 
 	return true, nil

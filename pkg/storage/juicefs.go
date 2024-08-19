@@ -53,7 +53,7 @@ func (m *InstallJuiceFsModule) Init() {
 		Hosts:    m.Runtime.GetAllHosts(),
 		Action:   new(EnableJuiceFsService),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	checkJuiceFsState := &task.RemoteTask{
@@ -94,15 +94,13 @@ type DownloadJuiceFs struct {
 }
 
 func (t *DownloadJuiceFs) Execute(runtime connector.Runtime) error {
+	var arch = constants.OsArch
 	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	binary := files.NewKubeBinary("juicefs", constants.OsArch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
+	binary := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
 	}
-
-	t.ModuleCache.Set(common.CacheJuiceFsPath, binary.BaseDir)
-	t.ModuleCache.Set(common.CacheJuiceFsFileName, binary.FileName)
 
 	var exists = util.IsExist(binary.Path())
 	if exists {
@@ -121,6 +119,7 @@ func (t *DownloadJuiceFs) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+"juicefs", binary)
 	return nil
 }
 
@@ -129,15 +128,21 @@ type InstallJuiceFs struct {
 }
 
 func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
+	// todo redis password fetch
 	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
-	var juiceFsBaseDir, _ = t.ModuleCache.GetMustString(common.CacheJuiceFsPath)
-	var juiceFsFileName, _ = t.ModuleCache.GetMustString(common.CacheJuiceFsFileName)
 
 	if redisPassword == "" {
 		return fmt.Errorf("redis password not found")
 	}
 
-	var cmd = fmt.Sprintf("cd %s && tar -zxf ./%s && chmod +x juicefs && install juicefs /usr/local/bin && install juicefs /sbin/mount.juicefs && rm -rf ./LICENSE ./README.md ./README_CN.md ./juicefs", juiceFsBaseDir, juiceFsFileName)
+	juicefsObj, ok := t.PipelineCache.Get(common.KubeBinaries + "-" + constants.OsArch + "-" + "juicefs")
+	if !ok {
+		return errors.New("get JuiceFs Binary by pipeline cache failed")
+	}
+
+	juicefs := juicefsObj.(*files.KubeBinary)
+
+	var cmd = fmt.Sprintf("cd %s && tar -zxf ./%s && chmod +x juicefs && install juicefs /usr/local/bin && install juicefs /sbin/mount.juicefs && rm -rf ./LICENSE ./README.md ./README_CN.md ./juicefs", juicefs.BaseDir, juicefs.FileName)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
 	}

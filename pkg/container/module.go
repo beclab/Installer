@@ -215,9 +215,9 @@ func UninstallContainerd(m *UninstallContainerModule) []task.Interface {
 		Name:  "UninstallContainerd",
 		Desc:  "Uninstall containerd",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
-		Prepare: &prepare.PrepareCollection{
-			&ContainerdExist{Not: false},
-		},
+		// Prepare: &prepare.PrepareCollection{
+		// 	&ContainerdExist{Not: false},
+		// },
 		Action:   new(DisableContainerd),
 		Parallel: true,
 	}

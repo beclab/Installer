@@ -97,11 +97,11 @@ func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type InstallMinio struct {
+type DownloadMinio struct {
 	common.KubeAction
 }
 
-func (t *InstallMinio) Execute(runtime connector.Runtime) error {
+func (t *DownloadMinio) Execute(runtime connector.Runtime) error {
 	var arch = constants.OsArch
 	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	binary := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
@@ -127,12 +127,26 @@ func (t *InstallMinio) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	var cmd = fmt.Sprintf("cd %s && chmod +x minio && install minio /usr/local/bin", binary.BaseDir)
+	t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+"minio", binary)
+	return nil
+}
+
+type InstallMinio struct {
+	common.KubeAction
+}
+
+func (t *InstallMinio) Execute(runtime connector.Runtime) error {
+	minioObj, ok := t.PipelineCache.Get(common.KubeBinaries + "-" + constants.OsArch + "-" + "minio")
+	if !ok {
+		return errors.New("get Minio Binary by pipeline cache failed")
+	}
+
+	minio := minioObj.(*files.KubeBinary)
+
+	var cmd = fmt.Sprintf("cd %s && chmod +x minio && install minio /usr/local/bin", minio.BaseDir)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
-
-	t.PipelineCache.Set(common.CacheMinioPath, binary.Path())
 
 	return nil
 }
@@ -165,6 +179,15 @@ func (m *InstallMinioModule) IsSkip() bool {
 
 func (m *InstallMinioModule) Init() {
 	m.Name = "InstallMinio"
+
+	downloadMinio := &task.RemoteTask{
+		Name:     "DownloadMinio",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Prepare:  &CheckMinioExists{},
+		Action:   &DownloadMinio{},
+		Parallel: false,
+		Retry:    1,
+	}
 
 	installMinio := &task.RemoteTask{
 		Name:     "InstallMinio",
@@ -201,6 +224,7 @@ func (m *InstallMinioModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		downloadMinio,
 		installMinio,
 		configMinio,
 		enableMinio,

@@ -138,6 +138,7 @@ func NewArgument() *Argument {
 		Storage: &Storage{
 			StorageType: Minio,
 		},
+		GPU: &GPU{},
 	}
 }
 

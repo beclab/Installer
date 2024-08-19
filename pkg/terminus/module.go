@@ -38,11 +38,12 @@ type InstallWizardDownloadModule struct {
 
 func (m *InstallWizardDownloadModule) Init() {
 	m.Name = "DownloadInstallWizard"
-
 	download := &task.LocalTask{
-		Name:   "DownloadInstallWizard",
-		Action: new(Download),
-		Retry:  1,
+		Name: "DownloadInstallWizard",
+		Action: &Download{
+			version: m.Version,
+		},
+		Retry: 1,
 	}
 
 	m.Tasks = []task.Interface{

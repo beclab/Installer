@@ -50,6 +50,9 @@ type Download struct {
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
+	if t.KubeConf.Arg.TerminusVersion == "" {
+		return nil
+	}
 	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.version, prePath)
 
@@ -59,10 +62,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 
 	var exists = util.IsExist(wizard.Path())
 	if exists {
-		p := wizard.Path()
-		if err := wizard.SHA256Check(); err != nil {
-			util.RemoveFile(p)
-		}
+		util.RemoveFile(wizard.Path())
 	}
 
 	if !exists || wizard.OverWrite {
@@ -71,11 +71,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 			return fmt.Errorf("Failed to download %s binary: %s error: %w ", wizard.ID, wizard.Url, err)
 		}
 	}
-
-	// todo
-	// util.Untar(wizard.Path(), wizard.BaseDir)
-	// fmt.Println("---1---", wizard.Path())
-	// fmt.Println("---2---", wizard.BaseDir)
+	util.Untar(wizard.Path(), wizard.BaseDir)
 
 	return nil
 }

@@ -19,6 +19,7 @@ package common
 const (
 	DefaultK8sVersion        = "v1.22.10"
 	DefaultK3sVersion        = "v1.22.16-k3s"
+	DefaultKubernetesVersion = ""
 	DefaultKubeSphereVersion = "v3.3.0"
 )
 
