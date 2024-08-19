@@ -177,6 +177,10 @@ func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
 
 	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /var/jfsCache /terminus/jfscache", false, false)
 
+	_, _ = runtime.GetRunner().SudoCmdExt("umount /terminus/rootfs", false, false)
+
+	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /terminus/rootfs", false, false)
+
 	return nil
 }
 
