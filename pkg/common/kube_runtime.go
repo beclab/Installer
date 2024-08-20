@@ -115,11 +115,15 @@ type User struct {
 type Storage struct {
 	StorageVendor    string `json:"storage_vendor"`
 	StorageType      string `json:"storage_type"`
+	StorageDomain    string `json:"storage_domain"`
+	StorageBucket    string `json:"storage_bucket"`
+	StoragePrefix    string `json:"storage_prefix"`
 	StorageAccessKey string `json:"storage_access_key"`
 	StorageSecretKey string `json:"storage_secret_key"`
-	StorageToken     string `json:"storage_token"`
-	StorageClusterId string `json:"storage_cluster_id"`
-	StorageBucket    string `json:"storage_bucket"`
+
+	StorageToken      string `json:"storage_token"`       // juicefs  --> from env
+	StorageClusterId  string `json:"storage_cluster_id"`  // use only on the Terminus cloud, juicefs  --> from env
+	StorageSyncSecret string `json:"storage_sync_secret"` // use only on the Terminus cloud  --> from env
 }
 
 type GPU struct {
@@ -143,10 +147,11 @@ func NewArgument() *Argument {
 }
 
 func (a *Argument) SetGPU(enable bool, share bool) {
-	a.GPU = &GPU{
-		Enable: enable,
-		Share:  share,
+	if a.GPU == nil {
+		a.GPU = new(GPU)
 	}
+	a.GPU.Enable = enable
+	a.GPU.Share = share
 }
 
 func (a *Argument) SetTerminusVersion(version string) {

@@ -28,7 +28,7 @@ func (t *CreateRedisSecret) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 
-	redisPwd, ok := t.ModuleCache.Get(common.CacheRedisPassword)
+	redisPwd, ok := t.PipelineCache.Get(common.CacheRedisPassword)
 	if !ok {
 		return fmt.Errorf("get redis password from module cache failed")
 	}

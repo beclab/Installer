@@ -104,6 +104,7 @@ type DownloadMinio struct {
 func (t *DownloadMinio) Execute(runtime connector.Runtime) error {
 	var arch = constants.OsArch
 	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	// todo download minio-operator
 	binary := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
 
 	if err := binary.CreateBaseDir(); err != nil {

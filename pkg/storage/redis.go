@@ -164,7 +164,7 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 		return errors.Wrapf(errors.WithStack(err), "untar redis failed")
 	}
 
-	var cmd = fmt.Sprintf("cd %s/redis-%s && make -j%d && make install && cd .. && rm -rf ./redis-%s", redis.BaseDir, redis.Version, constants.CpuPhysicalCount, redis.Version)
+	var cmd = fmt.Sprintf("cd %s/redis-%s && cp ./* /usr/local/bin/ && ln -s /usr/local/bin/redis-server /usr/local/bin/redis-sentinel && rm -rf ./redis-%s", redis.BaseDir, redis.Version, redis.Version)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
 		return err
 	}

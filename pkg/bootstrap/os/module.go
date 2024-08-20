@@ -40,6 +40,7 @@ func (c *ConfigSystemModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			&CheckHwClock{},
 		},
+		Action:   new(InstallHwClock),
 		Parallel: false,
 		Retry:    0,
 	}

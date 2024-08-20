@@ -32,6 +32,7 @@ import (
 	kubekeyregistry "bytetrade.io/web3os/installer/pkg/bootstrap/registry"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -47,6 +48,28 @@ import (
 	kube "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+type PatchK3s struct {
+	common.KubeAction
+}
+
+func (t *PatchK3s) Execute(runtime connector.Runtime) error {
+	var p = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "deploy", "patch-k3s.yaml")
+	if !util.IsExist(p) {
+		return nil
+	}
+
+	kubectlpath, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if kubectlpath == "" {
+		return fmt.Errorf("kubectl not found")
+	}
+
+	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s apply -f %s", kubectlpath, p), false, true); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 type GetClusterStatus struct {
 	common.KubeAction

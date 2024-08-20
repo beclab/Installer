@@ -96,6 +96,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime) []module.Module {
 		&ksplugins.DeployPrometheusModule{},
 		&ksplugins.DeployKsCoreModule{},
 		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // check ks-apiserver phase
+		&k3s.PatchK3sModule{},                                                    // todo Originally, it was placed after install_gpu, and needs to be tested
 	}
 
 	return m

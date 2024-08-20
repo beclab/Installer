@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"html/template"
+	"text/template"
 
 	"github.com/lithammer/dedent"
 )

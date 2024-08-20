@@ -63,7 +63,8 @@ var (
 	MinioUrl         = "https://dl.min.io/server/minio/release/linux-%s/archive/minio.%s"
 	MinioOperatorUrl = "https://github.com/beclab/minio-operator/releases/download/v%s/minio-operator-v%s-linux-%s.tar.gz"
 
-	RedisUrl = "https://download.redis.io/releases/redis-%s.tar.gz"
+	// RedisUrl = "https://download.redis.io/releases/redis-%s.tar.gz"
+	RedisUrl = "https://dc3p1870nn3cj.cloudfront.net/%s"
 
 	JuiceFsUrl = "https://github.com/beclab/juicefs-ext/releases/download/%s/juicefs-%s-linux-%s.tar.gz"
 

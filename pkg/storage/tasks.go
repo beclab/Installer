@@ -27,10 +27,11 @@ func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
 	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 
 	minio := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
+	miniooperator := files.NewKubeBinary("minio-operator", arch, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, prePath)
 	redis := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
 	juicefs := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
 
-	binaries := []*files.KubeBinary{minio, redis, juicefs}
+	binaries := []*files.KubeBinary{minio, miniooperator, redis, juicefs}
 	for _, binary := range binaries {
 		if err := binary.CreateBaseDir(); err != nil {
 			return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

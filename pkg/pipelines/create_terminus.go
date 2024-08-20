@@ -19,7 +19,6 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
 	}
 
-	fmt.Println("---a1---", opts.Version)
 	arg := common.NewArgument()
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetTerminusVersion(opts.Version)
@@ -27,6 +26,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetWSL(opts.WSL)
 	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)
 	arg.SetGPU(opts.GpuEnable, opts.GpuShare)
+	arg.SetStorage(createStorage(opts))
 
 	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
 		return err
@@ -65,4 +65,18 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	return nil
+}
+
+func createStorage(opts *options.CliTerminusInstallOptions) *common.Storage {
+	return &common.Storage{
+		StorageType:       opts.StorageType,
+		StorageDomain:     opts.StorageDomain,
+		StorageBucket:     opts.StorageBucket,
+		StoragePrefix:     opts.StoragePrefix,
+		StorageAccessKey:  opts.StorageAccessKey,
+		StorageSecretKey:  opts.StorageSecretKey,
+		StorageToken:      opts.StorageToken,
+		StorageClusterId:  opts.StorageClusterId,
+		StorageSyncSecret: opts.StorageSyncSecret,
+	}
 }

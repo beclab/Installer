@@ -95,6 +95,7 @@ type KubeBinary struct {
 	Type                string
 	ID                  string
 	FileName            string
+	FileNameHash        string
 	Os                  string
 	Arch                string
 	Version             string
@@ -257,7 +258,8 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 	case redis:
 		component.Type = COMPONENT
 		component.FileName = fmt.Sprintf("redis-%s.tar.gz", version)
-		component.Url = fmt.Sprintf(RedisUrl, version)
+		component.FileNameHash = utils.MD5(component.FileName)
+		component.Url = fmt.Sprintf(RedisUrl, component.FileNameHash)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case juicefs:

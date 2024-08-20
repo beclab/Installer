@@ -94,7 +94,7 @@ func (p *GenerateRedisPassword) PreCheck(runtime connector.Runtime) (bool, error
 		return false, fmt.Errorf("failed to generate redis password")
 	}
 
-	p.ModuleCache.Set(common.CacheRedisPassword, pass)
+	p.PipelineCache.Set(common.CacheRedisPassword, pass)
 	return true, nil
 }
 

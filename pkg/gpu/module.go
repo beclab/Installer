@@ -8,6 +8,29 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
+type CheckWSLGPUEnableModule struct {
+	common.KubeModule
+}
+
+func (m *CheckWSLGPUEnableModule) Init() {
+	m.Name = "CheckWSLGPUEnable"
+
+	checkWslGPU := &task.RemoteTask{
+		Name:  "CheckWslGpuEnabled",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+		},
+		Action:   new(CheckWslGPU),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		checkWslGPU,
+	}
+}
+
 type InstallDepsModule struct {
 	common.KubeModule
 	Skip bool // enableGPU && ubuntuVersionSupport

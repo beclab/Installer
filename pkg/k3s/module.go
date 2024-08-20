@@ -35,6 +35,27 @@ import (
 	"bytetrade.io/web3os/installer/pkg/registry"
 )
 
+type PatchK3sModule struct {
+	common.KubeModule
+}
+
+func (i *PatchK3sModule) Init() {
+	i.Name = "PatchK3s"
+
+	patchK3s := &task.RemoteTask{
+		Name:  "PatchK3s",
+		Hosts: i.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+		},
+		Action:   new(PatchK3s),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	i.Tasks = []task.Interface{patchK3s}
+}
+
 type InstallContainerModule struct {
 	common.KubeModule
 	Skip bool
