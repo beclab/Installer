@@ -228,3 +228,9 @@ func ArchAlias(arch string) string {
 		return "amd64"
 	}
 }
+
+func Random() int {
+	rand.Seed(time.Now().UnixNano())
+	randomInt := rand.Intn(50000)
+	return randomInt
+}

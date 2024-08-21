@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"html/template"
+	"text/template"
 
 	"github.com/lithammer/dedent"
 )
@@ -11,12 +11,13 @@ var SettingsValue = template.Must(template.New("values.yaml").Parse(
   name: 'user-space-{{ .UserName }}'
   role: admin
 
-cluster_id: {{ .ClusterId }}
-s3_sts: {{ .StorageToken }}
-s3_ak: {{ .StorageAccessKey }}
-s3_sk: {{ .StorageSecretKey }}
+{{ if .Storage }}
+{{ range $key, $value := .Storage }}
+{{ $key }}: {{ $value }}
+{{ end }}
+{{ end }}
 
 user:
   name: '{{ .UserName }}'
-	`),
+`),
 ))

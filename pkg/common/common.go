@@ -215,6 +215,11 @@ const (
 )
 
 const (
+	CacheLaunchAppKey    = "launch_app_key"
+	CacheLaunchAppSecret = "launch_app_secret"
+)
+
+const (
 	EnvDeleteCacheName      = "DELETE_CACHE"
 	EnvCloudInstanceName    = "TERMINUS_IS_CLOUD_VERSION"
 	EnvStorageTypeName      = "STORAGE"

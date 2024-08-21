@@ -15,6 +15,36 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+type CheckAppServiceState struct {
+	common.KubeAction
+}
+
+func (t *CheckAppServiceState) Execute(runtime connector.Runtime) error {
+	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	cmd := fmt.Sprintf("%s get pod  -n os-system -l 'tier=app-service' -o jsonpath='{.items[*].status.phase}'", kubectl)
+
+	appservicephase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if appservicephase == "Running" {
+		return nil
+	}
+	return fmt.Errorf("App Service State is Pending")
+}
+
+type CheckCitusState struct {
+	common.KubeAction
+}
+
+func (t *CheckCitusState) Execute(runtime connector.Runtime) error {
+	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	cmd := fmt.Sprintf("%s get pod  -n os-system -l 'app=citus' -o jsonpath='{.items[*].status.phase}'", kubectl)
+
+	citusphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if citusphase == "Running" {
+		return nil
+	}
+	return fmt.Errorf("Citus State is Pending")
+}
+
 type InstallOsSystemPrepare struct {
 	common.KubePrepare
 }
@@ -110,8 +140,30 @@ func (m *InstallOsModule) Init() {
 		Retry:    1,
 	}
 
+	checkAppServiceState := &task.RemoteTask{
+		Name:     "CheckAppServiceState",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Prepare:  new(common.IsMaster),
+		Action:   &CheckAppServiceState{},
+		Parallel: false,
+		Retry:    50,
+		Delay:    5 * time.Second,
+	}
+
+	checkCitusState := &task.RemoteTask{
+		Name:     "CheckCitusState",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Prepare:  new(common.IsMaster),
+		Action:   &CheckCitusState{},
+		Parallel: false,
+		Retry:    50,
+		Delay:    5 * time.Second,
+	}
+
 	m.Tasks = []task.Interface{
 		installOsSystem,
+		checkAppServiceState,
+		checkCitusState,
 	}
 }
 

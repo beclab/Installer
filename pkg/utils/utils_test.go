@@ -6,6 +6,9 @@ import (
 )
 
 func TestA(t *testing.T) {
-	var a = MD5("beclab/notification-manager-operator-ext:v0.1.0-ext")
-	fmt.Println(a)
+	for i := 0; i < 100; i++ {
+		a, _ := GeneratePassword(16)
+		fmt.Println(a)
+	}
+
 }

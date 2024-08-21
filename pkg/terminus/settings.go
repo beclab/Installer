@@ -11,9 +11,31 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	settingstemplates "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
+
+type UpdateSettingsValuePrepare struct {
+	common.KubePrepare
+}
+
+func (p *UpdateSettingsValuePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
+	var settingsFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
+	var data = util.Data{}
+
+	settingsStr, err := util.Render(settingstemplates.SettingsValue, data)
+	if err != nil {
+		return false, errors.Wrap(errors.WithStack(err), "render settings template failed")
+	}
+
+	if err := util.WriteFile(settingsFile, []byte(settingsStr), cc.FileMode0644); err != nil {
+		return false, errors.Wrap(errors.WithStack(err), fmt.Sprintf("write settings %s failed", settingsFile))
+	}
+
+	return true, nil
+}
 
 type InstallSettings struct {
 	common.KubeAction
