@@ -15,6 +15,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"bytetrade.io/web3os/installer/version"
 	"github.com/pkg/errors"
 )
 
@@ -24,14 +25,21 @@ type DownloadStorageBinaries struct {
 
 func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
 	var arch = constants.OsArch
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 
+	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	terminus := files.NewKubeBinary("terminus-cli", arch, version.VERSION, path.Join(prePath, cc.WizardDir))
 	minio := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
 	miniooperator := files.NewKubeBinary("minio-operator", arch, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, prePath)
 	redis := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
 	juicefs := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
+	velero := files.NewKubeBinary("velero", arch, kubekeyapiv1alpha2.DefaultVeleroVersion, prePath)
 
-	binaries := []*files.KubeBinary{minio, miniooperator, redis, juicefs}
+	// gpu
+	keyring := files.NewKubeBinary("cuda-keyring", arch, "1.0", prePath)
+	gpgkey := files.NewKubeBinary("gpgkey", arch, "", prePath)
+	libnvidia := files.NewKubeBinary("libnvidia-container", arch, "", prePath)
+
+	binaries := []*files.KubeBinary{terminus, minio, miniooperator, redis, juicefs, velero, keyring, gpgkey, libnvidia}
 	for _, binary := range binaries {
 		if err := binary.CreateBaseDir(); err != nil {
 			return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

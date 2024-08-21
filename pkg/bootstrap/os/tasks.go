@@ -35,15 +35,36 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
-type InstallHwClock struct {
+type UpdateNtpDateTask struct {
 	common.KubeAction
 }
 
-func (t *InstallHwClock) Execute(runtime connector.Runtime) error {
-	var cmd = "apt install util-linux-extra -y"
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
+func (t *UpdateNtpDateTask) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().Host.CmdExt("apt remove unattended-upgrades -y", false, true); err != nil {
 		return err
 	}
+
+	if _, err := runtime.GetRunner().Host.CmdExt("apt install ntpdate -y", false, true); err != nil {
+		return err
+	}
+
+	ntpdateCommand, err := util.GetCommand(common.CommandNtpdate)
+	if err != nil {
+		return fmt.Errorf("getntpdate command error: %v", err)
+	}
+
+	hwclockCommand, err := util.GetCommand(common.CommandHwclock)
+	if err != nil {
+		return fmt.Errorf("gethwclock command error: %v", err)
+	}
+
+	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s -b -u pool.ntp.org", ntpdateCommand), false, true); err != nil {
+		return err
+	}
+	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s -w", hwclockCommand), false, true); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -52,11 +73,12 @@ type TimeSyncTask struct {
 }
 
 func (t *TimeSyncTask) Execute(runtime connector.Runtime) error {
-	var cmd = `sysctl -w kernel.printk="3 3 1 7"`
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
-		logger.Errorf("failed to execute %s: %v", cmd, err)
-		return err
-	}
+	// var cmd = `sysctl -w kernel.printk="3 3 1 7"`
+	// if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	// 	logger.Errorf("failed to execute %s: %v", cmd, err)
+	// 	return err
+	// }
+	var cmd string
 
 	ntpdatePath, err := util.GetCommand(common.CommandNtpdate)
 	if err != nil {

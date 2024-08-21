@@ -60,6 +60,7 @@ var (
 	AWSCliUrl  = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
 	OSSUtilUrl = "https://github.com/aliyun/ossutil/releases/download/%s/%s"
 
+	TerminusUrl      = "https://github.com/beclab/Installer/releases/download/%s/terminus-cli-v%s_%s_%s.tar.gz"
 	MinioUrl         = "https://dl.min.io/server/minio/release/linux-%s/archive/minio.%s"
 	MinioOperatorUrl = "https://github.com/beclab/minio-operator/releases/download/v%s/minio-operator-v%s-linux-%s.tar.gz"
 
@@ -67,6 +68,8 @@ var (
 	RedisUrl = "https://dc3p1870nn3cj.cloudfront.net/%s"
 
 	JuiceFsUrl = "https://github.com/beclab/juicefs-ext/releases/download/%s/juicefs-%s-linux-%s.tar.gz"
+
+	VeleroUrl = "https://github.com/beclab/velero/releases/download/%s/velero-%s-linux-%s.tar.gz"
 
 	CudaKeyringUbuntu24Amd64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb"
 	CudaKeyringUbuntu24Arm64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/arm64/cuda-keyring_1.1-1_all.deb"
@@ -81,8 +84,32 @@ var (
 	// https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.1-1_all.deb
 	CudaKeyringUbuntu20Arm64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.0-1_all.deb"
 
-	CudaKeyringUrl = "https://developer.download.nvidia.com/compute/cuda/repos/%s/%s/cuda-keyring_%s-1_all.deb" // arm64  x86_64
+	CudaKeyringUrl    = "https://developer.download.nvidia.com/compute/cuda/repos/%s/%s/cuda-keyring_%s-1_all.deb" // arm64  x86_64
+	CudaKeyringCNDUrl = "https://dc3p1870nn3cj.cloudfront.net/%s"
+	CudaGpgKeyUrl     = "https://nvidia.github.io/libnvidia-container/gpgkey"
+	CudaGpgKeyCDNUrl  = "https://dc3p1870nn3cj.cloudfront.net/%s"
+	CudaLibNvidiaUrl  = "https://nvidia.github.io/libnvidia-container/%s%s/libnvidia-container.list"
 )
+
+func getGpuCDNPrefix(arch string, fileHash string) string {
+	var res = fileHash
+	if arch == "arm64" {
+		res = "arm64/" + fileHash
+	}
+	return res
+}
+
+func getNvidiaLibUrl(platform string, os string) string {
+	return fmt.Sprintf(CudaLibNvidiaUrl, platform, os)
+}
+
+func getCudaKeyringUrlExt(arch string, fileHash string) string {
+	var res = fileHash
+	if arch == "arm64" {
+		res = "arm64/" + fileHash
+	}
+	return res
+}
 
 func getCudaKeyringUrl(arch string, os string, cudaversion string) string {
 	var version string

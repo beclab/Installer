@@ -34,15 +34,12 @@ type ConfigSystemModule struct {
 func (c *ConfigSystemModule) Init() {
 	c.Name = "ConfigSystem"
 
-	installHwclock := &task.RemoteTask{
-		Name:  "InstallHwClock",
-		Hosts: c.Runtime.GetAllHosts(),
-		Prepare: &prepare.PrepareCollection{
-			&CheckHwClock{},
-		},
-		Action:   new(InstallHwClock),
+	updateNtpDateTask := &task.RemoteTask{
+		Name:     "UpdateNtpDate",
+		Hosts:    c.Runtime.GetAllHosts(),
+		Action:   new(UpdateNtpDateTask),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	timeSyncTask := &task.RemoteTask{
@@ -62,7 +59,7 @@ func (c *ConfigSystemModule) Init() {
 	}
 
 	c.Tasks = []task.Interface{
-		installHwclock,
+		updateNtpDateTask,
 		timeSyncTask,
 		configProxyTask,
 	}

@@ -2,6 +2,7 @@ package terminus
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -14,6 +15,64 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
+
+type CopyToWizard struct {
+	common.KubeAction
+}
+
+func (t *CopyToWizard) Execute(runtime connector.Runtime) error {
+	var wizardPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir)
+	if !util.IsExist(wizardPath) {
+		return nil
+	}
+
+	var componentsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.ComponentsDir)
+	if !util.IsExist(componentsPath) {
+		return nil
+	}
+
+	var homeDir = path.Join("/", "home")
+	homeFiles, err := ioutil.ReadDir(homeDir)
+	if err != nil {
+		return nil
+	}
+
+	var find = false
+	for _, f := range homeFiles {
+		if !f.IsDir() {
+			continue
+		}
+		find = true
+		var aname = f.Name()
+		var np = path.Join("/home", aname, "install-wizard")
+		copyWizard(wizardPath, np, runtime)
+		var cp = path.Join("/home", aname, "install-wizard", cc.ComponentsDir)
+		copyWizard(componentsPath, cp, runtime)
+
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chown -R %s:%s %s", aname, aname, np), false, false); err != nil {
+			logger.Errorf("chown %s failed", aname)
+		}
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chmod +x %s", np), false, false); err != nil {
+			logger.Errorf("chmod %s failed", np)
+		}
+	}
+
+	if !find {
+		var aname = "home"
+		var np = path.Join("/home", aname, "install-wizard")
+		copyWizard(wizardPath, np, runtime)
+		var cp = path.Join("/home", aname, "install-wizard", cc.ComponentsDir)
+		copyWizard(componentsPath, cp, runtime)
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chown -R %s:%s %s", aname, aname, np), false, false); err != nil {
+			logger.Errorf("chown %s failed", aname)
+		}
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chmod +x %s", np), false, false); err != nil {
+			logger.Errorf("chmod %s failed", np)
+		}
+	}
+
+	return nil
+}
 
 type SetUserInfo struct {
 	common.KubeAction
@@ -71,7 +130,29 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 			return fmt.Errorf("Failed to download %s binary: %s error: %w ", wizard.ID, wizard.Url, err)
 		}
 	}
+
 	util.Untar(wizard.Path(), wizard.BaseDir)
+
+	return nil
+}
+
+func copyWizard(wizardPath string, np string, runtime connector.Runtime) {
+	if util.IsExist(np) {
+		util.RemoveDir(np)
+	} else {
+		// util.Mkdir(np)
+	}
+	_, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("cp -a %s %s", wizardPath, np), false, false)
+	if err != nil {
+		logger.Errorf("copy -a %s to %s failed", wizardPath, np)
+	}
+}
+
+type DownloadFullInstaller struct {
+	common.KubeAction
+}
+
+func (t *DownloadFullInstaller) Execute(runtime connector.Runtime) error {
 
 	return nil
 }

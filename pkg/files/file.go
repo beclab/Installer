@@ -67,10 +67,13 @@ const (
 	awscli        = "awscli"
 	ossutil       = "ossutil"
 	minio         = "minio"
+	terminus      = "terminus-cli"
 	miniooperator = "minio-operator"
 	redis         = "redis"
 	juicefs       = "juicefs"
 	cudakeyring   = "cuda-keyring"
+	gpgkey        = "gpgkey"
+	libnvidia     = "libnvidia-container"
 	installwizard = "install-wizard"
 )
 
@@ -86,7 +89,7 @@ const (
 	CONTAINERD = "containerd"
 	RUNC       = "runc"
 	WIZARD     = "wizard"
-	COMPONENT  = "component"
+	COMPONENT  = "components"
 	PATCH      = "patch"
 	GPU        = "gpu"
 )
@@ -231,7 +234,7 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		if component.Zone == "cn" {
 			component.Url = fmt.Sprintf(RunUrlCN, version, arch)
 		}
-	case awscli: // * component
+	case awscli: // + components
 		component.Type = COMPONENT
 		component.FileName = "awscli-exe-linux-x86_64.zip"
 		component.Url = AWSCliUrl
@@ -241,6 +244,12 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Type = COMPONENT
 		component.FileName = fmt.Sprintf("ossutil-%s-%s.zip", version, arch)
 		component.Url = fmt.Sprintf(OSSUtilUrl, version, component.FileName)
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type)
+	case terminus:
+		component.Type = COMPONENT
+		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, constants.OsType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
+		component.Url = fmt.Sprintf(TerminusUrl, version, version, constants.OsType, arch)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case minio:
@@ -268,7 +277,13 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf(JuiceFsUrl, version, version, arch)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
-	case apparmor: // * patch
+	case velero:
+		component.Type = COMPONENT
+		component.FileName = fmt.Sprintf("velero-%s-linux-%s.tar.gz", version, arch)
+		component.Url = fmt.Sprintf(VeleroUrl, version, version, arch)
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type)
+	case apparmor: // + patch
 		component.Type = PATCH
 		component.FileName = fmt.Sprintf("apparmor_%s-0ubuntu1_%s.deb", version, arch)
 		switch arch {
@@ -308,10 +323,26 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
-	case cudakeyring:
+	case cudakeyring: // + gpu
 		component.Type = GPU
 		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)
-		component.Url = getCudaKeyringUrl(arch, constants.OsPlatform, version)
+		component.FileNameHash = utils.MD5(component.FileName)
+		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash)) //getCudaKeyringUrl(arch, constants.OsVersion, version)
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type)
+	case gpgkey:
+		component.Type = GPU
+		component.FileName = "gpgkey"
+		component.FileNameHash = utils.MD5(component.FileName)
+		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type)
+	case libnvidia:
+		component.Type = GPU
+		component.FileName = fmt.Sprintf("%s_%s_libnvidia-container.list", constants.OsPlatform, constants.OsVersion)
+		component.FileNameHash = utils.MD5(component.FileName)
+		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
+		// component.Url = getNvidiaLibUrl(constants.OsPlatform, constants.OsVersion)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	default:

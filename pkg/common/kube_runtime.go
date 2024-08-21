@@ -98,6 +98,9 @@ type Argument struct {
 	Minikube        bool
 	MinikubeProfile string
 	WSL             bool
+
+	DownloadFullInstaller bool
+	BuildFullPackage      bool
 }
 
 type AwsHost struct {
@@ -144,6 +147,14 @@ func NewArgument() *Argument {
 		},
 		GPU: &GPU{},
 	}
+}
+
+func (a *Argument) SetDownloadFullInstaller(v bool) {
+	a.DownloadFullInstaller = v
+}
+
+func (a *Argument) SetBuildFullPackage(v bool) {
+	a.BuildFullPackage = v
 }
 
 func (a *Argument) SetGPU(enable bool, share bool) {

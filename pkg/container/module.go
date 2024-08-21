@@ -35,7 +35,8 @@ import (
 
 type InstallContainerModule struct {
 	common.KubeModule
-	Skip bool
+	Skip        bool
+	NoneCluster bool
 }
 
 func (i *InstallContainerModule) IsSkip() bool {
@@ -43,7 +44,7 @@ func (i *InstallContainerModule) IsSkip() bool {
 }
 
 func (i *InstallContainerModule) Init() {
-	i.Name = "InstallContainerModule"
+	i.Name = "InstallContainerModule(k8s)"
 	i.Desc = "Install container manager"
 
 	switch i.KubeConf.Cluster.Kubernetes.ContainerManager {
@@ -64,7 +65,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Desc:  "Sync containerd binaries",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&kubernetes.NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
 		Action:   new(SyncContainerd),
@@ -77,7 +78,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Desc:  "Sync crictl binaries",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&kubernetes.NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&CrictlExist{Not: true},
 		},
 		Action:   new(SyncCrictlBinaries),
@@ -90,7 +91,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Desc:  "Generate containerd service",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&kubernetes.NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
 		Action: &action.Template{
@@ -106,7 +107,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Desc:  "Generate containerd config",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&kubernetes.NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
 		Action: &action.Template{
@@ -129,7 +130,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Desc:  "Generate crictl config",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&kubernetes.NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
 		Action: &action.Template{
@@ -148,7 +149,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Desc:  "Enable containerd",
 		Hosts: m.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&kubernetes.NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
 		Action:   new(EnableContainerd),

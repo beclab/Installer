@@ -19,13 +19,21 @@ func (m *InstallDepsModule) Init() {
 		Retry:  0,
 	}
 
+	enableSSHTask := &task.RemoteTask{
+		Name:     "EnableSSH",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Action:   new(EnableSSHTask),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	installSocat := &task.RemoteTask{
 		Name:     "InstallSocat",
 		Hosts:    m.Runtime.GetAllHosts(),
 		Prepare:  &CheckDepsPrepare{Command: common.CommandSocat},
 		Action:   new(SocatTask),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	installConntrack := &task.RemoteTask{
@@ -34,11 +42,12 @@ func (m *InstallDepsModule) Init() {
 		Prepare:  &CheckDepsPrepare{Command: common.CommandConntrack},
 		Action:   new(ConntrackTask),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
 		patchOs,
+		enableSSHTask,
 		installSocat,
 		installConntrack,
 	}

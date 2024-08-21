@@ -32,6 +32,7 @@ const (
 	ImagesDir         = "images"
 	ScriptsDir        = "scripts"
 	WizardDir         = "wizard"
+	ComponentsDir     = "components"
 	DeployDir         = "deploy"
 	TerminusDir       = "terminus"
 	GreetingShell     = "greeting.sh"

@@ -36,12 +36,12 @@ func K8sFilesDownloadHTTP(kubeConf *common.KubeConf, path, version, arch string,
 	kubeadm := files.NewKubeBinary("kubeadm", arch, version, path)
 	kubelet := files.NewKubeBinary("kubelet", arch, version, path)
 	kubectl := files.NewKubeBinary("kubectl", arch, version, path)
-	kubecni := files.NewKubeBinary("kubecni", arch, kubekeyapiv1alpha2.DefaultCniVersion, path)
+	kubecni := files.NewKubeBinary("kubecni", arch, kubekeyapiv1alpha2.DefaultCniVersion_v_1_1_1, path)
 	helm := files.NewKubeBinary("helm", arch, kubekeyapiv1alpha2.DefaultHelmVersion, path)
 	docker := files.NewKubeBinary("docker", arch, kubekeyapiv1alpha2.DefaultDockerVersion, path)
 	crictl := files.NewKubeBinary("crictl", arch, kubekeyapiv1alpha2.DefaultCrictlVersion, path)
 	containerd := files.NewKubeBinary("containerd", arch, kubekeyapiv1alpha2.DefaultContainerdVersion, path)
-	runc := files.NewKubeBinary("runc", arch, kubekeyapiv1alpha2.DefaultRuncVersion, path)
+	runc := files.NewKubeBinary("runc", arch, kubekeyapiv1alpha2.DefaultRuncVersion_v_1_1_4, path)
 
 	binaries := []*files.KubeBinary{kubeadm, kubelet, kubectl, helm, kubecni, crictl, etcd}
 

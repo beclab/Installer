@@ -13,6 +13,21 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
+type EnableSSHTask struct {
+	common.KubeAction
+}
+
+func (t *EnableSSHTask) Execute(runtime connector.Runtime) error {
+	stdout, _ := runtime.GetRunner().SudoCmdExt("systemctl is-active ssh", false, false)
+	if stdout != "active" {
+		if _, err := runtime.GetRunner().SudoCmdExt("systemctl enable --now ssh", false, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type PatchTask struct {
 	common.KubeAction
 }
@@ -31,29 +46,29 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		debianFrontend = "DEBIAN_FRONTEND=noninteractive"
 		fallthrough
 	case common.Ubuntu, common.Raspbian:
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, true); err != nil {
 			logger.Errorf("update os error %v", err)
 			return err
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd("apt --fix-broken install -y", false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("apt --fix-broken install -y", false, true); err != nil {
 			logger.Errorf("fix-broken install error %v", err)
 			return err
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y -qq %s", debianFrontend, constants.PkgManager, pre_reqs), false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y -qq %s", debianFrontend, constants.PkgManager, pre_reqs), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", pre_reqs, err)
 			return err
 		}
 
-		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc openssh-server bison flex"
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, constants.PkgManager, cmd), false, false); err != nil {
+		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc openssh-server bison flex tree"
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, constants.PkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}
 	case common.CentOs, common.Fedora, common.RHEl:
 		cmd = "conntrack socat httpd-tools ntpdate net-tools make gcc openssh-server"
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s install -y %s", constants.PkgManager, cmd), false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s install -y %s", constants.PkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}

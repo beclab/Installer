@@ -2,13 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 )
 
 func TestA(t *testing.T) {
-	for i := 0; i < 100; i++ {
-		a, _ := GeneratePassword(16)
-		fmt.Println(a)
-	}
+	var a = "aaa.tar.gz"
+	var b = filepath.Base(a)
+	fmt.Print(b)
 
 }

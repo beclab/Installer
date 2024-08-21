@@ -66,7 +66,7 @@ func (i *InstallContainerModule) IsSkip() bool {
 }
 
 func (i *InstallContainerModule) Init() {
-	i.Name = "InstallContainerModule"
+	i.Name = "InstallContainerModule(k3s)"
 	i.Desc = "Install container manager"
 
 	switch i.KubeConf.Cluster.Kubernetes.ContainerManager {

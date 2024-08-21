@@ -141,12 +141,23 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	}
 	var distribution = fmt.Sprintf("%s%s", constants.OsPlatform, version)
 
-	var cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | apt-key add -")
+	var cmd string
+	var keyPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.GpuDir, "gpgkey")
+	if !util.IsExist(keyPath) {
+		cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | apt-key add -")
+	} else {
+		cmd = fmt.Sprintf("apt-key add %s", keyPath)
+	}
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
 	}
 
-	cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/%s/libnvidia-container.list | tee /etc/apt/sources.list.d/libnvidia-container.list", distribution)
+	var libPath = path.Join(runtime.GetHomeDir(), cc.TerminusDir, cc.PackageCacheDir, cc.GpuDir, "libnvidia-container.list")
+	if !util.IsExist(libPath) {
+		cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/%s/libnvidia-container.list | tee /etc/apt/sources.list.d/libnvidia-container.list", distribution)
+	} else {
+		cmd = fmt.Sprintf("cp %s %s", libPath, "/etc/apt/sources.list.d/")
+	}
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
 	}

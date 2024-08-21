@@ -44,10 +44,14 @@ func (n *NoClusterInfo) PreCheck(_ connector.Runtime) (bool, error) {
 
 type NodeInCluster struct {
 	common.KubePrepare
-	Not bool
+	Not         bool
+	NoneCluster bool
 }
 
 func (n *NodeInCluster) PreCheck(runtime connector.Runtime) (bool, error) {
+	if n.NoneCluster {
+		return true, nil
+	}
 	host := runtime.RemoteHost()
 	if v, ok := n.PipelineCache.Get(common.ClusterStatus); ok {
 		cluster := v.(*KubernetesStatus)

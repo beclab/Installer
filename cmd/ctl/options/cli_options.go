@@ -91,7 +91,10 @@ func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 }
 
 type CliPrepareSystemOptions struct {
-	Version string
+	Version               string
+	RegistryMirrors       string
+	DownloadFullInstaller bool
+	Package               bool
 }
 
 func NewCliPrepareSystemOptions() *CliPrepareSystemOptions {
@@ -100,4 +103,7 @@ func NewCliPrepareSystemOptions() *CliPrepareSystemOptions {
 
 func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.Version, "version", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
+	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
+	cmd.Flags().BoolVar(&o.DownloadFullInstaller, "download", false, "Download the full installation package")
+	cmd.Flags().BoolVar(&o.Package, "package", false, "Build full package")
 }
