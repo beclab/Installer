@@ -8,6 +8,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/bootstrap/patch"
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
@@ -47,9 +48,9 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	}
 
 	m = append(m,
-		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
-		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
-		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable || !isSupportOs()},
+		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable || !isSupportOs()},
+		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable || !isSupportOs()},
 		&gpu.InstallPluginModule{Skip: true},
 		&terminus.PreparedModule{},
 	)
@@ -59,4 +60,12 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 		Modules: m,
 		Runtime: runtime,
 	}
+}
+
+func isSupportOs() bool {
+	if constants.OsPlatform == common.Ubuntu && (strings.Contains(constants.OsVersion, "20.") || strings.Contains(constants.OsVersion, "22.")) {
+		return true
+	}
+
+	return false
 }
