@@ -61,7 +61,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 			return err
 		}
 
-		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc openssh-server bison flex tree"
+		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc openssh-server bison flex tree unzip"
 		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, constants.PkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
