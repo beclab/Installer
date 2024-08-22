@@ -29,7 +29,6 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 		&terminus.TidyPackageModule{},
 		// &terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion},
 		&storage.DownloadStorageBinariesModule{},
-		&binaries.NodeBinariesModule{},
 		//
 		&precheck.PreCheckOsModule{},
 		&patch.InstallDepsModule{},
@@ -40,6 +39,7 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 		// &storage.InstallRedisModule{},
 		// &binaries.K3sNodeBinariesModule{},
 		//
+		&binaries.NodeBinariesModule{},
 		&container.InstallContainerModule{Skip: isK3s, NoneCluster: true}, //
 		// &k3s.InstallContainerModule{Skip: !isK3s},
 		&images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages}, //

@@ -44,7 +44,11 @@ func (t *UpdateNtpDateTask) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.CmdExt("apt install ntpdate -y", false, true); err != nil {
+	var ntpPkg = " ntpdate "
+	if strings.Contains(constants.OsVersion, "24.") {
+		ntpPkg += " util-linux-extra "
+	}
+	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("apt install %s -y", ntpPkg), false, true); err != nil {
 		return err
 	}
 

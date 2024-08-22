@@ -568,7 +568,7 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
-		logger.Debugf("%s %s download succeeded", b.FileName, b.Version)
+		logger.Debugf("%s download succeeded", b.FileName)
 		line <- []interface{}{fmt.Sprintf("%s download succeeded", b.FileName), common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 		break
 	}
