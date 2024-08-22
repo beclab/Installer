@@ -39,7 +39,11 @@ func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
 	gpgkey := files.NewKubeBinary("gpgkey", arch, "", prePath)
 	libnvidia := files.NewKubeBinary("libnvidia-container", arch, "", prePath)
 
-	binaries := []*files.KubeBinary{terminus, minio, miniooperator, redis, juicefs, velero, keyring, gpgkey, libnvidia}
+	binaries := []*files.KubeBinary{terminus, minio, miniooperator, redis, juicefs, velero, keyring, gpgkey}
+	if constants.OsPlatform == common.Ubuntu && !strings.Contains(constants.OsVersion, "24.") {
+		binaries = append(binaries, libnvidia)
+	}
+	// libnvidia
 	for _, binary := range binaries {
 		if err := binary.CreateBaseDir(); err != nil {
 			return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

@@ -152,6 +152,9 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
+	if strings.Contains(constants.OsVersion, "24.") {
+		return nil
+	}
 	var libPath = path.Join(runtime.GetHomeDir(), cc.TerminusDir, cc.PackageCacheDir, cc.GpuDir, "libnvidia-container.list")
 	if !util.IsExist(libPath) {
 		cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/%s/libnvidia-container.list | tee /etc/apt/sources.list.d/libnvidia-container.list", distribution)
