@@ -22,8 +22,7 @@ import (
 
 func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	var isK3s = strings.Contains(runtime.Arg.KubernetesVersion, "k3s")
-	if isK3s {
-	}
+	var osSupport = isSupportOs()
 	m := []module.Module{
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
@@ -48,9 +47,9 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	}
 
 	m = append(m,
-		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable || !isSupportOs()},
-		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable || !isSupportOs()},
-		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable || !isSupportOs()},
+		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable || !osSupport},
+		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable || !osSupport},
+		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable || !osSupport},
 		&gpu.InstallPluginModule{Skip: true},
 		&terminus.PreparedModule{},
 	)
