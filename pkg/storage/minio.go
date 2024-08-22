@@ -144,7 +144,8 @@ func (t *InstallMinio) Execute(runtime connector.Runtime) error {
 
 	minio := minioObj.(*files.KubeBinary)
 
-	var cmd = fmt.Sprintf("cd %s && chmod +x minio && install minio /usr/local/bin", minio.BaseDir)
+	// var cmd = fmt.Sprintf("cd %s && chmod +x minio && install minio /usr/local/bin", minio.BaseDir)
+	var cmd = fmt.Sprintf("cd %s && && cp %s minio && chmod +x minio && install minio /usr/local/bin", minio.BaseDir, minio.FileName)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return err
 	}

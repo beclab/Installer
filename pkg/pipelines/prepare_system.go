@@ -8,19 +8,19 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/system"
 )
 
-func PrepareSystemPipeline(version string, proxy string, downloadFullInstaller bool, buildPackage bool) error {
+func PrepareSystemPipeline(version string, proxy string) error {
 	ksVersion, _, exists := kubernetes.CheckKubeExists()
 	if exists {
 		return fmt.Errorf("Kubernetes %s is already installed", ksVersion)
 	}
 
+	var terminusVersion = version // utils.GetTerminusVersion(version)
+
 	var arg = common.NewArgument()
-	arg.SetTerminusVersion(version)
+	arg.SetTerminusVersion(terminusVersion)
 	arg.SetKubernetesVersion(common.K8s, common.DefaultKubernetesVersion)
 	arg.SetProxy(proxy, proxy)
 	arg.SetGPU(true, true)
-	arg.SetDownloadFullInstaller(downloadFullInstaller)
-	arg.SetBuildFullPackage(buildPackage)
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {

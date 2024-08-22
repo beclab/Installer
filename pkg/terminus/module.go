@@ -83,3 +83,43 @@ func (r *DownloadFullInstallerModule) IsSkip() bool {
 func (m *DownloadFullInstallerModule) Init() {
 	m.Name = "DownloadFullInstaller"
 }
+
+type TidyPackageModule struct {
+	common.KubeModule
+	Skip bool
+}
+
+func (r *TidyPackageModule) IsSkip() bool {
+	return r.Skip
+}
+
+func (m *TidyPackageModule) Init() {
+	m.Name = "TidyInstallerPackage"
+
+	tidyInstallerPackage := &task.LocalTask{
+		Name:   "TidyInstallerPacker",
+		Action: new(TidyInstallerPackage),
+		Retry:  1,
+	}
+
+	m.Tasks = []task.Interface{
+		tidyInstallerPackage,
+	}
+}
+
+type PreparedModule struct {
+	common.KubeModule
+}
+
+func (m *PreparedModule) Init() {
+	m.Name = "PrepareFinished"
+
+	prepareFinished := &task.LocalTask{
+		Name:   "PrepareFinished",
+		Action: new(PrepareFinished),
+	}
+
+	m.Tasks = []task.Interface{
+		prepareFinished,
+	}
+}

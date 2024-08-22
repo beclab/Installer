@@ -81,11 +81,16 @@ func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
 		path.Join(runtime.GetRootDir(), ".installed"),
 		path.Join(common.RunLockDir, ".installed"),
 		path.Join("/usr/local/var/run", ".installed"),
+		path.Join("/tmp/install_log"),
 	}
 
 	for _, f := range installed {
 		if util.IsExist(f) {
-			util.RemoveFile(f)
+			if util.IsDir(f) {
+				util.RemoveDir(f)
+			} else {
+				util.RemoveFile(f)
+			}
 		}
 	}
 

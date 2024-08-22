@@ -12,6 +12,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
 	"bytetrade.io/web3os/installer/pkg/gpu"
+	_ "bytetrade.io/web3os/installer/pkg/gpu"
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/storage"
@@ -20,31 +21,37 @@ import (
 
 func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	var isK3s = strings.Contains(runtime.Arg.KubernetesVersion, "k3s")
+	if isK3s {
+	}
 	m := []module.Module{
-		// &precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
-		&terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion},
+		&terminus.TidyPackageModule{},
+		// &terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion},
+		&storage.DownloadStorageBinariesModule{},
+		&binaries.NodeBinariesModule{},
+		//
 		&precheck.PreCheckOsModule{},
 		&patch.InstallDepsModule{},
 		&os.ConfigSystemModule{},
-		&storage.DownloadStorageBinariesModule{},
+		//
 		// &storage.InitStorageModule{Skip: !runtime.Arg.IsCloudInstance},
 		// &storage.InstallMinioModule{Skip: runtime.Arg.Storage.StorageType != common.Minio},
 		// &storage.InstallRedisModule{},
 		// &binaries.K3sNodeBinariesModule{},
-		&binaries.NodeBinariesModule{},
-		&container.InstallContainerModule{Skip: isK3s, NoneCluster: true},
+		//
+		&container.InstallContainerModule{Skip: isK3s, NoneCluster: true}, //
 		// &k3s.InstallContainerModule{Skip: !isK3s},
-		&images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
-		&terminus.CopyToWizardModule{},
+		&images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages}, //
+		// &terminus.CopyToWizardModule{},
 	}
 
 	m = append(m,
 		&gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
 		&gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
 		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
-		&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
+		&gpu.InstallPluginModule{Skip: true},
+		&terminus.PreparedModule{},
 	)
 
 	return &pipeline.Pipeline{

@@ -53,8 +53,9 @@ func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
 			if err := binary.SHA256Check(); err != nil {
 				_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
 			} else {
-				continue
+				logger.Infof("%s exists", binary.FileName)
 			}
+			continue
 		}
 
 		if !exists || binary.OverWrite {

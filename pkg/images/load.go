@@ -47,6 +47,18 @@ func (p *CopyImageManifest) PreCheck(runtime connector.Runtime) (bool, error) {
 		util.CopyFile(imageNodeMf, path.Join(dst, cc.ManifestImageNode))
 	}
 
+	var rootImagesPath = path.Join(runtime.GetRootDir(), cc.ImagesDir, cc.ManifestImage)
+	var homeImagesPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
+	if !util.IsExist(homeImagesPath) && util.IsExist(rootImagesPath) {
+		util.CopyFile(rootImagesPath, homeImagesPath)
+	}
+
+	var rootImagesNodePath = path.Join(runtime.GetRootDir(), cc.ImagesDir, cc.ManifestImageNode)
+	var homeImagesNodePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImageNode)
+	if !util.IsExist(homeImagesNodePath) && util.IsExist(rootImagesNodePath) {
+		util.CopyFile(rootImagesNodePath, homeImagesNodePath)
+	}
+
 	return true, nil
 }
 

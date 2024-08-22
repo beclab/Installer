@@ -75,6 +75,7 @@ const (
 	gpgkey        = "gpgkey"
 	libnvidia     = "libnvidia-container"
 	installwizard = "install-wizard"
+	fullinstaller = "full-installer"
 )
 
 // KubeBinary Type field const
@@ -251,10 +252,10 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, constants.OsType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
 		component.Url = fmt.Sprintf(TerminusUrl, version, version, constants.OsType, arch)
 		component.CheckSum = false
-		component.BaseDir = filepath.Join(prePath, component.Type)
+		component.BaseDir = filepath.Join(prePath)
 	case minio:
 		component.Type = COMPONENT
-		component.FileName = "minio"
+		component.FileName = fmt.Sprintf("minio.%s", version) // "minio"
 		component.Url = fmt.Sprintf(MinioUrl, arch, version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
@@ -323,6 +324,9 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
+	case fullinstaller: // todo
+		component.Type = WIZARD
+		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
 	case cudakeyring: // + gpu
 		component.Type = GPU
 		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)
@@ -484,9 +488,9 @@ func (b *KubeBinary) Download() error {
 	for i := 5; i > 0; i-- {
 		totalSize, err := b.GetFileSize()
 		if err != nil {
-			logger.Warnf("get file %s size failed", b.FileName)
+			logger.Warnf("get file %s %s size failed", b.FileName, b.Version)
 		} else if totalSize > 0 {
-			logger.Debugf("get file %s size: %s", b.FileName, utils.FormatBytes(totalSize))
+			logger.Debugf("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
 		}
 
 		client := grab.NewClient()
@@ -561,7 +565,7 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
-		logger.Debugf("%s download succeeded", b.FileName)
+		logger.Debugf("%s %s download succeeded", b.FileName, b.Version)
 		line <- []interface{}{fmt.Sprintf("%s download succeeded", b.FileName), common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 		break
 	}

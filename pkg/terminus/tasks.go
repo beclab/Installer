@@ -156,3 +156,48 @@ func (t *DownloadFullInstaller) Execute(runtime connector.Runtime) error {
 
 	return nil
 }
+
+type TidyInstallerPackage struct {
+	common.KubeAction
+}
+
+func (t *TidyInstallerPackage) Execute(runtime connector.Runtime) error {
+	var terminusPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey)
+	if !util.IsExist(terminusPath) {
+		util.Mkdir(terminusPath)
+	}
+
+	var currentPkgPath = path.Join(runtime.GetRootDir(), cc.PackageCacheDir)
+	if util.CountDirFiles(currentPkgPath) > 0 {
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("rm -rf %s/pkg && mv %s %s", terminusPath, currentPkgPath, terminusPath), false, true); err != nil {
+			return fmt.Errorf("move pkg %s to %s failed", currentPkgPath, terminusPath)
+		}
+	}
+
+	var currentComponentsPath = path.Join(runtime.GetRootDir(), cc.ComponentsDir)
+	if util.CountDirFiles(currentComponentsPath) > 0 {
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("rm -rf %s/pkg/components && cp -a %s %s/pkg/", terminusPath, currentComponentsPath, terminusPath), false, true); err != nil {
+			return fmt.Errorf("copy components %s to %s failed", currentComponentsPath, currentPkgPath)
+		}
+	}
+
+	var currentImagesPath = path.Join(runtime.GetRootDir(), cc.ImagesDir)
+	var cmd = fmt.Sprintf("rm -rf %s/images && mv %s %s && mkdir %s && cp %s/images/images.* %s/", terminusPath, currentImagesPath, terminusPath, currentImagesPath, terminusPath, currentImagesPath)
+	if _, err := runtime.GetRunner().Host.CmdExt(cmd, false, true); err != nil {
+		return fmt.Errorf("move images %s to %s failed", currentImagesPath, terminusPath)
+	}
+
+	return nil
+}
+
+type PrepareFinished struct {
+	common.KubeAction
+}
+
+func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
+	var finPath = path.Join("/var/run/lock/.prepared")
+	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", finPath), false, true); err != nil {
+		return err
+	}
+	return nil
+}

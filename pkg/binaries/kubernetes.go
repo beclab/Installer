@@ -67,10 +67,19 @@ func K8sFilesDownloadHTTP(kubeConf *common.KubeConf, path, version, arch string,
 			if err := binary.SHA256Check(); err != nil {
 				_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
 			} else {
+				logger.Infof("%s exists", binary.FileName)
 				if binary.ID == "helm" {
 					util.CopyFile(fmt.Sprintf("%s/helm", binary.BaseDir), "/usr/local/bin/helm")
 					_ = exec.Command("/bin/sh", "-c", "chmod +x /usr/local/bin/helm").Run()
 				}
+				continue
+			}
+		}
+		if !exists && binary.ID == "helm" {
+			if util.IsExist(fmt.Sprintf("%s/helm", binary.BaseDir)) {
+				logger.Infof("%s exists", binary.FileName)
+				util.CopyFile(fmt.Sprintf("%s/helm", binary.BaseDir), "/usr/local/bin/helm")
+				_ = exec.Command("/bin/sh", "-c", "chmod +x /usr/local/bin/helm").Run()
 				continue
 			}
 		}

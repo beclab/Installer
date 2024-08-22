@@ -23,7 +23,7 @@ func NewCmdPrepare() *cobra.Command {
 		Use:   "prepare",
 		Short: "Prepare install",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := pipelines.PrepareSystemPipeline(o.PrepareOptions.Version, o.PrepareOptions.RegistryMirrors, o.PrepareOptions.DownloadFullInstaller, o.PrepareOptions.Package); err != nil {
+			if err := pipelines.PrepareSystemPipeline(o.PrepareOptions.Version, o.PrepareOptions.RegistryMirrors); err != nil {
 				logger.Errorf("prepare system error: %v", err)
 			}
 		},
