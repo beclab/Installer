@@ -328,6 +328,9 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.Type = WIZARD
 		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
 	case cudakeyring: // + gpu
+		if strings.Contains(constants.OsVersion, "24.") {
+			version = "1.1"
+		}
 		component.Type = GPU
 		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)
 		component.FileNameHash = utils.MD5(component.FileName)
