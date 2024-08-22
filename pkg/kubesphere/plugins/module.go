@@ -76,8 +76,8 @@ func (t *DeployKsPluginsModule) Init() {
 		},
 		Action:   new(CheckNodeState),
 		Parallel: false,
-		Retry:    500,
-		Delay:    5 * time.Second,
+		Retry:    20,
+		Delay:    10 * time.Second,
 	}
 
 	initNs := &task.RemoteTask{
