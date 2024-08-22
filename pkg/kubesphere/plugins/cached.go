@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
@@ -24,14 +25,19 @@ func (t *CopyManifest) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("images manifest directory not exists !!!")
 	}
 
-	filepath.Walk(maniDir, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(maniDir, func(pathx string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
 
-		if err := util.CopyFile(path, fmt.Sprintf("%s/%s", cachedDir, info.Name())); err != nil {
-			logger.Errorf("copy %s to %s failed: %v", path, cachedDir, err)
+		if strings.Contains(info.Name(), "tar") || strings.Contains(info.Name(), "tar.gz") {
+			util.MoveFile(pathx, path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ImagesDir))
+		} else {
+			if err := util.CopyFile(pathx, fmt.Sprintf("%s/%s", cachedDir, info.Name())); err != nil {
+				logger.Errorf("copy %s to %s failed: %v", pathx, cachedDir, err)
+			}
 		}
+
 		return nil
 	})
 	return nil
