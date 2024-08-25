@@ -27,6 +27,7 @@ type CliTerminusUninstallOptions struct {
 	DeleteCache   bool
 	StorageType   string // s3 oss
 	StorageBucket string
+	Quiet         bool
 }
 
 func NewCliTerminusUninstallOptions() *CliTerminusUninstallOptions {
@@ -41,6 +42,8 @@ func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&o.StorageType, "storage-type", "", "Set storage type, e.g., s3 or oss")
 	cmd.Flags().StringVar(&o.StorageBucket, "storage-bucket", "", "Set storage bucket")
+
+	cmd.Flags().BoolVar(&o.Quiet, "quiet", false, "Quiet mode, default: false")
 }
 
 type CliTerminusInstallOptions struct {

@@ -6,6 +6,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/filesystem"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
@@ -23,10 +24,11 @@ func DeleteMinikubePhase(args common.Argument, runtime *common.KubeRuntime) []mo
 }
 
 func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
+	var p = util.IsExist("/var/run/lock/.prepared")
 	return []module.Module{
-		&k3s.DeleteClusterModule{},
 		&kubernetes.ResetClusterModule{},
-		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
+		&container.UninstallContainerModule{Skip: p},
+		&k3s.DeleteClusterModule{},
 		&os.ClearOSEnvironmentModule{},
 		&certs.UninstallAutoRenewCertsModule{},
 		&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},

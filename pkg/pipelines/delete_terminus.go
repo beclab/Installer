@@ -19,28 +19,16 @@ import (
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
-	var input string
-	var err error
 	var kubeVersion = phase.GetCurrentKubeVersion()
-	var deleteCacheEnv = os.Getenv(common.EnvDeleteCacheName)
-	var deleteCache bool
-
-	if !opt.DeleteCache && strings.EqualFold(deleteCacheEnv, common.TRUE) {
-		deleteCache = true
-	}
-
-	if !deleteCache {
-		input, err = readDeleteCacheInput()
-		if err != nil {
-			return err
-		}
+	var deleteCache, err = formatDeleteCache(opt.Quiet, opt.DeleteCache)
+	if err != nil {
+		return err
 	}
 
 	var arg = common.NewArgument()
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
-	arg.SetDeleteCRI(false)
-	arg.SetDeleteCache(strings.EqualFold(input, common.YES))
+	arg.SetDeleteCache(deleteCache)
 	arg.SetStorage(&common.Storage{
 		StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
 		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
@@ -104,6 +92,23 @@ func formatParms(key, val string) string {
 	return ""
 }
 
-func formatIsCloudInstance() bool {
-	return strings.EqualFold(os.Getenv(common.EnvCloudInstanceName), common.TRUE)
+func formatDeleteCache(quiet, deleteCache bool) (bool, error) {
+	var input string
+	var err error
+	if !quiet {
+		if !deleteCache {
+			input, err = readDeleteCacheInput()
+			if err != nil {
+				return false, err
+			}
+		} else {
+			input = "true"
+		}
+	} else {
+		if deleteCache {
+			input = "true"
+		}
+	}
+
+	return strings.EqualFold(input, common.TRUE), nil
 }
