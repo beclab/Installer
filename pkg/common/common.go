@@ -220,7 +220,6 @@ const (
 )
 
 const (
-	EnvDeleteCacheName      = "DELETE_CACHE"
 	EnvCloudInstanceName    = "TERMINUS_IS_CLOUD_VERSION"
 	EnvStorageTypeName      = "STORAGE"
 	EnvStorageBucketName    = "S3_BUCKET"

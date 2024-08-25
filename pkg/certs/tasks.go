@@ -318,7 +318,7 @@ func (f *FetchKubeConfig) Execute(runtime connector.Runtime) error {
 	}
 
 	host := runtime.RemoteHost()
-	if err := runtime.GetRunner().Fetch(filepath.Join(runtime.GetWorkDir(), host.GetName(), "admin.conf"), tmpConfigFile); err != nil {
+	if err := runtime.GetRunner().Fetch(filepath.Join(runtime.GetWorkDir(), host.GetName(), "admin.conf"), tmpConfigFile, false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "fetch kube config file failed")
 	}
 	return nil

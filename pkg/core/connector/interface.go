@@ -109,9 +109,12 @@ type Host interface {
 
 	Echo()
 	Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
+	Fetch(local, remote string, printOutput bool, printLine bool) error
+	Scp(local, remote string) error
+	FileExist(remote string) bool
+	DirExist(remote string) (bool, error)
 	Cmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExt(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	MkDirAll(path string, mode string) error
-	Scp(local, remote string) error
 }

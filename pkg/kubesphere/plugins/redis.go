@@ -208,8 +208,8 @@ func (m *DeployRedisModule) Init() {
 		},
 		Action:   new(PatchRedisStatus),
 		Parallel: false,
-		Retry:    50,
-		Delay:    2 * time.Second,
+		Retry:    10,
+		Delay:    5 * time.Second,
 	}
 
 	m.Tasks = []task.Interface{

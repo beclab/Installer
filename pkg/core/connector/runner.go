@@ -18,7 +18,6 @@ package connector
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,11 +35,11 @@ type Runner struct {
 }
 
 func (r *Runner) Exec(cmd string, printOutput bool, printLine bool) (string, int, error) {
-	if !r.Host.GetMinikube() {
-		if r.Conn == nil {
-			return "", 1, errors.New("no ssh connection available")
-		}
-	}
+	// if !r.Host.GetMinikube() {
+	// 	if r.Conn == nil {
+	// 		return "", 1, errors.New("no ssh connection available")
+	// 	}
+	// }
 
 	var stdout string
 	var code int
@@ -49,7 +48,9 @@ func (r *Runner) Exec(cmd string, printOutput bool, printLine bool) (string, int
 	if r.Host.GetMinikube() {
 		stdout, code, err = r.Host.Exec(cmd, printOutput, printLine)
 	} else {
-		stdout, code, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
+		// stdout, code, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
+		// stdout, code, err = r.Host.Exec(SudoPrefix(cmd), printOutput, printLine)
+		stdout, code, err = r.Host.Exec(cmd, printOutput, printLine)
 	}
 
 	if err != nil {
@@ -74,18 +75,19 @@ func (r *Runner) Cmd(cmd string, printOutput bool, printLine bool) (string, erro
 }
 
 func (r *Runner) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
-	if !r.Host.GetMinikube() {
-		if r.Conn == nil {
-			return "", errors.New("no ssh connection available")
-		}
-	}
+	// if !r.Host.GetMinikube() {
+	// 	if r.Conn == nil {
+	// 		return "", errors.New("no ssh connection available")
+	// 	}
+	// }
 
 	var stdout string
 	var err error
 	if r.Host.GetMinikube() {
 		stdout, _, err = r.Host.Exec(cmd, printOutput, printLine)
 	} else {
-		stdout, _, err = r.Conn.Exec(cmd, r.Host, printLine)
+		stdout, _, err = r.Host.Exec(cmd, printOutput, printLine)
+		// stdout, _, err = r.Conn.Exec(cmd, r.Host, printLine)
 	}
 
 	if printOutput {
@@ -102,15 +104,15 @@ func (r *Runner) SudoExec(cmd string, printOutput bool, printLine bool) (string,
 }
 
 func (r *Runner) SudoCmd(cmd string, printOutput bool, printLine bool) (string, error) {
-	return r.Cmd(cmd, printOutput, printLine)
+	return r.Cmd(SudoPrefix(cmd), printOutput, printLine)
 }
 
 func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
-	if !r.Host.GetMinikube() {
-		if r.Conn == nil {
-			return "", errors.New("no ssh connection available")
-		}
-	}
+	// if !r.Host.GetMinikube() {
+	// 	if r.Conn == nil {
+	// 		return "", errors.New("no ssh connection available")
+	// 	}
+	// }
 
 	var stdout string
 	var err error
@@ -119,7 +121,8 @@ func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOut
 		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
 		stdout, err = r.Host.CmdExtWithContext(ctx, cmd, printOutput, printLine)
 	} else {
-		stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
+		stdout, _, err = r.Host.Exec(SudoPrefix(cmd), printOutput, printLine)
+		// stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
 	}
 
 	if printOutput {
@@ -132,11 +135,11 @@ func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOut
 }
 
 func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
-	if !r.Host.GetMinikube() {
-		if r.Conn == nil {
-			return "", errors.New("no ssh connection available")
-		}
-	}
+	// if !r.Host.GetMinikube() {
+	// 	if r.Conn == nil {
+	// 		return "", errors.New("no ssh connection available")
+	// 	}
+	// }
 
 	var stdout string
 	var err error
@@ -145,7 +148,8 @@ func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (strin
 		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
 		stdout, err = r.Host.CmdExt(cmd, printOutput, printLine)
 	} else {
-		stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
+		// stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
+		stdout, err = r.Host.CmdExt(SudoPrefix(cmd), printOutput, printLine)
 	}
 
 	if printOutput {
@@ -157,12 +161,13 @@ func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (strin
 	return stdout, err
 }
 
-func (r *Runner) Fetch(local, remote string) error {
-	if r.Conn == nil {
-		return errors.New("no ssh connection available")
-	}
+func (r *Runner) Fetch(local, remote string, printOutput bool, printLine bool) error {
+	// if r.Conn == nil {
+	// 	return errors.New("no ssh connection available")
+	// }
 
-	if err := r.Conn.Fetch(local, remote, r.Host); err != nil {
+	// if err := r.Conn.Fetch(local, remote, r.Host); err != nil {
+	if err := r.Host.Fetch(local, remote, printOutput, printLine); err != nil {
 		logger.Debugf("fetch remote file %s to local %s failed: %v", remote, local, err)
 		return err
 	}
@@ -171,17 +176,18 @@ func (r *Runner) Fetch(local, remote string) error {
 }
 
 func (r *Runner) Scp(local, remote string) error {
-	if !r.Host.GetMinikube() {
-		if r.Conn == nil {
-			return errors.New("no ssh connection available")
-		}
-	}
+	// if !r.Host.GetMinikube() {
+	// 	if r.Conn == nil {
+	// 		return errors.New("no ssh connection available")
+	// 	}
+	// }
 
 	var err error
 	if r.Host.GetMinikube() {
 		err = r.Host.Scp(local, remote)
 	} else {
-		err = r.Conn.Scp(local, remote, r.Host)
+		// err = r.Conn.Scp(local, remote, r.Host)
+		err = r.Host.Scp(local, remote)
 	}
 
 	if err != nil {
@@ -194,9 +200,9 @@ func (r *Runner) Scp(local, remote string) error {
 
 func (r *Runner) SudoScp(local, remote string) error {
 	if !r.Host.GetMinikube() {
-		if r.Conn == nil {
-			return errors.New("no ssh connection available")
-		}
+		// if r.Conn == nil {
+		// 	return errors.New("no ssh connection available")
+		// }
 	}
 
 	// ! remote             /etc/kubernetes/addons/clusterconfigurations.yaml
@@ -216,7 +222,8 @@ func (r *Runner) SudoScp(local, remote string) error {
 		baseRemotePath = filepath.Dir(remote)
 	}
 	if !r.Host.GetMinikube() {
-		if err := r.Conn.MkDirAll(baseRemotePath, "", r.Host); err != nil {
+		// if err := r.Conn.MkDirAll(baseRemotePath, "", r.Host); err != nil {
+		if err := r.Host.MkDirAll(baseRemotePath, "755"); err != nil {
 			return err
 		}
 	}
@@ -258,21 +265,21 @@ func (r *Runner) SudoScp(local, remote string) error {
 }
 
 func (r *Runner) FileExist(remote string) (bool, error) {
-	if r.Conn == nil {
-		return false, errors.New("no ssh connection available")
-	}
-
-	ok := r.Conn.RemoteFileExist(remote, r.Host)
+	// if r.Conn == nil {
+	// 	return false, errors.New("no ssh connection available")
+	// }
+	// ok := r.Conn.RemoteFileExist(remote, r.Host)
+	ok := r.Host.FileExist(remote)
 	logger.Debugf("check remote file exist: %v", ok)
 	return ok, nil
 }
 
 func (r *Runner) DirExist(remote string) (bool, error) {
-	if r.Conn == nil {
-		return false, errors.New("no ssh connection available")
-	}
+	// if r.Conn == nil {
+	// 	return false, errors.New("no ssh connection available")
+	// }
 
-	ok, err := r.Conn.RemoteDirExist(remote, r.Host)
+	ok, err := r.Host.DirExist(remote)
 	if err != nil {
 		logger.Debugf("check remote dir exist failed: %v", err)
 		return false, err
@@ -282,11 +289,11 @@ func (r *Runner) DirExist(remote string) (bool, error) {
 }
 
 func (r *Runner) MkDir(path string) error {
-	if r.Conn == nil {
-		return errors.New("no ssh connection available")
-	}
+	// if r.Conn == nil {
+	// 	return errors.New("no ssh connection available")
+	// }
 
-	if err := r.Conn.MkDirAll(path, "", r.Host); err != nil {
+	if err := r.Host.MkDirAll(path, "755"); err != nil {
 		logger.Errorf("make remote dir %s failed: %v", path, err)
 		return err
 	}
@@ -294,11 +301,12 @@ func (r *Runner) MkDir(path string) error {
 }
 
 func (r *Runner) Chmod(path string, mode os.FileMode) error {
-	if r.Conn == nil {
-		return errors.New("no ssh connection available")
-	}
+	// if r.Conn == nil {
+	// 	return errors.New("no ssh connection available")
+	// }
 
-	if err := r.Conn.Chmod(path, mode); err != nil {
+	// if err := r.Conn.Chmod(path, mode); err != nil {
+	if err := os.Chmod(path, mode); err != nil {
 		logger.Errorf("chmod remote path %s failed: %v", path, err)
 		return err
 	}
@@ -306,12 +314,13 @@ func (r *Runner) Chmod(path string, mode os.FileMode) error {
 }
 
 func (r *Runner) FileMd5(path string) (string, error) {
-	if r.Conn == nil {
-		return "", errors.New("no ssh connection available")
-	}
+	// if r.Conn == nil {
+	// 	return "", errors.New("no ssh connection available")
+	// }
 
-	cmd := fmt.Sprintf("md5sum %s | cut -d\" \" -f1", path)
-	out, _, err := r.Conn.Exec(cmd, r.Host, false)
+	// cmd := fmt.Sprintf("md5sum %s | cut -d\" \" -f1", path)
+	// out, _, err := r.Host.Exec(cmd, false, false)
+	out, err := util.FileMD5(path)
 	if err != nil {
 		logger.Errorf("count remote %s md5 failed: %v", path, err)
 		return "", err

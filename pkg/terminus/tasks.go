@@ -2,7 +2,6 @@ package terminus
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -21,57 +20,69 @@ type CopyToWizard struct {
 }
 
 func (t *CopyToWizard) Execute(runtime connector.Runtime) error {
-	var wizardPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir)
-	if !util.IsExist(wizardPath) {
-		return nil
+	var terminusComponentsDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.ComponentsDir)
+	var gpuDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.GpuDir)
+	var homeComponentsDir = path.Join(runtime.GetRootDir(), cc.ComponentsDir)
+	if !util.IsExist(homeComponentsDir) {
+		runtime.GetRunner().Host.CmdExt(fmt.Sprintf("cp -a %s %s", terminusComponentsDir, runtime.GetRootDir()), false, true)
 	}
-
-	var componentsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.ComponentsDir)
-	if !util.IsExist(componentsPath) {
-		return nil
-	}
-
-	var homeDir = path.Join("/", "home")
-	homeFiles, err := ioutil.ReadDir(homeDir)
-	if err != nil {
-		return nil
-	}
-
-	var find = false
-	for _, f := range homeFiles {
-		if !f.IsDir() {
-			continue
-		}
-		find = true
-		var aname = f.Name()
-		var np = path.Join("/home", aname, "install-wizard")
-		copyWizard(wizardPath, np, runtime)
-		var cp = path.Join("/home", aname, "install-wizard", cc.ComponentsDir)
-		copyWizard(componentsPath, cp, runtime)
-
-		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chown -R %s:%s %s", aname, aname, np), false, false); err != nil {
-			logger.Errorf("chown %s failed", aname)
-		}
-		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chmod +x %s", np), false, false); err != nil {
-			logger.Errorf("chmod %s failed", np)
-		}
-	}
-
-	if !find {
-		var aname = "home"
-		var np = path.Join("/home", aname, "install-wizard")
-		copyWizard(wizardPath, np, runtime)
-		var cp = path.Join("/home", aname, "install-wizard", cc.ComponentsDir)
-		copyWizard(componentsPath, cp, runtime)
-		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chown -R %s:%s %s", aname, aname, np), false, false); err != nil {
-			logger.Errorf("chown %s failed", aname)
-		}
-		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chmod +x %s", np), false, false); err != nil {
-			logger.Errorf("chmod %s failed", np)
-		}
+	if util.IsExist(gpuDir) && util.CountDirFiles(gpuDir) > 0 {
+		runtime.GetRunner().Host.CmdExt(fmt.Sprintf("cp  %s/* %s/", gpuDir, homeComponentsDir), false, true)
 	}
 
 	return nil
+
+	// var wizardPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir)
+	// if !util.IsExist(wizardPath) {
+	// 	return nil
+	// }
+
+	// var componentsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.ComponentsDir)
+	// if !util.IsExist(componentsPath) {
+	// 	return nil
+	// }
+
+	// var homeDir = path.Join("/", "home")
+	// homeFiles, err := ioutil.ReadDir(homeDir)
+	// if err != nil {
+	// 	return nil
+	// }
+
+	// var find = false
+	// for _, f := range homeFiles {
+	// 	if !f.IsDir() {
+	// 		continue
+	// 	}
+	// 	find = true
+	// 	var aname = f.Name()
+	// 	var np = path.Join("/home", aname, "install-wizard")
+	// 	copyWizard(wizardPath, np, runtime)
+	// 	var cp = path.Join("/home", aname, "install-wizard", cc.ComponentsDir)
+	// 	copyWizard(componentsPath, cp, runtime)
+
+	// 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chown -R %s:%s %s", aname, aname, np), false, false); err != nil {
+	// 		logger.Errorf("chown %s failed", aname)
+	// 	}
+	// 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chmod +x %s", np), false, false); err != nil {
+	// 		logger.Errorf("chmod %s failed", np)
+	// 	}
+	// }
+
+	// if !find {
+	// 	var aname = "home"
+	// 	var np = path.Join("/home", aname, "install-wizard")
+	// 	copyWizard(wizardPath, np, runtime)
+	// 	var cp = path.Join("/home", aname, "install-wizard", cc.ComponentsDir)
+	// 	copyWizard(componentsPath, cp, runtime)
+	// 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chown -R %s:%s %s", aname, aname, np), false, false); err != nil {
+	// 		logger.Errorf("chown %s failed", aname)
+	// 	}
+	// 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("chmod +x %s", np), false, false); err != nil {
+	// 		logger.Errorf("chmod %s failed", np)
+	// 	}
+	// }
+
+	// return nil
 }
 
 type SetUserInfo struct {
@@ -162,6 +173,11 @@ type TidyInstallerPackage struct {
 }
 
 func (t *TidyInstallerPackage) Execute(runtime connector.Runtime) error {
+	var preparedLock = path.Join("/var/run/lock/.prepared")
+	if util.IsExist(preparedLock) {
+		util.RemoveFile(preparedLock)
+	}
+
 	var terminusPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey)
 	if !util.IsExist(terminusPath) {
 		util.Mkdir(terminusPath)

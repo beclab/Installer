@@ -18,7 +18,9 @@ package connector
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/pkg/core/cache"
@@ -201,6 +203,52 @@ func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout st
 	return stdout, code, err
 }
 
+func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool) error {
+	output, _, err := b.Exec(SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), printOutput, printLine)
+	if err != nil {
+		return fmt.Errorf("open remote file failed %v, remote path: %s", err, remote)
+	}
+
+	err = util.MkFileFullPathDir(local)
+	if err != nil {
+		return err
+	}
+	// open local Destination file
+	dstFile, err := os.Create(local)
+	if err != nil {
+		return fmt.Errorf("create local file failed %v", err)
+	}
+	defer dstFile.Close()
+	// copy to local file
+	//_, err = srcFile.WriteTo(dstFile)
+	if base64Str, err := base64.StdEncoding.DecodeString(output); err != nil {
+		return err
+	} else {
+		if _, err = dstFile.WriteString(string(base64Str)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *BaseHost) Scp(local, remote string) error {
+	var remoteDir = filepath.Dir(remote)
+	if !util.IsExist(remoteDir) {
+		util.Mkdir(remoteDir)
+	}
+	var cmd = fmt.Sprintf("cp %s %s", local, remote)
+	_, _, err := b.Exec(cmd, false, false)
+	return err
+}
+
+func (b *BaseHost) FileExist(remote string) bool {
+	return util.IsExist(remote)
+}
+func (b *BaseHost) DirExist(remote string) (bool, error) {
+	return util.IsExist(remote), nil
+}
+
 func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, error) {
 	stdout, _, err := b.Exec(cmd, printOutput, printLine)
 	if err != nil {
@@ -231,16 +279,6 @@ func (b *BaseHost) CmdExtWithContext(ctx context.Context, cmd string, printOutpu
 	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
 
 	return stdout, err
-}
-
-func (b *BaseHost) Scp(local, remote string) error {
-	var remoteDir = filepath.Dir(remote)
-	if !util.IsExist(remoteDir) {
-		util.Mkdir(remoteDir)
-	}
-	var cmd = fmt.Sprintf("cp %s %s", local, remote)
-	_, _, err := b.Exec(cmd, false, false)
-	return err
 }
 
 func (b *BaseHost) MkDirAll(path string, mode string) error {
