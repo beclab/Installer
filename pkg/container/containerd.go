@@ -17,7 +17,9 @@
 package container
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -150,7 +152,25 @@ type DisableContainerd struct {
 func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().SudoCmd(
 		"systemctl disable containerd && systemctl stop containerd", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("disable and stop containerd failed"))
+		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("disable and stop containerd failed"))
+	}
+
+	if err := umountPoints(runtime); err != nil {
+		return err
+	}
+
+	var cmd = "ps -ef | grep containerd-shim-runc-v2 | grep -v grep | awk '{print $2}'"
+	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if err == nil || stdout != "" {
+		scanner := bufio.NewScanner(strings.NewReader(stdout))
+		for scanner.Scan() {
+			line := scanner.Text()
+			fields := strings.Fields(line)
+			if len(fields) > 1 {
+				pid := fields[1]
+				runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, true)
+			}
+		}
 	}
 
 	// remove containerd related files
@@ -164,6 +184,7 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 		"/usr/local/bin/ctr",         // cloud version
 		"/etc/systemd/system/containerd.service",
 		"/lib/systemd/system/containerd.service", // apt installed
+		"/run/containerd",                        //
 		filepath.Join("/etc/systemd/system", templates.ContainerdService.Name()),
 		filepath.Join("/etc/containerd", templates.ContainerdConfig.Name()),
 		filepath.Join("/etc", templates.CrictlConfig.Name()),
@@ -177,6 +198,35 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 	for _, file := range files {
 		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
 	}
+	return nil
+}
+
+func umountPoints(runtime connector.Runtime) error {
+	file, err := os.Open("/proc/mounts")
+	if err != nil {
+		return fmt.Errorf("failed to open /proc/mounts: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.Contains(line, "containerd") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) >= 2 {
+			p := fields[1]
+			if util.IsExist(p) {
+				runtime.GetRunner().SudoCmd(fmt.Sprintf("umount %s", p), false, true)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading /proc/mounts: %w", err)
+	}
+
 	return nil
 }
 
