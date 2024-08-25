@@ -203,6 +203,18 @@ func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout st
 	return stdout, code, err
 }
 
+func (b *BaseHost) ExecExt(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
+	stdout, code, err = util.Exec(cmd, printOutput, printLine)
+
+	if printOutput {
+		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
+	}
+
+	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
+
+	return stdout, code, err
+}
+
 func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool) error {
 	output, _, err := b.Exec(SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), printOutput, printLine)
 	if err != nil {

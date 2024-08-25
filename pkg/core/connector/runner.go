@@ -86,7 +86,7 @@ func (r *Runner) CmdExt(cmd string, printOutput bool, printLine bool) (string, e
 	if r.Host.GetMinikube() {
 		stdout, _, err = r.Host.Exec(cmd, printOutput, printLine)
 	} else {
-		stdout, _, err = r.Host.Exec(cmd, printOutput, printLine)
+		stdout, _, err = r.Host.ExecExt(cmd, printOutput, printLine)
 		// stdout, _, err = r.Conn.Exec(cmd, r.Host, printLine)
 	}
 
