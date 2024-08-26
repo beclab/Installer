@@ -223,8 +223,8 @@ func getProcessIds(pid string, runtime connector.Runtime) []string {
 	var childs = getChildPids(pid, runtime)
 	if childs != nil && len(childs) > 0 {
 		for _, child := range childs {
-			t := getChildPids(child, runtime)
-			if c == nil || len(c) == 0 {
+			t := getProcessIds(child, runtime)
+			if t == nil || len(t) == 0 {
 				continue
 			}
 			c = append(c, t...)
