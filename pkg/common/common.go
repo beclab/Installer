@@ -169,6 +169,7 @@ const (
 const (
 	CommandIptables  = "iptables"
 	CommandGPG       = "gpg"
+	CommandSudo      = "sudo"
 	CommandSocat     = "socat"
 	CommandConntrack = "conntrack"
 	CommandNtpdate   = "ntpdate"

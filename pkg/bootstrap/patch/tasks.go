@@ -38,7 +38,10 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	var pre_reqs = "apt-transport-https ca-certificates curl"
 
 	if _, err := util.GetCommand(common.CommandGPG); err != nil {
-		pre_reqs = pre_reqs + " gnupg"
+		pre_reqs = pre_reqs + " gnupg "
+	}
+	if _, err := util.GetCommand(common.CommandSudo); err != nil {
+		pre_reqs = pre_reqs + " sudo "
 	}
 
 	switch constants.OsPlatform {
@@ -46,9 +49,11 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		debianFrontend = "DEBIAN_FRONTEND=noninteractive"
 		fallthrough
 	case common.Ubuntu, common.Raspbian:
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, true); err != nil {
-			logger.Errorf("update os error %v", err)
-			return err
+		if !t.KubeConf.Arg.IsProxmox() {
+			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, true); err != nil {
+				logger.Errorf("update os error %v", err)
+				return err
+			}
 		}
 
 		if _, err := runtime.GetRunner().SudoCmd("apt --fix-broken install -y", false, true); err != nil {

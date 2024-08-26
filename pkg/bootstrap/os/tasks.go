@@ -331,7 +331,7 @@ func (r *RemoveNodeFiles) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, file := range nodeFiles {
-		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
+		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, false)
 	}
 	return nil
 }
@@ -342,7 +342,7 @@ type RemoveFiles struct {
 
 func (r *RemoveFiles) Execute(runtime connector.Runtime) error {
 	for _, file := range clusterFiles {
-		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
+		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, false)
 	}
 	return nil
 }

@@ -202,6 +202,10 @@ func (a *Argument) SetWSL(wsl bool) {
 	a.WSL = wsl
 }
 
+func (a *Argument) IsProxmox() bool {
+	return strings.Contains(constants.OsKernel, "-pve")
+}
+
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 	if kubeVersion != "" {
 		a.KubernetesVersion = kubeVersion

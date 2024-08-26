@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container/templates"
@@ -151,7 +152,7 @@ type DisableContainerd struct {
 
 func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().SudoCmd(
-		"systemctl disable containerd && systemctl stop containerd", false, true); err != nil {
+		"systemctl disable containerd && systemctl stop containerd", false, false); err != nil {
 		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("disable and stop containerd failed"))
 	}
 
@@ -168,7 +169,7 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 			fields := strings.Fields(line)
 			if len(fields) > 1 {
 				pid := fields[1]
-				runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, true)
+				runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, false)
 			}
 		}
 	}
@@ -397,6 +398,8 @@ func MigrateSelfNodeCriTasks(runtime connector.Runtime, kubeAction common.KubeAc
 			},
 			Action:   new(DisableContainerd),
 			Parallel: false,
+			Retry:    2,
+			Delay:    5 * time.Second,
 		}
 		tasks = append(tasks, CordonNode, DrainNode, Uninstall)
 	}

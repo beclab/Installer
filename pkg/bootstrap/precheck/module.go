@@ -38,7 +38,7 @@ func (m *GetStorageKeyModule) Init() {
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
 		Action:   new(GetStorageKeyTask),
 		Parallel: false,
-		Retry:    0,
+		Retry:    1,
 	}
 
 	m.Tasks = []task.Interface{
