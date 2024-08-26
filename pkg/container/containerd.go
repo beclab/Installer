@@ -151,16 +151,11 @@ type DisableContainerd struct {
 }
 
 func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd(
-		"systemctl disable containerd && systemctl stop containerd", false, false); err != nil {
-		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("disable and stop containerd failed"))
-	}
+	_, _ = runtime.GetRunner().SudoCmd("systemctl disable containerd && systemctl stop containerd", false, false)
 
-	if err := umountPoints(runtime); err != nil {
-		return err
-	}
-
-	var cmd = "ps -ef | grep containerd-shim-runc-v2 | grep -v grep | awk '{print $2}'"
+	var pids []string
+	var childpids []string
+	var cmd = "ps -ef | grep containerd-shim | grep -v grep | awk '{print $2}'"
 	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
 	if err == nil || stdout != "" {
 		scanner := bufio.NewScanner(strings.NewReader(stdout))
@@ -169,9 +164,30 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 			fields := strings.Fields(line)
 			if len(fields) > 1 {
 				pid := fields[1]
-				runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, false)
+				pids = append(pids, pid)
 			}
 		}
+
+		if len(pids) > 0 {
+			for _, pid := range pids {
+				var p = getProcessIds(pid, runtime)
+				childpids = append(childpids, p...)
+			}
+		}
+	}
+
+	var allPids []string
+	allPids = append(allPids, childpids...)
+	allPids = append(allPids, pids...)
+
+	if len(allPids) > 0 {
+		for _, pid := range allPids {
+			runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, false)
+		}
+	}
+
+	if err := umountPoints(runtime); err != nil {
+		return err
 	}
 
 	// remove containerd related files
@@ -200,6 +216,39 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
 	}
 	return nil
+}
+
+func getProcessIds(pid string, runtime connector.Runtime) []string {
+	var c []string
+	var childs = getChildPids(pid, runtime)
+	if childs != nil && len(childs) > 0 {
+		for _, child := range childs {
+			t := getChildPids(child, runtime)
+			if c == nil || len(c) == 0 {
+				continue
+			}
+			c = append(c, t...)
+		}
+		c = append(c, childs...)
+		return c
+	}
+	return nil
+}
+
+func getChildPids(pid string, runtime connector.Runtime) []string {
+	var childs []string
+	var cmd = fmt.Sprintf("pgrep -P %s", pid)
+	chpids, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if err == nil && chpids != "" {
+		scanner := bufio.NewScanner(strings.NewReader(chpids))
+		for scanner.Scan() {
+			line := scanner.Text()
+			if line != "" {
+				childs = append(childs, line)
+			}
+		}
+	}
+	return childs
 }
 
 func umountPoints(runtime connector.Runtime) error {
