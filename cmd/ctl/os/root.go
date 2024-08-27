@@ -22,5 +22,7 @@ func NewCmdOs() *cobra.Command {
 	rootOsCmd.AddCommand(NewCmdDebugOs())
 	// rootOsCmd.AddCommand(NewCmdRestoreOs())
 	rootOsCmd.AddCommand(NewCmdPrepare())
+	rootOsCmd.AddCommand(NewCmdDownload())
+	rootOsCmd.AddCommand(NewCmdCheckDownload())
 	return rootOsCmd
 }

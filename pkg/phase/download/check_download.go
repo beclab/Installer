@@ -8,8 +8,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
 )
 
-func NewDownloadPackage(mainifest string, runtime *common.KubeRuntime) *pipeline.Pipeline {
-
+func NewCheckDownload(mainifest string, runtime *common.KubeRuntime) *pipeline.Pipeline {
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
@@ -17,7 +16,7 @@ func NewDownloadPackage(mainifest string, runtime *common.KubeRuntime) *pipeline
 	}
 
 	return &pipeline.Pipeline{
-		Name:    "Download Terminus Installation Package",
+		Name:    "Check Downloaded Terminus Installation Package",
 		Modules: m,
 		Runtime: runtime,
 	}
