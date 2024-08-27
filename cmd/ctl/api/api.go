@@ -1,11 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"os"
 	"os/user"
 
-	"bytetrade.io/web3os/installer/cmd/ctl/helper"
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/apiserver"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -33,11 +31,6 @@ func NewCmdApi() *cobra.Command {
 			options.InitEnv(o.ApiOptions)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := helper.InitLog(constants.WorkDir); err != nil {
-				fmt.Println("init logger failed", err)
-				os.Exit(1)
-			}
-
 			if err := GetCurrentUser(); err != nil {
 				logger.Errorf(err.Error())
 				os.Exit(1)
