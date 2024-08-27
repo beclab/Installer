@@ -126,9 +126,6 @@ func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
 
 	var jsonPatch = fmt.Sprintf(`{\"status\": {\"redis\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`,
 		time.Now().Format("2006-01-02T15:04:05Z"))
-	if runtime.GetRunner().Host.GetMinikube() {
-		jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
-	}
 	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
 
 	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
