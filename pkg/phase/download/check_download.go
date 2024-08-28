@@ -8,11 +8,11 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
 )
 
-func NewCheckDownload(mainifest string, runtime *common.KubeRuntime) *pipeline.Pipeline {
+func NewCheckDownload(mainifest, baserdir string, runtime *common.KubeRuntime) *pipeline.Pipeline {
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
-		&download.PackageDownloadModule{Manifest: mainifest},
+		&download.PackageDownloadModule{Manifest: mainifest, BaseDir: baserdir},
 	}
 
 	return &pipeline.Pipeline{

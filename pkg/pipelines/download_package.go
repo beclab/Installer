@@ -17,12 +17,17 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	}
 
 	manifest := opts.Manifest
+	home := runtime.GetHomeDir()
 	if manifest == "" {
-		home := runtime.GetHomeDir()
 		manifest = home + "/.terminus/installation.manifest"
 	}
 
-	p := download.NewDownloadPackage(manifest, runtime)
+	baseDir := opts.BaseDir
+	if baseDir == "" {
+		baseDir = home + "/.terminus"
+	}
+
+	p := download.NewDownloadPackage(manifest, baseDir, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download package failed %v", err)
 		return err

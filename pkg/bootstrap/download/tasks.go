@@ -19,11 +19,13 @@ import (
 type PackageDownload struct {
 	common.KubeAction
 	Manifest string
+	BaseDir  string
 }
 
 type CheckDownload struct {
 	common.KubeAction
 	Manifest string
+	BaseDir  string
 }
 
 type fileUrl struct {
@@ -61,10 +63,9 @@ func (d *PackageDownload) Execute(runtime connector.Runtime) error {
 			}
 
 			item := must(readItem(line))
-			baseDir := runtime.GetHomeDir() + "/.terminus"
 
-			if !must(isRealExists(runtime, item, baseDir)) {
-				err := d.downloadItem(runtime, item, baseDir)
+			if !must(isRealExists(runtime, item, d.BaseDir)) {
+				err := d.downloadItem(runtime, item, d.BaseDir)
 				if err != nil {
 					logger.Fatal(err)
 				}
@@ -96,9 +97,8 @@ func (d *CheckDownload) Execute(runtime connector.Runtime) error {
 			}
 
 			item := must(readItem(line))
-			baseDir := runtime.GetHomeDir() + "/.terminus"
 
-			if !must(isRealExists(runtime, item, baseDir)) {
+			if !must(isRealExists(runtime, item, d.BaseDir)) {
 				name := item.Filename
 				if item.ImageName != "" {
 					name = item.ImageName
@@ -163,6 +163,7 @@ func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest
 	component.Arch = constants.OsArch
 	component.BaseDir = getDownloadTargetBasePath(item, baseDir)
 	component.Url = url.Url
+	component.FileName = item.Filename
 
 	downloadPath := component.Path()
 	if utils.IsExist(downloadPath) {
