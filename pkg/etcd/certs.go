@@ -125,7 +125,11 @@ func (f *FetchCerts) Execute(runtime connector.Runtime) error {
 			return errors.Wrap(err, "failed to find certificate files")
 		}
 
-		certsList := strings.Split(certs, "\r\n")
+		var split = "\r\n"
+		if !strings.Contains(certs, split) && strings.Contains(certs, "\n") {
+			split = "\n"
+		}
+		certsList := strings.Split(certs, split)
 		if len(certsList) > 0 {
 			for _, cert := range certsList {
 				if err := runtime.GetRunner().Fetch(filepath.Join(dst, cert), filepath.Join(src, cert), false, true); err != nil {
