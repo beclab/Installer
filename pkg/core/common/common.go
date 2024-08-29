@@ -85,3 +85,7 @@ const (
 const (
 	DownloadUrl = "https://dc3p1870nn3cj.cloudfront.net"
 )
+
+const (
+	ZfsSnapshotter = "/var/lib/containerd/io.containerd.snapshotter.v1.zfs"
+)

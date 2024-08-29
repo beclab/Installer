@@ -113,7 +113,7 @@ state = "/run/containerd"
       discard_unpacked_layers = false
       ignore_rdt_not_enabled_errors = false
       no_pivot = false
-      snapshotter = "overlayfs"
+      snapshotter = "{{ .FsType }}"
 
       [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
         base_runtime_spec = ""
@@ -257,7 +257,7 @@ state = "/run/containerd"
     upperdir_label = false
 
   [plugins."io.containerd.snapshotter.v1.zfs"]
-    root_path = ""
+    root_path = "{{ .ZfsRootPath }}"
 
   [plugins."io.containerd.tracing.processor.v1.otlp"]
     endpoint = ""

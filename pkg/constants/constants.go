@@ -26,6 +26,8 @@ var (
 	MemFree              uint64
 	DiskTotal            uint64
 	DiskFree             uint64
+	FsType               string
+	DefaultZfsPrefixName string
 
 	CgroupCpuEnabled    int
 	CgroupMemoryEnabled int
