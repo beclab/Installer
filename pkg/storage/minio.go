@@ -2,11 +2,8 @@ package storage
 
 import (
 	"fmt"
-	"os/exec"
-	"path"
 	"time"
 
-	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"github.com/pkg/errors"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -16,7 +13,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/files"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	minioTemplates "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
@@ -26,7 +23,7 @@ type CheckMinioState struct {
 }
 
 func (t *CheckMinioState) Execute(runtime connector.Runtime) error {
-	var cmd = "systemctl --no-pager -n 0 status minio" // 这里可以考虑用 is-active 来验证
+	var cmd = "systemctl --no-pager -n 0 status minio" //
 	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("Minio Pending")
@@ -97,55 +94,29 @@ func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type DownloadMinio struct {
-	common.KubeAction
-}
-
-func (t *DownloadMinio) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	// todo download minio-operator
-	binary := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
-
-	if err := binary.CreateBaseDir(); err != nil {
-		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
-	}
-
-	var exists = util.IsExist(binary.Path())
-	if exists {
-		p := binary.Path()
-		if err := binary.SHA256Check(); err != nil {
-			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-		}
-		// _ = exec.Command(fmt.Sprintf("cp %s /usr/local/bin/", binary.Path())).Run()
-		// return nil
-	}
-
-	if !exists || binary.OverWrite {
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
-		if err := binary.Download(); err != nil {
-			return fmt.Errorf("Failed to download %s binary: %s error: %w ", binary.ID, binary.Url, err)
-		}
-	}
-
-	t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+"minio", binary)
-	return nil
-}
-
 type InstallMinio struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *InstallMinio) Execute(runtime connector.Runtime) error {
-	minioObj, ok := t.PipelineCache.Get(common.KubeBinaries + "-" + constants.OsArch + "-" + "minio")
-	if !ok {
-		return errors.New("get Minio Binary by pipeline cache failed")
+	if !utils.IsExist(MinioDataDir) {
+		err := utils.Mkdir(MinioDataDir)
+		if err != nil {
+			logger.Errorf("cannot mkdir %s for minio", MinioDataDir)
+			return err
+		}
 	}
 
-	minio := minioObj.(*files.KubeBinary)
+	minio, err := t.Manifest.Get("minio")
+	if err != nil {
+		return err
+	}
+
+	path := minio.FilePath(t.BaseDir)
 
 	// var cmd = fmt.Sprintf("cd %s && chmod +x minio && install minio /usr/local/bin", minio.BaseDir)
-	var cmd = fmt.Sprintf("cd %s && && cp %s minio && chmod +x minio && install minio /usr/local/bin", minio.BaseDir, minio.FileName)
+	var cmd = fmt.Sprintf("cp -f %s /tmp/minio && chmod +x /tmp/minio && install /tmp/minio /usr/local/bin", path)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
@@ -159,7 +130,7 @@ type CheckMinioExists struct {
 
 func (p *CheckMinioExists) PreCheck(runtime connector.Runtime) (bool, error) {
 	if !utils.IsExist(MinioDataDir) {
-		utils.Mkdir(MinioDataDir)
+		return true, nil
 	}
 
 	if !utils.IsExist(MinioFile) {
@@ -172,6 +143,7 @@ func (p *CheckMinioExists) PreCheck(runtime connector.Runtime) (bool, error) {
 // - InstallMinioModule
 type InstallMinioModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 	Skip bool
 }
 
@@ -182,20 +154,16 @@ func (m *InstallMinioModule) IsSkip() bool {
 func (m *InstallMinioModule) Init() {
 	m.Name = "InstallMinio"
 
-	downloadMinio := &task.RemoteTask{
-		Name:     "DownloadMinio",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Prepare:  &CheckMinioExists{},
-		Action:   &DownloadMinio{},
-		Parallel: false,
-		Retry:    1,
-	}
-
 	installMinio := &task.RemoteTask{
-		Name:     "InstallMinio",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Prepare:  &CheckMinioExists{},
-		Action:   &InstallMinio{},
+		Name:    "InstallMinio",
+		Hosts:   m.Runtime.GetAllHosts(),
+		Prepare: &CheckMinioExists{},
+		Action: &InstallMinio{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: false,
 		Retry:    1,
 	}
@@ -226,7 +194,6 @@ func (m *InstallMinioModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		downloadMinio,
 		installMinio,
 		configMinio,
 		enableMinio,

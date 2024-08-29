@@ -21,6 +21,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/kubesphere"
 	ksplugins "bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/loadbalancer"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/plugins"
 	"bytetrade.io/web3os/installer/pkg/plugins/dns"
 	"bytetrade.io/web3os/installer/pkg/plugins/network"
@@ -48,9 +49,7 @@ func NewDarwinClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	return m
 }
 
-func NewK3sCreateClusterPhase(runtime *common.KubeRuntime) []module.Module {
-	noArtifact := runtime.Arg.Artifact == ""
-	skipPushImages := runtime.Arg.SKipPushImages || noArtifact || (!noArtifact && runtime.Cluster.Registry.PrivateRegistry == "")
+func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.InstallationManifest) []module.Module {
 	skipLocalStorage := true
 	if runtime.Arg.DeployLocalStorage != nil {
 		skipLocalStorage = !*runtime.Arg.DeployLocalStorage
@@ -59,25 +58,32 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime) []module.Module {
 	}
 
 	m := []module.Module{
-		&artifact.UnArchiveModule{Skip: noArtifact},                            // skip
-		&os.RepositoryModule{Skip: noArtifact || !runtime.Arg.InstallPackages}, // skip
-		&binaries.K3sNodeBinariesModule{},
 		&os.ConfigureOSModule{},
 		&k3s.StatusModule{},
-		&k3s.InstallContainerModule{},
-		&images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
+		// &k3s.InstallContainerModule{},
+		// &images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
 		&etcd.PreCheckModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.CertsModule{},
-		&etcd.InstallETCDBinaryModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
+		&etcd.InstallETCDBinaryModule{
+			ManifestModule: manifest.ManifestModule{
+				BaseDir:  runtime.Arg.BaseDir,
+				Manifest: manifestMap,
+			},
+			Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.ConfigureModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.BackupModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
-		&loadbalancer.K3sKubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
-		&k3s.InstallKubeBinariesModule{},
+		// &loadbalancer.K3sKubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
+		&k3s.InstallKubeBinariesModule{
+			ManifestModule: manifest.ManifestModule{
+				BaseDir:  runtime.Arg.BaseDir,
+				Manifest: manifestMap,
+			},
+		},
 		&k3s.InitClusterModule{},
 		&k3s.StatusModule{},
 		&k3s.JoinNodesModule{},
-		&images.CopyImagesToRegistryModule{Skip: skipPushImages},
-		&loadbalancer.K3sHaproxyModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabled()},
+		// &images.CopyImagesToRegistryModule{Skip: skipPushImages},
+		// &loadbalancer.K3sHaproxyModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabled()},
 		&network.DeployNetworkPluginModule{},
 		&kubernetes.ConfigureKubernetesModule{},
 		&filesystem.ChownModule{},

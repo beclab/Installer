@@ -3,6 +3,7 @@ package terminus
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -117,14 +118,15 @@ func (t *SetUserInfo) Execute(runtime connector.Runtime) error {
 type Download struct {
 	common.KubeAction
 	version string
+	BaseDir string
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
 	if t.KubeConf.Arg.TerminusVersion == "" {
-		return nil
+		return errors.New("unknown version to download")
 	}
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.version, prePath)
+
+	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.version, t.BaseDir)
 
 	if err := wizard.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", wizard.FileName)
@@ -208,12 +210,31 @@ func (t *TidyInstallerPackage) Execute(runtime connector.Runtime) error {
 
 type PrepareFinished struct {
 	common.KubeAction
+	BaseDir string
 }
 
 func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
-	var finPath = path.Join("/var/run/lock/.prepared")
+	var finPath = filepath.Join(t.BaseDir, ".prepared")
 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", finPath), false, true); err != nil {
 		return err
 	}
+	return nil
+}
+
+type CheckPepared struct {
+	common.KubeAction
+	BaseDir string
+	Force   bool
+}
+
+func (t *CheckPepared) Execute(runtime connector.Runtime) error {
+	var finPath = filepath.Join(t.BaseDir, ".prepared")
+
+	if utils.IsExist(finPath) {
+		t.PipelineCache.Set(common.CachePreparedState, "true")
+	} else if t.Force {
+		return errors.New("terminus is not prepared well, cannot continue actions")
+	}
+
 	return nil
 }

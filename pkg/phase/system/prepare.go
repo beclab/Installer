@@ -18,16 +18,19 @@ import (
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/manifest"
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
-func PrepareSystemPhase(runtime *common.KubeRuntime, manifestPath, baseDir string) *pipeline.Pipeline {
+func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	var isK3s = strings.Contains(runtime.Arg.KubernetesVersion, "k3s")
 	var osSupport = isSupportOs()
-	manifestMap, err := manifest.ReadAll(manifestPath)
+	manifestMap, err := manifest.ReadAll(runtime.Arg.Manifest)
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	(&gpu.CheckWslGPU{}).Execute(runtime)
 
 	m := []module.Module{
 		&precheck.GetSysInfoModel{},
@@ -38,22 +41,42 @@ func PrepareSystemPhase(runtime *common.KubeRuntime, manifestPath, baseDir strin
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  baseDir,
+				BaseDir:  runtime.Arg.BaseDir,
 			},
 		},
 		&patch.InstallDepsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  baseDir,
+				BaseDir:  runtime.Arg.BaseDir,
 			},
 		},
 		&os.ConfigSystemModule{},
+		// unitl now, system ready
+
 		// &binaries.K3sNodeBinariesModule{},
 		// &binaries.NodeBinariesModule{},
+
+		&storage.InitStorageModule{Skip: runtime.Arg.WSL || !runtime.Arg.IsCloudInstance},
+		&storage.InstallMinioModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: manifestMap,
+				BaseDir:  runtime.Arg.BaseDir,
+			},
+			Skip: runtime.Arg.WSL || runtime.Arg.Storage.StorageType != common.Minio,
+		},
+		&storage.InstallRedisModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: manifestMap,
+				BaseDir:  runtime.Arg.BaseDir,
+			},
+			Skip: runtime.Arg.WSL,
+		},
+		&storage.InstallJuiceFsModule{Skip: runtime.Arg.WSL},
+
 		&container.InstallContainerModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  baseDir,
+				BaseDir:  runtime.Arg.BaseDir,
 			},
 			Skip:        isK3s,
 			NoneCluster: true,
@@ -61,23 +84,22 @@ func PrepareSystemPhase(runtime *common.KubeRuntime, manifestPath, baseDir strin
 		&k3s.InstallContainerModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  baseDir,
+				BaseDir:  runtime.Arg.BaseDir,
 			},
 			Skip: !isK3s,
 		},
 		&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  baseDir,
+				BaseDir:  runtime.Arg.BaseDir,
 			},
 			Skip: runtime.Arg.SkipPullImages,
 		}, //
 		// &terminus.CopyToWizardModule{},
-		&gpu.CheckWSLGPUEnableModule{},
 		&gpu.InstallDepsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  baseDir,
+				BaseDir:  runtime.Arg.BaseDir,
 			},
 			Skip: !runtime.Arg.GPU.Enable || !osSupport,
 		},

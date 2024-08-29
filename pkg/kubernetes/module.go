@@ -21,14 +21,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
-
-	"bytetrade.io/web3os/installer/pkg/binaries"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
-	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/kubernetes/templates"
 )
 
@@ -430,138 +426,6 @@ func (s *SetUpgradePlanModule) Init() {
 
 	s.Tasks = []task.Interface{
 		plan,
-	}
-}
-
-// ! discard
-type ProgressiveUpgradeModule struct {
-	common.KubeModule
-	Step UpgradeStep
-}
-
-func (p *ProgressiveUpgradeModule) Init() { // ! discard
-	p.Name = fmt.Sprintf("ProgressiveUpgradeModule %d/%d", p.Step, len(UpgradeStepList))
-	p.Desc = fmt.Sprintf("Progressive upgrade %d/%d", p.Step, len(UpgradeStepList))
-
-	nextVersion := &task.LocalTask{
-		Name:    "CalculateNextVersion(k8s)",
-		Desc:    "Calculate next upgrade version",
-		Prepare: new(NotEqualPlanVersion),
-		Action:  new(CalculateNextVersion),
-	}
-
-	download := &task.LocalTask{
-		Name:    "DownloadBinaries",
-		Desc:    "Download installation binaries",
-		Prepare: new(NotEqualPlanVersion),
-		Action:  new(binaries.Download),
-	}
-
-	pull := &task.RemoteTask{
-		Name:     "PullImages", // ! discard
-		Desc:     "Start to pull images on all nodes",
-		Hosts:    p.Runtime.GetHostsByRole(common.K8s),
-		Prepare:  new(NotEqualPlanVersion),
-		Action:   new(images.PullImage),
-		Parallel: true,
-	}
-
-	syncBinary := &task.RemoteTask{
-		Name:     "SyncKubeBinary",
-		Desc:     "Synchronize kubernetes binaries",
-		Hosts:    p.Runtime.GetHostsByRole(common.K8s),
-		Prepare:  new(NotEqualPlanVersion),
-		Action:   new(SyncKubeBinary),
-		Parallel: true,
-		Retry:    2,
-	}
-
-	upgradeKubeMaster := &task.RemoteTask{
-		Name:     "UpgradeClusterOnMaster(k8s)",
-		Desc:     "Upgrade cluster on master",
-		Hosts:    p.Runtime.GetHostsByRole(common.Master),
-		Prepare:  new(NotEqualPlanVersion),
-		Action:   &UpgradeKubeMaster{ModuleName: p.Name},
-		Parallel: false,
-	}
-
-	cluster := NewKubernetesStatus()
-	p.PipelineCache.GetOrSet(common.ClusterStatus, cluster)
-
-	clusterStatus := &task.RemoteTask{
-		Name:     "GetClusterStatus",
-		Desc:     "Get kubernetes cluster status",
-		Hosts:    p.Runtime.GetHostsByRole(common.Master),
-		Prepare:  new(NotEqualPlanVersion),
-		Action:   new(GetClusterStatus),
-		Parallel: false,
-	}
-
-	upgradeKubeWorker := &task.RemoteTask{
-		Name:  "UpgradeClusterOnWorker(k8s)",
-		Desc:  "Upgrade cluster on worker",
-		Hosts: p.Runtime.GetHostsByRole(common.Worker),
-		Prepare: &prepare.PrepareCollection{
-			new(NotEqualPlanVersion),
-			new(common.OnlyWorker),
-		},
-		Action:   &UpgradeKubeWorker{ModuleName: p.Name},
-		Parallel: false,
-	}
-
-	reconfigureDNS := &task.RemoteTask{
-		Name:  "ReconfigureCoreDNS(k8s)",
-		Desc:  "Reconfigure CoreDNS",
-		Hosts: p.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			new(NotEqualPlanVersion),
-		},
-		Action:   &ReconfigureDNS{ModuleName: p.Name},
-		Parallel: false,
-	}
-
-	currentVersion := &task.LocalTask{
-		Name:    "SetCurrentK8sVersion",
-		Desc:    "Set current k8s version",
-		Prepare: new(NotEqualPlanVersion),
-		Action:  new(SetCurrentK8sVersion),
-	}
-
-	p.Tasks = []task.Interface{
-		nextVersion,
-		download,
-		pull,
-		syncBinary,
-		upgradeKubeMaster,
-		clusterStatus,
-		upgradeKubeWorker,
-		reconfigureDNS,
-		currentVersion,
-	}
-}
-
-func (p *ProgressiveUpgradeModule) Until() (*bool, error) {
-	f := false
-	t := true
-	currentVersion, ok := p.PipelineCache.GetMustString(common.K8sVersion)
-	if !ok {
-		return &f, errors.New("get current Kubernetes version failed by pipeline cache")
-	}
-	planVersion, ok := p.PipelineCache.GetMustString(common.PlanK8sVersion)
-	if !ok {
-		return &f, errors.New("get upgrade plan Kubernetes version failed by pipeline cache")
-	}
-
-	if currentVersion != planVersion {
-		return &f, nil
-	} else {
-		originalDesired, ok := p.PipelineCache.GetMustString(common.DesiredK8sVersion)
-		if !ok {
-			return &f, errors.New("get original desired Kubernetes version failed by pipeline cache")
-		}
-		p.KubeConf.Cluster.Kubernetes.Version = originalDesired
-		return &t, nil
 	}
 }
 

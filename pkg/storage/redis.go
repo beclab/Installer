@@ -2,20 +2,16 @@ package storage
 
 import (
 	"fmt"
-	"os/exec"
-	"path"
 	"strings"
 	"time"
 
-	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/files"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/utils"
 
 	redisTemplates "bytetrade.io/web3os/installer/pkg/storage/templates"
@@ -114,57 +110,24 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type DownloadRedis struct {
-	common.KubeAction
-}
-
-func (t *DownloadRedis) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	binary := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
-
-	if err := binary.CreateBaseDir(); err != nil {
-		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
-	}
-
-	var exists = util.IsExist(binary.Path())
-	if exists {
-		p := binary.Path()
-		if err := binary.SHA256Check(); err != nil {
-			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-		}
-	}
-
-	if !exists || binary.OverWrite {
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, runtime.RemoteHost().GetArch(), binary.ID, binary.Version)
-		if err := binary.Download(); err != nil {
-			return fmt.Errorf("Failed to download %s binary: %s error: %w ", binary.ID, binary.Url, err)
-		}
-	}
-
-	t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+"redis", binary)
-
-	return nil
-}
-
 type InstallRedis struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *InstallRedis) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-	redisObj, ok := t.PipelineCache.Get(common.KubeBinaries + "-" + arch + "-" + "redis")
-	if !ok {
-		return errors.New("get Redis Binary by pipeline cache failed")
+	redis, err := t.Manifest.Get("redis")
+	if err != nil {
+		return err
 	}
 
-	redis := redisObj.(*files.KubeBinary)
+	path := redis.FilePath(t.BaseDir)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("cd %s && tar xf ./%s", redis.BaseDir, redis.FileName), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf /tmp/redis-* && cp -f %s /tmp/%s && cd /tmp && tar xf ./%s", path, redis.Filename, redis.Filename), false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "untar redis failed")
 	}
 
-	var cmd = fmt.Sprintf("cd %s/redis-%s && cp ./* /usr/local/bin/ && ln -s /usr/local/bin/redis-server /usr/local/bin/redis-sentinel && rm -rf ./redis-%s", redis.BaseDir, redis.Version, redis.Version)
+	var cmd = "cd /tmp/redis-* && cp ./* /usr/local/bin/ && ln -s /usr/local/bin/redis-server /usr/local/bin/redis-sentinel && rm -rf ./redis-*"
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
 		return err
 	}
@@ -180,23 +143,26 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 
 type InstallRedisModule struct {
 	common.KubeModule
+	manifest.ManifestModule
+	Skip bool
+}
+
+func (m *InstallRedisModule) IsSkip() bool {
+	return m.Skip
 }
 
 func (m *InstallRedisModule) Init() {
 	m.Name = "InstallRedis"
 
-	downloadRedis := &task.RemoteTask{
-		Name:     "Download",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(DownloadRedis),
-		Parallel: false,
-		Retry:    1,
-	}
-
 	installRedis := &task.RemoteTask{
-		Name:     "Install",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(InstallRedis),
+		Name:  "Install",
+		Hosts: m.Runtime.GetAllHosts(),
+		Action: &InstallRedis{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: false,
 		Retry:    0,
 	}
@@ -227,7 +193,6 @@ func (m *InstallRedisModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		downloadRedis,
 		installRedis,
 		configRedis,
 		enableRedisService,

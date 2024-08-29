@@ -19,30 +19,27 @@ import (
 )
 
 type CheckWslGPU struct {
-	common.KubeAction
 }
 
-func (t *CheckWslGPU) Execute(runtime connector.Runtime) error {
-	if !t.KubeConf.Arg.WSL {
-		return nil
+func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
+	if !runtime.Arg.WSL {
+		return
 	}
 	var nvidiaSmiFile = "/usr/lib/wsl/lib/nvidia-smi"
 	if !util.IsExist(nvidiaSmiFile) {
-		return nil
+		return
 	}
 
 	stdout, err := runtime.GetRunner().Host.CmdExt("/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, true)
 	if err != nil {
 		logger.Errorf("nvidia-smi not found")
-		return nil
+		return
 	}
 	if stdout == "" {
-		return nil
+		return
 	}
 
-	t.KubeConf.Arg.SetGPU(true, true)
-
-	return nil
+	runtime.Arg.SetGPU(true, true)
 }
 
 type CopyEmbedGpuFiles struct {

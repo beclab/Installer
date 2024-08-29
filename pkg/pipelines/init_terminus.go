@@ -33,7 +33,8 @@ func InstallTerminusPipeline(args common.Argument) error {
 
 	var kubeModules []module.Module
 	if runtime.Cluster.Kubernetes.Type == common.K3s {
-		kubeModules = cluster.NewK3sCreateClusterPhase(runtime) // +
+		// FIXME:
+		kubeModules = cluster.NewK3sCreateClusterPhase(runtime, nil) // +
 	} else {
 		kubeModules = cluster.NewCreateClusterPhase(runtime)
 	}

@@ -2,21 +2,17 @@ package storage
 
 import (
 	"fmt"
-	"os/exec"
-	"path"
 	"time"
 
-	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/files"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	juicefsTemplates "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
@@ -25,25 +21,27 @@ import (
 // - InstallJuiceFsModule
 type InstallJuiceFsModule struct {
 	common.KubeModule
+	manifest.ManifestModule
+	Skip bool
+}
+
+func (m *InstallJuiceFsModule) IsSkip() bool {
+	return m.Skip
 }
 
 func (m *InstallJuiceFsModule) Init() {
 	m.Name = "InstallJuiceFs"
 
-	downloadJuiceFs := &task.RemoteTask{
-		Name:     "DownloadJuiceFs",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Prepare:  &CheckJuiceFsExists{},
-		Action:   new(DownloadJuiceFs),
-		Parallel: false,
-		Retry:    0,
-	}
-
 	installJuiceFs := &task.RemoteTask{
-		Name:     "InstallJuiceFs",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Prepare:  &CheckJuiceFsExists{},
-		Action:   new(InstallJuiceFs),
+		Name:    "InstallJuiceFs",
+		Hosts:   m.Runtime.GetAllHosts(),
+		Prepare: &CheckJuiceFsExists{},
+		Action: &InstallJuiceFs{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: false,
 		Retry:    1,
 	}
@@ -66,7 +64,6 @@ func (m *InstallJuiceFsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		downloadJuiceFs,
 		installJuiceFs,
 		enableJuiceFsService,
 		checkJuiceFsState,
@@ -89,60 +86,27 @@ func (p *CheckJuiceFsExists) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-type DownloadJuiceFs struct {
-	common.KubeAction
-}
-
-func (t *DownloadJuiceFs) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	binary := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
-
-	if err := binary.CreateBaseDir(); err != nil {
-		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
-	}
-
-	var exists = util.IsExist(binary.Path())
-	if exists {
-		p := binary.Path()
-		if err := binary.SHA256Check(); err != nil {
-			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-		} else {
-			return nil
-		}
-	}
-
-	if !exists || binary.OverWrite {
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, runtime.RemoteHost().GetArch(), binary.ID, binary.Version)
-		if err := binary.Download(); err != nil {
-			return fmt.Errorf("Failed to download %s binary: %s error: %w ", binary.ID, binary.Url, err)
-		}
-	}
-
-	t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+"juicefs", binary)
-	return nil
-}
-
 type InstallJuiceFs struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 	// todo redis password fetch
-	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
+	var redisPassword, ok = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 
-	if redisPassword == "" {
+	if !ok || redisPassword == "" {
 		return fmt.Errorf("redis password not found")
 	}
 
-	juicefsObj, ok := t.PipelineCache.Get(common.KubeBinaries + "-" + constants.OsArch + "-" + "juicefs")
-	if !ok {
-		return errors.New("get JuiceFs Binary by pipeline cache failed")
+	juicefs, err := t.Manifest.Get("juicefs")
+	if err != nil {
+		return err
 	}
 
-	juicefs := juicefsObj.(*files.KubeBinary)
+	path := juicefs.FilePath(t.BaseDir)
 
-	var cmd = fmt.Sprintf("cd %s && tar -zxf ./%s && chmod +x juicefs && install juicefs /usr/local/bin && install juicefs /sbin/mount.juicefs && rm -rf ./LICENSE ./README.md ./README_CN.md ./juicefs", juicefs.BaseDir, juicefs.FileName)
+	var cmd = fmt.Sprintf("rm -rf /tmp/juicefs* && cp -f %s /tmp/%s && cd /tmp && tar -zxf ./%s && chmod +x juicefs && install juicefs /usr/local/bin && install juicefs /sbin/mount.juicefs && rm -rf ./LICENSE ./README.md ./README_CN.md ./juicefs*", path, juicefs.Filename, juicefs.Filename)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
 	}
@@ -222,7 +186,7 @@ func getStorageTypeStr(pc *cache.Cache, storage *common.Storage) string {
 	case common.Minio:
 		formatStr = getMinioStr(pc)
 	case common.OSS, common.S3:
-		formatStr = getCloudStr(pc, storage)
+		formatStr = getCloudStr(storage)
 	}
 
 	if storage.StorageVendor == "true" {
@@ -236,7 +200,7 @@ func getStorageTypeStr(pc *cache.Cache, storage *common.Storage) string {
 	return formatStr
 }
 
-func getCloudStr(pc *cache.Cache, storage *common.Storage) string {
+func getCloudStr(storage *common.Storage) string {
 
 	var str = fmt.Sprintf(" --bucket %s", storage.StorageBucket)
 	if storage.StorageVendor == "true" {

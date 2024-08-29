@@ -101,6 +101,9 @@ type Argument struct {
 
 	DownloadFullInstaller bool
 	BuildFullPackage      bool
+
+	BaseDir  string
+	Manifest string
 }
 
 type AwsHost struct {
@@ -218,6 +221,14 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 	default:
 		a.KubernetesVersion = DefaultK3sVersion
 	}
+}
+
+func (a *Argument) SetBaseDir(dir string) {
+	a.BaseDir = dir
+}
+
+func (a *Argument) SetManifest(manifest string) {
+	a.Manifest = manifest
 }
 
 func (a *Argument) ArgValidate() error {

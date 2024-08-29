@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bytetrade.io/web3os/installer/pkg/files"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 
 	"github.com/pkg/errors"
 
@@ -133,6 +133,7 @@ func (s *SyncCertsFile) Execute(runtime connector.Runtime) error {
 
 type InstallETCDBinary struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (g *InstallETCDBinary) Execute(runtime connector.Runtime) error {
@@ -140,22 +141,19 @@ func (g *InstallETCDBinary) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binariesMapObj, ok := g.PipelineCache.Get(common.KubeBinaries + "-" + runtime.RemoteHost().GetArch())
-	if !ok {
-		return errors.New("get KubeBinary by pipeline cache failed")
-	}
-	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
-	binary, ok := binariesMap["etcd"]
-	if !ok {
-		return fmt.Errorf("get kube binary etcd info failed: no such key")
+	binary, err := g.Manifest.Get("etcd")
+	if err != nil {
+		return fmt.Errorf("get kube binary etcd info failed: %w", err)
 	}
 
-	dst := filepath.Join(common.TmpDir, binary.FileName)
-	if err := runtime.GetRunner().Scp(binary.Path(), dst); err != nil {
+	path := binary.FilePath(g.BaseDir)
+
+	dst := filepath.Join(common.TmpDir, binary.Filename)
+	if err := runtime.GetRunner().Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync etcd tar.gz failed")
 	}
 
-	etcdDir := strings.TrimSuffix(binary.FileName, ".tar.gz")
+	etcdDir := strings.TrimSuffix(binary.Filename, ".tar.gz")
 	installCmd := fmt.Sprintf("tar -zxf %s && cp -f %s/etcd* /usr/local/bin/ && chmod +x /usr/local/bin/etcd* && rm -rf %s", dst, etcdDir, etcdDir)
 	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install etcd binaries failed")

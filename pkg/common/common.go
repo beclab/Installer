@@ -208,6 +208,7 @@ const (
 	CacheMinioOperatorPath = "minio_operator_path"
 
 	CacheHostRedisPassword = "hostredis_password"
+	CachePreparedState     = "prepare_state"
 
 	CacheJuiceFsPath     = "juicefs_binary_path"
 	CacheJuiceFsFileName = "juicefs_binary_filename"

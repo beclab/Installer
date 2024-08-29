@@ -325,10 +325,7 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
 		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
 		component.CheckSum = false
-		component.BaseDir = filepath.Join(prePath, component.Type)
-	case fullinstaller: // todo
-		component.Type = WIZARD
-		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
+		component.BaseDir = filepath.Join(prePath, fmt.Sprintf("install-wizard-v%s", version))
 	case cudakeyring: // + gpu
 		if strings.Contains(constants.OsVersion, "24.") {
 			version = "1.1"

@@ -2,12 +2,9 @@ package storage
 
 import (
 	"fmt"
-	"path"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
@@ -53,16 +50,6 @@ func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 		return false, nil
 	}
 
-	if _, err := util.GetCommand("unzip"); err != nil {
-		if _, err := runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, false); err != nil {
-			return false, err
-		}
-	}
-
-	if storageType != "s3" && storageType != "oss" {
-		return false, nil
-	}
-
 	if storageBucket == "" {
 		return false, nil
 	}
@@ -70,25 +57,25 @@ func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 	return true, nil
 }
 
-type CreateJuiceFsDataPath struct {
-	common.KubePrepare
-}
+// type CreateJuiceFsDataPath struct {
+// 	common.KubePrepare
+// }
 
-func (p *CreateJuiceFsDataPath) PreCheck(runtime connector.Runtime) (bool, error) {
-	var juiceFsDataPath = path.Join(corecommon.TerminusDir, "data", "juicefs")
-	if !utils.IsExist(juiceFsDataPath) {
-		utils.Mkdir(juiceFsDataPath)
-	}
+// func (p *CreateJuiceFsDataPath) PreCheck(runtime connector.Runtime) (bool, error) {
+// 	var juiceFsDataPath = path.Join(corecommon.TerminusDir, "data", "juicefs")
+// 	if !utils.IsExist(juiceFsDataPath) {
+// 		utils.Mkdir(juiceFsDataPath)
+// 	}
 
-	var juiceFsMountPoint = path.Join(corecommon.TerminusDir, "rootfs")
-	if !utils.IsExist(juiceFsMountPoint) {
-		utils.Mkdir(juiceFsMountPoint)
-	}
+// 	var juiceFsMountPoint = path.Join(corecommon.TerminusDir, "rootfs")
+// 	if !utils.IsExist(juiceFsMountPoint) {
+// 		utils.Mkdir(juiceFsMountPoint)
+// 	}
 
-	var juiceFsCacheDir = path.Join(corecommon.TerminusDir, "jfscache")
-	if !utils.IsExist(juiceFsCacheDir) {
-		utils.Mkdir(juiceFsCacheDir)
-	}
+// 	var juiceFsCacheDir = path.Join(corecommon.TerminusDir, "jfscache")
+// 	if !utils.IsExist(juiceFsCacheDir) {
+// 		utils.Mkdir(juiceFsCacheDir)
+// 	}
 
-	return true, nil
-}
+// 	return true, nil
+// }

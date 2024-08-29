@@ -20,7 +20,7 @@ func NewInstallOsOptions() *InstallOsOptions {
 func NewCmdInstallOs() *cobra.Command {
 	o := NewInstallOsOptions()
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "install",
 		Short: "Install Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
 

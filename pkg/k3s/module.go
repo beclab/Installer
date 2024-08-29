@@ -220,6 +220,7 @@ func (s *StatusModule) Init() {
 
 type InstallKubeBinariesModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 }
 
 func (i *InstallKubeBinariesModule) Init() {
@@ -227,11 +228,16 @@ func (i *InstallKubeBinariesModule) Init() {
 	i.Desc = "Install k3s cluster"
 
 	syncBinary := &task.RemoteTask{
-		Name:     "SyncKubeBinary(k3s)",
-		Desc:     "Synchronize k3s binaries",
-		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
-		Prepare:  &NodeInCluster{Not: true},
-		Action:   new(SyncKubeBinary),
+		Name:    "SyncKubeBinary(k3s)",
+		Desc:    "Synchronize k3s binaries",
+		Hosts:   i.Runtime.GetHostsByRole(common.K8s),
+		Prepare: &NodeInCluster{Not: true},
+		Action: &SyncKubeBinary{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  i.BaseDir,
+				Manifest: i.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}

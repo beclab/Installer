@@ -22,6 +22,8 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	arg.SetKubernetesVersion(common.K8s, common.DefaultKubernetesVersion)
 	arg.SetProxy(opts.RegistryMirrors, opts.RegistryMirrors)
 	arg.SetGPU(true, true)
+	arg.SetStorage(createStorage(opts))
+	arg.SetWSL(opts.WSL)
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
@@ -39,7 +41,10 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 		baseDir = home + "/.terminus"
 	}
 
-	var p = system.PrepareSystemPhase(runtime, manifest, baseDir)
+	runtime.Arg.SetBaseDir(baseDir)
+	runtime.Arg.SetManifest(manifest)
+
+	var p = system.PrepareSystemPhase(runtime)
 	if err := p.Start(); err != nil {
 		return err
 	}

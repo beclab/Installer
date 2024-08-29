@@ -25,6 +25,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/etcd/templates"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
 type PreCheckModule struct {
@@ -142,6 +143,7 @@ func CertsModuleForExternal(c *CertsModule) []task.Interface {
 
 type InstallETCDBinaryModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 	Skip bool
 }
 
@@ -154,10 +156,15 @@ func (i *InstallETCDBinaryModule) Init() {
 	i.Desc = "Install ETCD cluster"
 
 	installETCDBinary := &task.RemoteTask{
-		Name:     "InstallETCDBinary",
-		Desc:     "Install etcd using binary",
-		Hosts:    i.Runtime.GetHostsByRole(common.ETCD),
-		Action:   new(InstallETCDBinary),
+		Name:  "InstallETCDBinary",
+		Desc:  "Install etcd using binary",
+		Hosts: i.Runtime.GetHostsByRole(common.ETCD),
+		Action: &InstallETCDBinary{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  i.BaseDir,
+				Manifest: i.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    1,
 	}

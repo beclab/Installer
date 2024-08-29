@@ -34,6 +34,7 @@ func (m *SetupWs) Init() {
 type InstallWizardDownloadModule struct {
 	common.KubeModule
 	Version string
+	BaseDir string
 }
 
 func (m *InstallWizardDownloadModule) Init() {
@@ -42,6 +43,7 @@ func (m *InstallWizardDownloadModule) Init() {
 		Name: "DownloadInstallWizard",
 		Action: &Download{
 			version: m.Version,
+			BaseDir: m.BaseDir,
 		},
 		Retry: 1,
 	}
@@ -109,6 +111,7 @@ func (m *TidyPackageModule) Init() {
 
 type PreparedModule struct {
 	common.KubeModule
+	BaseDir string
 }
 
 func (m *PreparedModule) Init() {
@@ -121,5 +124,24 @@ func (m *PreparedModule) Init() {
 
 	m.Tasks = []task.Interface{
 		prepareFinished,
+	}
+}
+
+type CheckPreparedModule struct {
+	common.KubeModule
+	BaseDir string
+	Force   bool
+}
+
+func (m *CheckPreparedModule) Init() {
+	m.Name = "CheckPrepared"
+
+	checkPrepared := &task.LocalTask{
+		Name:   "CheckPrepared",
+		Action: &CheckPepared{Force: m.Force, BaseDir: m.BaseDir},
+	}
+
+	m.Tasks = []task.Interface{
+		checkPrepared,
 	}
 }

@@ -59,6 +59,7 @@ func (t *InstallMinioOperator) Execute(runtime connector.Runtime) error {
 	}
 
 	var minioData, _ = t.PipelineCache.GetMustString(common.CacheMinioDataPath)
+	// FIXME:
 	var minioPassword, _ = t.PipelineCache.GetMustString(common.CacheMinioPassword)
 	var cmd = fmt.Sprintf("%s init --address %s --cafile /etc/ssl/etcd/ssl/ca.pem --certfile /etc/ssl/etcd/ssl/node-%s.pem --keyfile /etc/ssl/etcd/ssl/node-%s-key.pem --volume %s --password %s",
 		MinioOperatorFile, constants.LocalIp, runtime.RemoteHost().GetName(),

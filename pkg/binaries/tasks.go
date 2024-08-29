@@ -18,16 +18,11 @@ package binaries
 
 import (
 	"fmt"
-	"path"
-	"path/filepath"
 
-	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/manifest"
-	mapset "github.com/deckarep/golang-set"
 	"github.com/pkg/errors"
 )
 
@@ -44,180 +39,6 @@ func (t *InstallAppArmorTask) Execute(runtime connector.Runtime) error {
 
 	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("dpkg -i %s", fileName), false, true); err != nil {
 		logger.Errorf("failed to install apparmor: %v", err)
-		return err
-	}
-
-	return nil
-}
-
-type Download struct {
-	common.KubeAction
-}
-
-func (d *Download) Execute(runtime connector.Runtime) error {
-	cfg := d.KubeConf.Cluster
-
-	var kubeVersion string
-	if cfg.Kubernetes.Version == "" {
-		kubeVersion = kubekeyapiv1alpha2.DefaultKubeVersion
-	} else {
-		kubeVersion = cfg.Kubernetes.Version
-	}
-
-	archMap := make(map[string]bool)
-	for _, host := range cfg.Hosts {
-		switch host.Arch {
-		case "amd64":
-			archMap["amd64"] = true
-		case "arm64":
-			archMap["arm64"] = true
-		default:
-			return errors.New(fmt.Sprintf("Unsupported architecture: %s", host.Arch))
-		}
-	}
-
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	for arch := range archMap {
-		if err := K8sFilesDownloadHTTP(d.KubeConf, prePath, kubeVersion, arch, d.PipelineCache); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-type K3sDownload struct {
-	common.KubeAction
-}
-
-func (k *K3sDownload) Execute(runtime connector.Runtime) error {
-	cfg := k.KubeConf.Cluster
-
-	var kubeVersion string
-	if cfg.Kubernetes.Version == "" {
-		kubeVersion = kubekeyapiv1alpha2.DefaultKubeVersion
-	} else {
-		kubeVersion = cfg.Kubernetes.Version
-	}
-
-	archMap := make(map[string]bool)
-	for _, host := range cfg.Hosts {
-		switch host.Arch {
-		case "amd64":
-			archMap["amd64"] = true
-		case "arm64":
-			archMap["arm64"] = true
-		default:
-			return errors.New(fmt.Sprintf("Unsupported architecture: %s", host.Arch))
-		}
-	}
-
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	for arch := range archMap {
-		if err := K3sFilesDownloadHTTP(k.KubeConf, prePath, kubeVersion, arch, k.PipelineCache); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type ArtifactDownload struct {
-	common.ArtifactAction
-}
-
-func (a *ArtifactDownload) Execute(runtime connector.Runtime) error {
-	manifest := a.Manifest.Spec
-
-	archMap := make(map[string]bool)
-	for _, arch := range manifest.Arches {
-		switch arch {
-		case "amd64":
-			archMap["amd64"] = true
-		case "arm64":
-			archMap["arm64"] = true
-		default:
-			return errors.New(fmt.Sprintf("Unsupported architecture: %s", arch))
-		}
-	}
-
-	kubernetesSet := mapset.NewThreadUnsafeSet()
-	for _, k := range manifest.KubernetesDistributions {
-		kubernetesSet.Add(k)
-	}
-
-	kubernetesVersions := make([]string, 0, kubernetesSet.Cardinality())
-	for _, k := range kubernetesSet.ToSlice() {
-		k8s := k.(kubekeyapiv1alpha2.KubernetesDistribution)
-		kubernetesVersions = append(kubernetesVersions, k8s.Version)
-	}
-
-	basePath := filepath.Join(runtime.GetWorkDir(), common.Artifact)
-	for arch := range archMap {
-		for _, version := range kubernetesVersions {
-			if err := KubernetesArtifactBinariesDownload(a.Manifest, basePath, arch, version); err != nil {
-				return err
-			}
-		}
-
-		if err := RegistryBinariesDownload(a.Manifest, basePath, arch); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type K3sArtifactDownload struct {
-	common.ArtifactAction
-}
-
-func (a *K3sArtifactDownload) Execute(runtime connector.Runtime) error {
-	manifest := a.Manifest.Spec
-
-	archMap := make(map[string]bool)
-	for _, arch := range manifest.Arches {
-		switch arch {
-		case "amd64":
-			archMap["amd64"] = true
-		case "arm64":
-			archMap["arm64"] = true
-		default:
-			return errors.New(fmt.Sprintf("Unsupported architecture: %s", arch))
-		}
-	}
-
-	kubernetesSet := mapset.NewThreadUnsafeSet()
-	for _, k := range manifest.KubernetesDistributions {
-		kubernetesSet.Add(k)
-	}
-
-	kubernetesVersions := make([]string, 0, kubernetesSet.Cardinality())
-	for _, k := range kubernetesSet.ToSlice() {
-		k8s := k.(kubekeyapiv1alpha2.KubernetesDistribution)
-		kubernetesVersions = append(kubernetesVersions, k8s.Version)
-	}
-
-	basePath := filepath.Join(runtime.GetWorkDir(), common.Artifact)
-	for arch := range archMap {
-		for _, version := range kubernetesVersions {
-			if err := K3sArtifactBinariesDownload(a.Manifest, basePath, arch, version); err != nil {
-				return err
-			}
-		}
-
-		if err := RegistryBinariesDownload(a.Manifest, basePath, arch); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type RegistryPackageDownload struct {
-	common.KubeAction
-}
-
-func (k *RegistryPackageDownload) Execute(runtime connector.Runtime) error {
-	arch := runtime.GetHostsByRole(common.Registry)[0].GetArch()
-	if err := RegistryPackageDownloadHTTP(k.KubeConf, runtime.GetWorkDir(), arch, k.PipelineCache); err != nil {
 		return err
 	}
 
@@ -249,3 +70,5 @@ func (d *CriDownload) Execute(runtime connector.Runtime) error {
 	}
 	return nil
 }
+
+// TODO: install helm

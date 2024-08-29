@@ -26,7 +26,6 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetWSL(opts.WSL)
 	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)
 	arg.SetGPU(opts.GpuEnable, opts.GpuShare)
-	arg.SetStorage(createStorage(opts))
 
 	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
 		return err
@@ -36,6 +35,20 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	if err != nil {
 		return nil
 	}
+
+	manifest := opts.Manifest
+	home := runtime.GetHomeDir()
+	if manifest == "" {
+		manifest = home + "/.terminus/installation.manifest"
+	}
+
+	baseDir := opts.BaseDir
+	if baseDir == "" {
+		baseDir = home + "/.terminus"
+	}
+
+	runtime.Arg.SetBaseDir(baseDir)
+	runtime.Arg.SetManifest(manifest)
 
 	var p = cluster.CreateTerminus(*arg, runtime)
 	if err := p.Start(); err != nil {
@@ -67,7 +80,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	return nil
 }
 
-func createStorage(opts *options.CliTerminusInstallOptions) *common.Storage {
+func createStorage(opts *options.CliPrepareSystemOptions) *common.Storage {
 	return &common.Storage{
 		StorageType:       opts.StorageType,
 		StorageDomain:     opts.StorageDomain,
