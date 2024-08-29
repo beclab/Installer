@@ -11,6 +11,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
 type EnableSSHTask struct {
@@ -84,10 +85,11 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 
 type SocatTask struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *SocatTask) Execute(runtime connector.Runtime) error {
-	filePath, fileName, err := binaries.DownloadSocat(runtime.GetWorkDir(), kubekeyapiv1alpha2.DefaultSocatVersion, constants.OsArch, t.PipelineCache)
+	filePath, fileName, err := binaries.GetSocat(t.BaseDir, t.Manifest)
 	if err != nil {
 		logger.Errorf("failed to download socat: %v", err)
 		return err
@@ -115,15 +117,16 @@ func (t *SocatTask) Execute(runtime connector.Runtime) error {
 
 type ConntrackTask struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
-	flexFilePath, flexFileName, err := binaries.DownloadFlex(runtime.GetWorkDir(), kubekeyapiv1alpha2.DefaultFlexVersion, constants.OsArch, t.PipelineCache)
+	flexFilePath, flexFileName, err := binaries.GetFlex(t.BaseDir, t.Manifest)
 	if err != nil {
 		logger.Errorf("failed to download flex: %v", err)
 		return err
 	}
-	filePath, fileName, err := binaries.DownloadConntrack(runtime.GetWorkDir(), kubekeyapiv1alpha2.DefaultConntrackVersion, constants.OsArch, t.PipelineCache)
+	filePath, fileName, err := binaries.GetConntrack(t.BaseDir, t.Manifest)
 	if err != nil {
 		logger.Errorf("failed to download conntrack: %v", err)
 		return err

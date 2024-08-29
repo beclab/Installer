@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -35,6 +36,7 @@ import (
 
 type InstallContainerModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 	Skip        bool
 	NoneCluster bool
 }
@@ -68,7 +70,12 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
-		Action:   new(SyncContainerd),
+		Action: &SyncContainerd{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}
@@ -81,7 +88,12 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&CrictlExist{Not: true},
 		},
-		Action:   new(SyncCrictlBinaries),
+		Action: &SyncCrictlBinaries{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}

@@ -32,6 +32,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/k3s/templates"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
 )
 
@@ -58,6 +59,7 @@ func (i *PatchK3sModule) Init() {
 
 type InstallContainerModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 	Skip bool
 }
 
@@ -89,7 +91,12 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Prepare: &prepare.PrepareCollection{
 			&container.ContainerdExist{Not: true},
 		},
-		Action:   new(container.SyncContainerd),
+		Action: &container.SyncContainerd{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}
@@ -101,7 +108,12 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Prepare: &prepare.PrepareCollection{
 			&container.CrictlExist{Not: true},
 		},
-		Action:   new(container.SyncCrictlBinaries),
+		Action: &container.SyncCrictlBinaries{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}

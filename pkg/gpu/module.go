@@ -6,6 +6,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
 type CheckWSLGPUEnableModule struct {
@@ -33,6 +34,7 @@ func (m *CheckWSLGPUEnableModule) Init() {
 
 type InstallDepsModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 	Skip bool // enableGPU && ubuntuVersionSupport
 }
 
@@ -43,16 +45,16 @@ func (m *InstallDepsModule) IsSkip() bool {
 func (m *InstallDepsModule) Init() {
 	m.Name = "InstallGPU"
 
-	copyEmbedGpuFiles := &task.RemoteTask{
-		Name:  "CopyFiles",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-		},
-		Action:   new(CopyEmbedGpuFiles),
-		Parallel: false,
-		Retry:    1,
-	}
+	// copyEmbedGpuFiles := &task.RemoteTask{
+	// 	Name:  "CopyFiles",
+	// 	Hosts: m.Runtime.GetHostsByRole(common.Master),
+	// 	Prepare: &prepare.PrepareCollection{
+	// 		new(common.OnlyFirstMaster),
+	// 	},
+	// 	Action:   new(CopyEmbedGpuFiles),
+	// 	Parallel: false,
+	// 	Retry:    1,
+	// }
 
 	installCudaDeps := &task.RemoteTask{
 		Name:  "InstallCudaKeyRing",
@@ -70,7 +72,12 @@ func (m *InstallDepsModule) Init() {
 				},
 			},
 		},
-		Action:   new(InstallCudaDeps),
+		Action: &InstallCudaDeps{
+			ManifestAction: manifest.ManifestAction{
+				Manifest: m.Manifest,
+				BaseDir:  m.BaseDir,
+			},
+		},
 		Parallel: false,
 		Retry:    1,
 	}
@@ -95,7 +102,12 @@ func (m *InstallDepsModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
 		},
-		Action:   new(UpdateCudaSource),
+		Action: &UpdateCudaSource{
+			ManifestAction: manifest.ManifestAction{
+				Manifest: m.Manifest,
+				BaseDir:  m.BaseDir,
+			},
+		},
 		Parallel: false,
 		Retry:    1,
 	}
@@ -112,7 +124,7 @@ func (m *InstallDepsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		copyEmbedGpuFiles,
+		// copyEmbedGpuFiles,
 		installCudaDeps,
 		installCudaDriver,
 		updateCudaSource,

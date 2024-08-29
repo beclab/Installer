@@ -34,6 +34,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
 	"bytetrade.io/web3os/installer/pkg/images"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
@@ -41,6 +42,7 @@ import (
 
 type SyncContainerd struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (s *SyncContainerd) Execute(runtime connector.Runtime) error {
@@ -48,19 +50,15 @@ func (s *SyncContainerd) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binariesMapObj, ok := s.PipelineCache.Get(common.KubeBinaries + "-" + runtime.RemoteHost().GetArch())
-	if !ok {
-		return errors.New("get KubeBinary by pipeline cache failed")
-	}
-	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
-
-	containerd, ok := binariesMap[common.Containerd]
-	if !ok {
-		return errors.New("get KubeBinary key containerd by pipeline cache failed")
+	containerd, err := s.Manifest.Get("containerd")
+	if err != nil {
+		return err
 	}
 
-	dst := filepath.Join(common.TmpDir, containerd.FileName)
-	if err := runtime.GetRunner().Scp(containerd.Path(), dst); err != nil {
+	path := containerd.FilePath(s.BaseDir)
+
+	dst := filepath.Join(common.TmpDir, containerd.Filename)
+	if err := runtime.GetRunner().Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync containerd binaries failed"))
 	}
 
@@ -74,6 +72,7 @@ func (s *SyncContainerd) Execute(runtime connector.Runtime) error {
 
 type SyncCrictlBinaries struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (s *SyncCrictlBinaries) Execute(runtime connector.Runtime) error {
@@ -81,20 +80,16 @@ func (s *SyncCrictlBinaries) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binariesMapObj, ok := s.PipelineCache.Get(common.KubeBinaries + "-" + runtime.RemoteHost().GetArch())
-	if !ok {
-		return errors.New("get KubeBinary by pipeline cache failed")
-	}
-	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
-
-	crictl, ok := binariesMap[common.Crictl]
-	if !ok {
-		return errors.New("get KubeBinary key crictl by pipeline cache failed")
+	crictl, err := s.Manifest.Get("crictl")
+	if err != nil {
+		return err
 	}
 
-	dst := filepath.Join(common.TmpDir, crictl.FileName)
+	path := crictl.FilePath(s.BaseDir)
 
-	if err := runtime.GetRunner().Scp(crictl.Path(), dst); err != nil {
+	dst := filepath.Join(common.TmpDir, crictl.Filename)
+
+	if err := runtime.GetRunner().Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync crictl binaries failed"))
 	}
 

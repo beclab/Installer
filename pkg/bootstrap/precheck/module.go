@@ -24,6 +24,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
 type GetStorageKeyModule struct {
@@ -74,6 +75,7 @@ func (m *GetSysInfoModel) Init() {
 
 type PreCheckOsModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 }
 
 func (m *PreCheckOsModule) Init() {
@@ -85,7 +87,11 @@ func (m *PreCheckOsModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			&binaries.Ubuntu24AppArmorCheck{},
 		},
-		Action:   new(binaries.InstallAppArmorTask),
+		Action: &binaries.InstallAppArmorTask{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest},
+		},
 		Parallel: false,
 		Retry:    0,
 	}

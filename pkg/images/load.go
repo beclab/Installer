@@ -19,6 +19,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/cavaliergopher/grab/v3"
 )
@@ -77,6 +78,7 @@ func (p *CheckImageManifest) PreCheck(runtime connector.Runtime) (bool, error) {
 
 type LoadImages struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
@@ -85,17 +87,8 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 	var minikubeprofile = t.KubeConf.Arg.MinikubeProfile
 	var containerManager = t.KubeConf.Cluster.Kubernetes.ContainerManager
 	var host = runtime.RemoteHost()
-	var imageManifest = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
-	manifests, _ := readImageManifest(imageManifest)
-	if manifests == nil {
-		logger.Debugf("image manifest is empty, skip load images")
-		return nil
-	}
 
-	var imagesDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ImageCacheDir)
-	if err := utils.Mkdir(imagesDir); err != nil {
-		return fmt.Errorf("create images cache directory error %v", err)
-	}
+	imageManifests, manifests := t.Manifest.GetImageList()
 
 	retry := func(f func() error, times int) (err error) {
 		for i := 0; i < times; i++ {
@@ -114,7 +107,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 	}
 
 	var mf = filterMinikubeImages(runtime.GetRunner(), host.GetOs(), minikubepath, manifests, minikubeprofile)
-	for _, imageRepoTag := range mf {
+	for index, imageRepoTag := range mf {
 		reserr = nil
 		if inspectImage(runtime.GetRunner(), containerManager, imageRepoTag) == nil {
 			logger.Debugf("%s already exists", imageRepoTag)
@@ -125,6 +118,8 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		var start = time.Now()
 		var imageHashTag = utils.MD5(imageRepoTag)
 		var imageFileName string
+
+		imagesDir := filepath.Join(t.BaseDir, imageManifests[index].Path)
 
 		var found = false
 		filepath.Walk(imagesDir, func(path string, info os.FileInfo, err error) error {
@@ -150,14 +145,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		})
 
 		if !found {
-			imageFileName = path.Join(imagesDir, fmt.Sprintf("%s.tar.gz", imageHashTag))
-			if err := downloadImageFile(host.GetArch(), imageRepoTag, imageFileName); err != nil {
-				// logger.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
-				reserr = fmt.Errorf("download image %s(hash:%s) file error %v", imageRepoTag, imageHashTag, err)
-				break
-			} else {
-				logger.Debugf("download %s success", imageRepoTag)
-			}
+			return fmt.Errorf("image %s not found in %s", imageRepoTag, imagesDir)
 		}
 
 		var imgFileName = filepath.Base(imageFileName)

@@ -21,10 +21,12 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
 type PreloadImagesModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 	Skip bool
 }
 
@@ -39,13 +41,18 @@ func (p *PreloadImagesModule) Init() {
 		Name:  "PreloadImages",
 		Hosts: p.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&MasterPullImages{Not: true},
+			// &MasterPullImages{Not: true},
 			&plugins.IsCloudInstance{Not: true},
-			&CopyImageManifest{},
-			&CheckImageManifest{},
+			// &CopyImageManifest{},
+			// &CheckImageManifest{},
 			&ContainerdInstalled{},
 		},
-		Action:   new(LoadImages),
+		Action: &LoadImages{
+			ManifestAction: manifest.ManifestAction{
+				Manifest: p.Manifest,
+				BaseDir:  p.BaseDir,
+			},
+		},
 		Parallel: false,
 		Retry:    1,
 	}

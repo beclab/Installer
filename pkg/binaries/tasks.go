@@ -23,23 +23,23 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/pkg/errors"
 )
 
 type InstallAppArmorTask struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *InstallAppArmorTask) Execute(runtime connector.Runtime) error {
-	fileName, err := DownloadUbutun24AppArmor(runtime.GetWorkDir(), kubekeyapiv1alpha2.DefaultUbuntu24AppArmonVersion,
-		constants.OsArch, t.PipelineCache)
+	fileName, err := GetUbutun24AppArmor(t.BaseDir, t.Manifest)
 	if err != nil {
-		logger.Errorf("failed to download apparmor: %v", err)
+		logger.Fatal("failed to download apparmor: %v", err)
 	}
 
 	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("dpkg -i %s", fileName), false, true); err != nil {

@@ -111,6 +111,8 @@ type KubeBinary struct {
 	OverWrite           bool
 	WriteDownloadingLog bool
 	Provider            storage.Provider
+	Md5sum              string
+	CheckMd5Sum         bool
 }
 
 func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
@@ -568,6 +570,18 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
+		if err := b.Md5Check(); err != nil { // ~ checksum
+			logger.Errorf("MD5 check failed: %v", err)
+			if i == 1 {
+				line <- []interface{}{fmt.Sprintf("MD5 check failed: %v", err), common.StateFail, float64(0)}
+				return err
+			}
+			path := b.Path()
+			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", path)).Run()
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
 		logger.Debugf("%s download succeeded", b.FileName)
 		line <- []interface{}{fmt.Sprintf("%s download succeeded", b.FileName), common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 		break
@@ -597,6 +611,23 @@ func (b *KubeBinary) SHA256Check() error {
 	}
 	if output != b.GetSha256() {
 		return errors.New(fmt.Sprintf("SHA256 no match. %s not equal %s", b.GetSha256(), output))
+	}
+	return nil
+}
+
+func (b *KubeBinary) Md5Check() error {
+	if !b.CheckMd5Sum {
+		return nil
+	}
+
+	var p string
+	p = b.Path()
+	output := util.LocalMd5Sum(p)
+	if strings.TrimSpace(b.Md5sum) == "" {
+		return errors.New(fmt.Sprintf("No Md5 sum found for %s. %s is not supported.", b.ID, b.Version))
+	}
+	if output != b.Md5sum {
+		return errors.New(fmt.Sprintf("md5 sum no match. %s not equal %s", b.Md5sum, output))
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package gpu
 
 import (
 	"fmt"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -13,8 +12,8 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/files"
 	k3sGpuTemplates "bytetrade.io/web3os/installer/pkg/gpu/templates"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
@@ -61,41 +60,26 @@ func (t *CopyEmbedGpuFiles) Execute(runtime connector.Runtime) error {
 
 type InstallCudaDeps struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
-	var arch string
-	switch runtime.GetRunner().Host.GetArch() {
-	case common.Arm64:
-		arch = "arm64"
-	default:
-		arch = "x86_64"
+	var fileId = fmt.Sprintf("%s-%s_cuda-keyring_%s",
+		strings.ToLower(constants.OsPlatform), constants.OsVersion,
+		kubekeyapiv1alpha2.DefaultCudaKeyringVersion)
+
+	cudakeyring, err := t.Manifest.Get(fileId)
+	if err != nil {
+		return err
 	}
 
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-
-	var cudakeyring = files.NewKubeBinary("cuda-keyring", arch, kubekeyapiv1alpha2.DefaultCudaKeyringVersion, prePath)
-
-	if err := cudakeyring.CreateBaseDir(); err != nil {
-		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", cudakeyring.FileName)
+	path := cudakeyring.FilePath(t.BaseDir)
+	var exists = util.IsExist(path)
+	if !exists {
+		return fmt.Errorf("Failed to find %s binary in %s", cudakeyring.Filename, path)
 	}
 
-	var exists = util.IsExist(cudakeyring.Path())
-	if exists {
-		p := cudakeyring.Path()
-		if err := cudakeyring.SHA256Check(); err != nil {
-			_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-		}
-	}
-
-	if !exists || cudakeyring.OverWrite {
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, cudakeyring.ID, cudakeyring.Version)
-		if err := cudakeyring.Download(); err != nil {
-			return fmt.Errorf("Failed to download %s binary: %s error: %w ", cudakeyring.ID, cudakeyring.Url, err)
-		}
-	}
-
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("dpkg -i %s", cudakeyring.Path()), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("dpkg -i %s", path), false, true); err != nil {
 		return err
 	}
 
@@ -128,6 +112,7 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 
 type UpdateCudaSource struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
@@ -139,15 +124,20 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	} else {
 		version = "20.04"
 	}
-	var distribution = fmt.Sprintf("%s%s", constants.OsPlatform, version)
 
 	var cmd string
-	var keyPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.GpuDir, "gpgkey")
-	if !util.IsExist(keyPath) {
-		cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | apt-key add -")
-	} else {
-		cmd = fmt.Sprintf("apt-key add %s", keyPath)
+	gpgkey, err := t.Manifest.Get("gpgkey")
+	if err != nil {
+		return err
 	}
+
+	keyPath := gpgkey.FilePath(t.BaseDir)
+
+	if !util.IsExist(keyPath) {
+		return fmt.Errorf("Failed to find %s binary in %s", gpgkey.Filename, keyPath)
+	}
+
+	cmd = fmt.Sprintf("apt-key add %s", keyPath)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
 	}
@@ -155,12 +145,22 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	if strings.Contains(constants.OsVersion, "24.") {
 		return nil
 	}
-	var libPath = path.Join(runtime.GetHomeDir(), cc.TerminusDir, cc.PackageCacheDir, cc.GpuDir, "libnvidia-container.list")
-	if !util.IsExist(libPath) {
-		cmd = fmt.Sprintf("curl -s -L https://nvidia.github.io/libnvidia-container/%s/libnvidia-container.list | tee /etc/apt/sources.list.d/libnvidia-container.list", distribution)
-	} else {
-		cmd = fmt.Sprintf("cp %s %s", libPath, "/etc/apt/sources.list.d/")
+
+	var fileId = fmt.Sprintf("%s_%s_libnvidia-container.list",
+		strings.ToLower(constants.OsPlatform), version)
+
+	libnvidia, err := t.Manifest.Get(fileId)
+	if err != nil {
+		return err
 	}
+
+	libPath := libnvidia.FilePath(t.BaseDir)
+
+	if !util.IsExist(libPath) {
+		return fmt.Errorf("Failed to find %s binary in %s", libnvidia.Filename, libPath)
+	}
+
+	cmd = fmt.Sprintf("cp %s %s", libPath, "/etc/apt/sources.list.d/")
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
 	}
