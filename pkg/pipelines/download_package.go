@@ -27,7 +27,7 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 		baseDir = home + "/.terminus"
 	}
 
-	p := download.NewDownloadPackage(manifest, baseDir, runtime)
+	p := download.NewDownloadPackage(manifest, baseDir, opts.Md5sum, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download package failed %v", err)
 		return err

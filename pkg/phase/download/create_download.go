@@ -9,12 +9,12 @@ import (
 	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
-func NewDownloadPackage(mainifest, baseDir string, runtime *common.KubeRuntime) *pipeline.Pipeline {
+func NewDownloadPackage(mainifest, baseDir, md5sum string, runtime *common.KubeRuntime) *pipeline.Pipeline {
 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
-		&terminus.InstallWizardDownloadModule{BaseDir: baseDir, Version: runtime.Arg.TerminusVersion},
+		&terminus.InstallWizardDownloadModule{BaseDir: baseDir, Md5sum: md5sum, Version: runtime.Arg.TerminusVersion},
 		&download.PackageDownloadModule{Manifest: mainifest, BaseDir: baseDir},
 	}
 

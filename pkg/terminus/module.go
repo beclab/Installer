@@ -35,6 +35,7 @@ type InstallWizardDownloadModule struct {
 	common.KubeModule
 	Version string
 	BaseDir string
+	Md5sum  string
 }
 
 func (m *InstallWizardDownloadModule) Init() {
@@ -42,8 +43,9 @@ func (m *InstallWizardDownloadModule) Init() {
 	download := &task.LocalTask{
 		Name: "DownloadInstallWizard",
 		Action: &Download{
-			version: m.Version,
+			Version: m.Version,
 			BaseDir: m.BaseDir,
+			Md5sum:  m.Md5sum,
 		},
 		Retry: 1,
 	}

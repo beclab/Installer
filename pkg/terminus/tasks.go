@@ -117,8 +117,9 @@ func (t *SetUserInfo) Execute(runtime connector.Runtime) error {
 
 type Download struct {
 	common.KubeAction
-	version string
+	Version string
 	BaseDir string
+	Md5sum  string
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
@@ -126,7 +127,9 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		return errors.New("unknown version to download")
 	}
 
-	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.version, t.BaseDir)
+	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.Version, t.BaseDir)
+	wizard.CheckMd5Sum = true
+	wizard.Md5sum = t.Md5sum
 
 	if err := wizard.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", wizard.FileName)
@@ -134,19 +137,22 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 
 	var exists = util.IsExist(wizard.Path())
 	if exists {
+		if err := wizard.Md5Check(); err == nil {
+			// file exists, re-unpack
+			return util.Untar(wizard.Path(), wizard.BaseDir)
+		} else {
+			logger.Error(err)
+		}
+
 		util.RemoveFile(wizard.Path())
 	}
 
-	if !exists || wizard.OverWrite {
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, wizard.ID, wizard.Version)
-		if err := wizard.Download(); err != nil {
-			return fmt.Errorf("Failed to download %s binary: %s error: %w ", wizard.ID, wizard.Url, err)
-		}
+	logger.Infof("%s downloading %s %s %s ...", common.LocalHost, wizard.ID, wizard.Version)
+	if err := wizard.Download(); err != nil {
+		return fmt.Errorf("Failed to download %s binary: %s error: %w ", wizard.ID, wizard.Url, err)
 	}
 
-	util.Untar(wizard.Path(), wizard.BaseDir)
-
-	return nil
+	return util.Untar(wizard.Path(), wizard.BaseDir)
 }
 
 func copyWizard(wizardPath string, np string, runtime connector.Runtime) {
