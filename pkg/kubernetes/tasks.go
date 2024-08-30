@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/etcd"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -100,51 +101,53 @@ func (g *GetClusterStatus) Execute(runtime connector.Runtime) error {
 
 type SyncKubeBinary struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
-	binariesMapObj, ok := i.PipelineCache.Get(common.KubeBinaries + "-" + runtime.RemoteHost().GetArch())
-	if !ok {
-		return errors.New("get KubeBinary by pipeline cache failed")
-	}
-	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
-
-	if err := SyncKubeBinaries(runtime, binariesMap); err != nil {
-		return err
-	}
-	return nil
-}
-
-// SyncKubeBinaries is used to sync kubernetes' binaries to each node.
-func SyncKubeBinaries(runtime connector.Runtime, binariesMap map[string]*files.KubeBinary) error {
 	if err := utils.ResetTmpDir(runtime); err != nil {
 		return err
 	}
 
-	binaryList := []string{"kubeadm", "kubelet", "kubectl", "helm", "kubecni"}
+	binaryList := []string{"kubeadm", "kubelet", "kubectl", "helm", "cni-plugins-k8s"}
 	for _, name := range binaryList {
-		binary, ok := binariesMap[name]
-		if !ok {
-			return fmt.Errorf("get kube binary %s info failed: no such key", name)
+		binary, err := i.Manifest.Get(name)
+		if err != nil {
+			return fmt.Errorf("get kube binary %s info failed: %w", err)
 		}
 
-		fileName := binary.FileName
+		path := binary.FilePath(i.BaseDir)
+
+		fileName := binary.Filename
 		switch name {
 		//case "kubelet":
 		//	if err := runtime.GetRunner().Scp(binary.Path, fmt.Sprintf("%s/%s", common.TmpDir, binary.Name)); err != nil {
 		//		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 		//	}
-		case "kubecni":
+		case "cni-plugins-k8s":
 			dst := filepath.Join(common.TmpDir, fileName)
-			if err := runtime.GetRunner().Scp(binary.Path(), dst); err != nil {
+			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
+			if err := runtime.GetRunner().Scp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
 			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar -zxf %s -C /opt/cni/bin", dst), false, false); err != nil {
 				return err
 			}
+		case "helm":
+			dst := filepath.Join(common.TmpDir, fileName)
+			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
+			if err := runtime.GetRunner().Scp(path, dst); err != nil {
+				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
+			}
+
+			cmd := fmt.Sprintf("tar -zxf %s && cd helm-* && mv ./helm /usr/local/bin/. && cd ../ && rm -rf helm-*",
+				dst)
+			if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
+				return err
+			}
 		default:
 			dst := filepath.Join(common.BinDir, fileName)
-			if err := runtime.GetRunner().SudoScp(binary.Path(), dst); err != nil {
+			if err := runtime.GetRunner().SudoScp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
 			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("chmod +x %s", dst), false, false); err != nil {

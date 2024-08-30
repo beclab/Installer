@@ -15,6 +15,7 @@ import (
 func ExecWithContext(ctx context.Context, name string, printOutput bool, printLine bool) (stdout string, code int, err error) {
 	exitCode := 0
 
+	logger.Infof("[exec] try to exec CMD: %s", name)
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", name)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
@@ -79,6 +80,7 @@ func ExecWithContext(ctx context.Context, name string, printOutput bool, printLi
 func Exec(name string, printOutput bool, printLine bool) (stdout string, code int, err error) {
 	exitCode := 0
 
+	logger.Infof("[exec] try to exec CMD: %s", name)
 	cmd := exec.Command("/bin/sh", "-c", name)
 	out, err := cmd.StdoutPipe()
 	if err != nil {

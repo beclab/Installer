@@ -36,7 +36,7 @@ func InstallTerminusPipeline(args common.Argument) error {
 		// FIXME:
 		kubeModules = cluster.NewK3sCreateClusterPhase(runtime, nil) // +
 	} else {
-		kubeModules = cluster.NewCreateClusterPhase(runtime)
+		kubeModules = cluster.NewCreateClusterPhase(runtime, nil)
 	}
 
 	m = append(m, kubeModules...)

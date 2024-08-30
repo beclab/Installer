@@ -30,7 +30,7 @@ func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipel
 			// FIXME:
 			kubeModules = NewK3sCreateClusterPhase(runtime, nil)
 		} else {
-			kubeModules = NewCreateClusterPhase(runtime)
+			kubeModules = NewCreateClusterPhase(runtime, nil)
 		}
 
 		kubeModules = append(kubeModules,
@@ -82,7 +82,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	if runtime.Cluster.Kubernetes.Type == common.K3s {
 		kubeModules = NewK3sCreateClusterPhase(runtime, manifestMap)
 	} else {
-		kubeModules = NewCreateClusterPhase(runtime)
+		kubeModules = NewCreateClusterPhase(runtime, manifestMap)
 	}
 
 	kubeModules = append(kubeModules,

@@ -26,6 +26,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/kubernetes/templates"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
 type StatusModule struct {
@@ -55,6 +56,7 @@ func (k *StatusModule) Init() {
 
 type InstallKubeBinariesModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 }
 
 func (i *InstallKubeBinariesModule) Init() {
@@ -62,11 +64,16 @@ func (i *InstallKubeBinariesModule) Init() {
 	i.Desc = "Install kubernetes cluster"
 
 	syncBinary := &task.RemoteTask{
-		Name:     "SyncKubeBinary",
-		Desc:     "Synchronize kubernetes binaries",
-		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
-		Prepare:  &NodeInCluster{Not: true},
-		Action:   new(SyncKubeBinary),
+		Name:    "SyncKubeBinary",
+		Desc:    "Synchronize kubernetes binaries",
+		Hosts:   i.Runtime.GetHostsByRole(common.K8s),
+		Prepare: &NodeInCluster{Not: true},
+		Action: &SyncKubeBinary{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  i.BaseDir,
+				Manifest: i.Manifest,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}

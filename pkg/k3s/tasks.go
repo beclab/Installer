@@ -125,7 +125,7 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binaryList := []string{"k3s", "helm", "cni-plugins-v0.9.1"} // kubecni
+	binaryList := []string{"k3s", "helm", "cni-plugins-k3s"} // kubecni
 	for _, name := range binaryList {
 		binary, err := s.Manifest.Get(name)
 		if err != nil {
@@ -136,7 +136,7 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 
 		fileName := binary.Filename
 		switch name {
-		case "cni-plugins-v0.9.1":
+		case "cni-plugins-k3s":
 			dst := filepath.Join(common.TmpDir, fileName)
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
 			if err := runtime.GetRunner().Scp(path, dst); err != nil {

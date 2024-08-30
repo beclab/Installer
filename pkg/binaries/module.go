@@ -21,10 +21,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-type NodeBinariesModule struct {
-	common.KubeModule
-}
-
 type CriBinariesModule struct {
 	common.KubeModule
 }

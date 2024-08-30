@@ -47,6 +47,7 @@ func (t *InstallAppArmorTask) Execute(runtime connector.Runtime) error {
 
 type CriDownload struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (d *CriDownload) Execute(runtime connector.Runtime) error {
