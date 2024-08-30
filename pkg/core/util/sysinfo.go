@@ -46,6 +46,46 @@ func GetCpu() (string, int, int, error) {
 	return cpuInfo[0].ModelName, cpuLogicalCount, cpuPhysicalCount, nil
 }
 
+func GetFs() (string, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// todo support other fs type
+	var fsType = "overlayfs"
+	var zfsPrefixName = ""
+
+	ps, err := disk.PartitionsWithContext(ctx, true)
+	if err != nil {
+		return "", "", err
+	}
+
+	if ps == nil || len(ps) == 0 {
+		return "", "", fmt.Errorf("partitions state is empty")
+	}
+
+	for _, p := range ps {
+		if p.Mountpoint == "/var/lib" && p.Fstype == "zfs" {
+			fsType = "zfs"
+			zfsPrefixName = p.Device
+			break
+		}
+	}
+
+	return fsType, zfsPrefixName, nil
+}
+
+func GetPs() ([]disk.PartitionStat, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ps, err := disk.PartitionsWithContext(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return ps, nil
+}
+
 func GetDisk() (uint64, uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

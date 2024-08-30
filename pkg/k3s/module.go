@@ -22,9 +22,11 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/container"
 	containertemplates "bytetrade.io/web3os/installer/pkg/container/templates"
 	"bytetrade.io/web3os/installer/pkg/core/action"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
@@ -82,6 +84,31 @@ func (i *InstallContainerModule) Init() {
 }
 
 func InstallContainerd(m *InstallContainerModule) []task.Interface {
+	fsReset := &task.RemoteTask{
+		Name:  "ZfsMountReset",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+			&container.ZfsResetPrepare{},
+		},
+		Action:   new(container.ZfsReset),
+		Parallel: false,
+		Retry:    5,
+		Delay:    5 * time.Second,
+	}
+
+	createZfsMount := &task.RemoteTask{
+		Name:  "CreateZfsMount",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+			&container.ZfsResetPrepare{},
+		},
+		Action:   new(container.CreateZfsMount),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	syncContainerd := &task.RemoteTask{
 		Name:  "SyncContainerd",
 		Desc:  "Sync containerd binaries",
@@ -138,6 +165,8 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 				"SandBoxImage":       images.GetImage(m.Runtime, m.KubeConf, "pause").ImageName(),
 				"Auths":              registry.DockerRegistryAuthEntries(m.KubeConf.Cluster.Registry.Auths),
 				"DataRoot":           containertemplates.DataRoot(m.KubeConf),
+				"FsType":             constants.FsType,
+				"ZfsRootPath":        cc.ZfsSnapshotter,
 			},
 		},
 		Parallel: true,
@@ -173,6 +202,8 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 	}
 
 	return []task.Interface{
+		fsReset,
+		createZfsMount,
 		syncContainerd,
 		syncCrictlBinaries,
 		generateContainerdService,

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 )
 
@@ -89,4 +90,15 @@ func (p *PrivateRegistryAuth) PreCheck(runtime connector.Runtime) (bool, error) 
 		return false, nil
 	}
 	return true, nil
+}
+
+type ZfsResetPrepare struct {
+	common.KubePrepare
+}
+
+func (p *ZfsResetPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
+	if constants.FsType == "zfs" {
+		return true, nil
+	}
+	return false, nil
 }
