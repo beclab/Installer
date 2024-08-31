@@ -156,6 +156,8 @@ update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy >/dev/null 2>&1 |
 update-alternatives --set arptables /usr/sbin/arptables-legacy >/dev/null 2>&1 || true
 update-alternatives --set ebtables /usr/sbin/ebtables-legacy >/dev/null 2>&1 || true
 
+for i in $(systemctl list-unit-files --no-legend --no-pager -l | grep --color=never -o .*.slice | grep kubepod); do sudo systemctl stop $i; done
+
 ulimit -u 65535
 ulimit -n 65535
 `)))

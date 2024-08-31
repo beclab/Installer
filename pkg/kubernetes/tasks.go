@@ -113,7 +113,7 @@ func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 	for _, name := range binaryList {
 		binary, err := i.Manifest.Get(name)
 		if err != nil {
-			return fmt.Errorf("get kube binary %s info failed: %w", err)
+			return fmt.Errorf("get kube binary %s info failed: %w", name, err)
 		}
 
 		path := binary.FilePath(i.BaseDir)
@@ -135,13 +135,14 @@ func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 			}
 		case "helm":
 			dst := filepath.Join(common.TmpDir, fileName)
+			untarDst := filepath.Join(common.TmpDir, strings.TrimSuffix(fileName, ".tar.gz"))
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
 			if err := runtime.GetRunner().Scp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
 
-			cmd := fmt.Sprintf("tar -zxf %s && cd helm-* && mv ./helm /usr/local/bin/. && cd ../ && rm -rf helm-*",
-				dst)
+			cmd := fmt.Sprintf("mkdir -p %s && tar -zxf %s -C %s && cd %s/linux-* && mv ./helm /usr/local/bin/.",
+				untarDst, dst, untarDst, untarDst)
 			if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 				return err
 			}

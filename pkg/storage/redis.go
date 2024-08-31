@@ -110,6 +110,22 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type CheckRedisExists struct {
+	common.KubePrepare
+}
+
+func (p *CheckRedisExists) PreCheck(runtime connector.Runtime) (bool, error) {
+	if !utils.IsExist(RedisServerInstalledFile) {
+		return true, nil
+	}
+
+	if !utils.IsExist(RedisServerFile) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 type InstallRedis struct {
 	common.KubeAction
 	manifest.ManifestAction
@@ -127,14 +143,19 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 		return errors.Wrapf(errors.WithStack(err), "untar redis failed")
 	}
 
-	var cmd = "cd /tmp/redis-* && cp ./* /usr/local/bin/ && ln -s /usr/local/bin/redis-server /usr/local/bin/redis-sentinel && rm -rf ./redis-*"
+	unpackPath := strings.TrimSuffix(redis.Filename, ".tar.gz")
+	var cmd = fmt.Sprintf("cd /tmp/%s && cp ./* /usr/local/bin/ && rm -rf ./%s",
+		unpackPath, unpackPath)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("ln -s %s %s", RedisServerInstalledFile, RedisServerFile), false, true); err != nil {
+	// if _, err := runtime.GetRunner().SudoCmdExt("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
+	// 	return err
+	// }
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisServerFile, RedisServerInstalledFile, RedisServerFile), false, true); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("ln -s %s %s", RedisCliInstalledFile, RedisCliFile), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisCliFile, RedisCliInstalledFile, RedisCliFile), false, true); err != nil {
 		return err
 	}
 
@@ -155,8 +176,9 @@ func (m *InstallRedisModule) Init() {
 	m.Name = "InstallRedis"
 
 	installRedis := &task.RemoteTask{
-		Name:  "Install",
-		Hosts: m.Runtime.GetAllHosts(),
+		Name:    "Install",
+		Hosts:   m.Runtime.GetAllHosts(),
+		Prepare: &CheckRedisExists{},
 		Action: &InstallRedis{
 			ManifestAction: manifest.ManifestAction{
 				BaseDir:  m.BaseDir,

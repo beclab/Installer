@@ -164,7 +164,12 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
 			&ContainerdExist{Not: true},
 		},
-		Action:   new(EnableContainerd),
+		Action: &EnableContainerd{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: true,
 	}
 

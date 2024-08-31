@@ -75,10 +75,6 @@ type CheckJuiceFsExists struct {
 }
 
 func (p *CheckJuiceFsExists) PreCheck(runtime connector.Runtime) (bool, error) {
-	if !utils.IsExist(JuiceFsDataDir) {
-		utils.Mkdir(JuiceFsDataDir)
-	}
-
 	if utils.IsExist(JuiceFsFile) {
 		return false, nil
 	}
@@ -92,6 +88,13 @@ type InstallJuiceFs struct {
 }
 
 func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
+	if !utils.IsExist(JuiceFsDataDir) {
+		err := utils.Mkdir(JuiceFsDataDir)
+		if err != nil {
+			return err
+		}
+	}
+
 	// todo redis password fetch
 	var redisPassword, ok = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 

@@ -76,6 +76,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 			},
 		},
 		&k3s.InitClusterModule{},
+		&dns.ClusterDNSModule{},
 		&k3s.StatusModule{},
 		&k3s.JoinNodesModule{},
 		// &images.CopyImagesToRegistryModule{Skip: skipPushImages},

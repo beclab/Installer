@@ -35,9 +35,6 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	m := []module.Module{
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
-		// &terminus.TidyPackageModule{},
-		// &storage.DownloadStorageBinariesModule{},
-		//
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
@@ -51,11 +48,8 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 			},
 		},
 		&os.ConfigSystemModule{},
+
 		// unitl now, system ready
-
-		// &binaries.K3sNodeBinariesModule{},
-		// &binaries.NodeBinariesModule{},
-
 		&storage.InitStorageModule{Skip: runtime.Arg.WSL || !runtime.Arg.IsCloudInstance},
 		&storage.InstallMinioModule{
 			ManifestModule: manifest.ManifestModule{
@@ -71,14 +65,20 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 			},
 			Skip: runtime.Arg.WSL,
 		},
-		&storage.InstallJuiceFsModule{Skip: runtime.Arg.WSL},
+		&storage.InstallJuiceFsModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: manifestMap,
+				BaseDir:  runtime.Arg.BaseDir,
+			},
+			Skip: runtime.Arg.WSL,
+		},
 
 		&container.InstallContainerModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
 				BaseDir:  runtime.Arg.BaseDir,
 			},
-			Skip:        isK3s,
+			Skip:        isK3s || runtime.Arg.IsCloudInstance,
 			NoneCluster: true,
 		}, //
 		&k3s.InstallContainerModule{
@@ -86,16 +86,17 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 				Manifest: manifestMap,
 				BaseDir:  runtime.Arg.BaseDir,
 			},
-			Skip: !isK3s,
+			Skip: !isK3s || runtime.Arg.IsCloudInstance,
 		},
 		&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
 				BaseDir:  runtime.Arg.BaseDir,
 			},
-			Skip: runtime.Arg.SkipPullImages,
+			Skip: runtime.Arg.SkipPullImages || runtime.Arg.IsCloudInstance,
 		}, //
-		// &terminus.CopyToWizardModule{},
+
+		// GPU install if necessary
 		&gpu.InstallDepsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
@@ -103,10 +104,10 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 			},
 			Skip: !runtime.Arg.GPU.Enable || !osSupport,
 		},
-		// &gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable || !osSupport},
 		&gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable || !osSupport},
-		// &gpu.InstallPluginModule{Skip: true},
-		&terminus.PreparedModule{},
+
+		// mark system prepared well
+		&terminus.PreparedModule{BaseDir: runtime.Arg.BaseDir},
 	}
 
 	return &pipeline.Pipeline{

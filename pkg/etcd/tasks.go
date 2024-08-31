@@ -154,7 +154,7 @@ func (g *InstallETCDBinary) Execute(runtime connector.Runtime) error {
 	}
 
 	etcdDir := strings.TrimSuffix(binary.Filename, ".tar.gz")
-	installCmd := fmt.Sprintf("tar -zxf %s && cp -f %s/etcd* /usr/local/bin/ && chmod +x /usr/local/bin/etcd* && rm -rf %s", dst, etcdDir, etcdDir)
+	installCmd := fmt.Sprintf("tar -zxf %s && cp -f %s-*/etcd* /usr/local/bin/ && chmod +x /usr/local/bin/etcd* && rm -rf %s-*", dst, etcdDir, etcdDir)
 	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install etcd binaries failed")
 	}

@@ -32,7 +32,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/files"
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
@@ -103,9 +102,12 @@ func (s *SyncCrictlBinaries) Execute(runtime connector.Runtime) error {
 
 type EnableContainerd struct {
 	common.KubeAction
+	manifest.ManifestAction
 }
 
 func (e *EnableContainerd) Execute(runtime connector.Runtime) error {
+	var isK3s = strings.Contains(e.KubeConf.Arg.KubernetesVersion, "k3s")
+
 	if _, err := runtime.GetRunner().SudoCmd(
 		"systemctl daemon-reload && systemctl enable containerd && systemctl start containerd",
 		false, false); err != nil {
@@ -117,19 +119,21 @@ func (e *EnableContainerd) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binariesMapObj, ok := e.PipelineCache.Get(common.KubeBinaries + "-" + runtime.RemoteHost().GetArch())
-	if !ok {
-		return errors.New("get KubeBinary by pipeline cache failed")
+	runcKey := common.Runc
+	if isK3s {
+		runcKey += "-k3s"
+	} else {
+		runcKey += "-k8s"
 	}
-	binariesMap := binariesMapObj.(map[string]*files.KubeBinary)
-
-	containerd, ok := binariesMap[common.Runc]
-	if !ok {
-		return errors.New("get KubeBinary key runc by pipeline cache failed")
+	containerd, err := e.Manifest.Get(runcKey)
+	if err != nil {
+		return errors.New("get KubeBinary key runc by manifest error")
 	}
 
-	dst := filepath.Join(common.TmpDir, containerd.FileName)
-	if err := runtime.GetRunner().Scp(containerd.Path(), dst); err != nil {
+	path := containerd.FilePath(e.BaseDir)
+
+	dst := filepath.Join(common.TmpDir, containerd.Filename)
+	if err := runtime.GetRunner().Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync runc binaries failed"))
 	}
 

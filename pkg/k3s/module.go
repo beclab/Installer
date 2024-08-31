@@ -180,7 +180,12 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 		Prepare: &prepare.PrepareCollection{
 			&container.ContainerdExist{Not: true},
 		},
-		Action:   new(container.EnableContainerd),
+		Action: &container.EnableContainerd{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
 		Parallel: true,
 	}
 
