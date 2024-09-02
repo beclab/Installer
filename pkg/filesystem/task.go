@@ -74,6 +74,7 @@ func (l *LocalTaskChown) Execute(runtime connector.Runtime) error {
 
 type DeleteInstalled struct {
 	common.KubeAction
+	BaseDir string
 }
 
 func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
@@ -82,6 +83,10 @@ func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
 		path.Join(common.RunLockDir, ".installed"),
 		path.Join("/usr/local/var/run", ".installed"),
 		path.Join("/tmp/install_log"),
+	}
+
+	if t.BaseDir != "" {
+		installed = append(installed, t.BaseDir)
 	}
 
 	for _, f := range installed {

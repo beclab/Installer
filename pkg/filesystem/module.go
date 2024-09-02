@@ -83,14 +83,17 @@ func (c *ChownOutputModule) Init() {
 
 type DeleteInstalledModule struct {
 	common.KubeModule
+	BaseDir string
 }
 
 func (m *DeleteInstalledModule) Init() {
 	m.Name = "DeleteInstalled"
 
 	deleteInstalled := &task.LocalTask{
-		Name:   "DeleteInstalled",
-		Action: new(DeleteInstalled),
+		Name: "DeleteInstalled",
+		Action: &DeleteInstalled{
+			BaseDir: m.BaseDir,
+		},
 	}
 
 	m.Tasks = []task.Interface{

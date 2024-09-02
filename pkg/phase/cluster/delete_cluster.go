@@ -6,7 +6,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
-	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/filesystem"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
@@ -23,19 +22,56 @@ func DeleteMinikubePhase(args common.Argument, runtime *common.KubeRuntime) []mo
 	}
 }
 
-func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
-	var p = util.IsExist("/var/run/lock/.prepared")
-	return []module.Module{
-		&kubernetes.ResetClusterModule{},
-		&container.UninstallContainerModule{Skip: p},
-		&k3s.DeleteClusterModule{},
-		&os.ClearOSEnvironmentModule{},
-		&certs.UninstallAutoRenewCertsModule{},
-		&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
-		&kubesphere.DeleteCacheModule{},
-		&storage.RemoveStorageModule{},
-		&container.DeleteZfsMountModule{Skip: p},
-		&k3s.UninstallK3sModule{},
-		&filesystem.DeleteInstalledModule{},
+func DeleteClusterPhase(baseDir, phase string, runtime *common.KubeRuntime) []module.Module {
+	var deleteVipModule = !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()
+	var res []module.Module
+
+	switch phase {
+	case "download":
+		res = append(res,
+			&filesystem.DeleteInstalledModule{
+				BaseDir: baseDir,
+			},
+		)
+		fallthrough
+	case "prepare":
+		res = append(res,
+			&container.UninstallContainerModule{},
+			&storage.RemoveStorageModule{},
+			&container.DeleteZfsMountModule{},
+		)
+		fallthrough
+	case "install":
+		res = append(res,
+			&k3s.UninstallK3sModule{},
+			&loadbalancer.DeleteVIPModule{Skip: deleteVipModule},
+			&certs.UninstallAutoRenewCertsModule{},
+			&os.ClearOSEnvironmentModule{},
+			&k3s.DeleteClusterModule{},
+			&kubernetes.ResetClusterModule{},
+		)
+	}
+
+	// res = []module.Module{
+	// 	&kubernetes.ResetClusterModule{},
+	// 	&container.UninstallContainerModule{Skip: p},
+	// 	&k3s.DeleteClusterModule{},
+	// 	&os.ClearOSEnvironmentModule{},
+	// 	&certs.UninstallAutoRenewCertsModule{},
+	// 	&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
+	// 	&kubesphere.DeleteCacheModule{},
+	// 	&storage.RemoveStorageModule{},
+	// 	&k3s.UninstallK3sModule{},
+	// 	&filesystem.DeleteInstalledModule{},
+	// }
+
+	reverseModules(res)
+
+	return res
+}
+
+func reverseModules(s []module.Module) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
 	}
 }

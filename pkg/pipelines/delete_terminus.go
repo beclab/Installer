@@ -25,6 +25,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		return err
 	}
 
+	deleteCache = false
 	var arg = common.NewArgument()
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
@@ -39,14 +40,24 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		return err
 	}
 
-	var m = []module.Module{&precheck.GreetingsModule{}, &precheck.GetSysInfoModel{}}
+	home := runtime.GetHomeDir()
+	baseDir := opt.BaseDir
+	if baseDir == "" {
+		baseDir = home + "/.terminus"
+	}
 
+	phase := opt.Phase
+	if err := checkPhase(phase); err != nil {
+		return err
+	}
+
+	var m = []module.Module{&precheck.GreetingsModule{}, &precheck.GetSysInfoModel{}}
 	switch constants.OsType {
 	case common.Darwin:
 		m = append(m, cluster.DeleteMinikubePhase(*arg, runtime)...)
 	default:
 		m = append(m, &precheck.GetStorageKeyModule{}, &storage.RemoveMountModule{})
-		m = append(m, cluster.DeleteClusterPhase(runtime)...)
+		m = append(m, cluster.DeleteClusterPhase(baseDir, phase, runtime)...)
 	}
 
 	p := pipeline.Pipeline{
@@ -56,12 +67,21 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	}
 
 	if err := p.Start(); err != nil {
-		logger.Errorf("delete terminus failed: %v", err)
+		logger.Errorf("uninstall failed: %v", err)
 		return err
 	}
 
 	return nil
 
+}
+
+func checkPhase(phase string) error {
+	if constants.OsType == common.Linux {
+		if phase == "" || (phase != "install" && phase != "prepare" && phase != "download") {
+			return fmt.Errorf("Please specify the phase to uninstall, such as --phase install. Supported: install, prepare, download.")
+		}
+	}
+	return nil
 }
 
 func readDeleteCacheInput() (string, error) {
