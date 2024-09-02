@@ -18,6 +18,7 @@ func GetMachineInfo() {
 	getWorkDir()
 	getHost()
 	getCpu()
+	getFs()
 	getDisk()
 	getMem()
 	getRepoManager()
@@ -69,6 +70,15 @@ func getDisk() {
 	}
 	constants.DiskTotal = diskTotal
 	constants.DiskFree = diskFree
+}
+
+func getFs() {
+	fsType, zfsPrefixName, err := util.GetFs()
+	if err != nil {
+		panic(err)
+	}
+	constants.FsType = fsType
+	constants.DefaultZfsPrefixName = zfsPrefixName
 }
 
 func getMem() {

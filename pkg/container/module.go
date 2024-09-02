@@ -19,7 +19,9 @@ package container
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
@@ -27,6 +29,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container/templates"
 	"bytetrade.io/web3os/installer/pkg/core/action"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
@@ -62,6 +65,33 @@ func (i *InstallContainerModule) Init() {
 }
 
 func InstallContainerd(m *InstallContainerModule) []task.Interface {
+	fsReset := &task.RemoteTask{
+		Name:  "DeleteZfsMount",
+		Hosts: m.Runtime.GetHostsByRole(common.K8s),
+		Prepare: &prepare.PrepareCollection{
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
+			&ContainerdExist{Not: true},
+			&ZfsResetPrepare{},
+		},
+		Action:   new(ZfsReset),
+		Parallel: false,
+		Retry:    5,
+		Delay:    5 * time.Second,
+	}
+
+	createZfsMount := &task.RemoteTask{
+		Name:  "CreateZfsMount",
+		Hosts: m.Runtime.GetHostsByRole(common.K8s),
+		Prepare: &prepare.PrepareCollection{
+			&kubernetes.NodeInCluster{Not: true, NoneCluster: m.NoneCluster},
+			&ContainerdExist{Not: true},
+			&ZfsResetPrepare{},
+		},
+		Action:   new(CreateZfsMount),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	syncContainerd := &task.RemoteTask{
 		Name:  "SyncContainerd",
 		Desc:  "Sync containerd binaries",
@@ -132,6 +162,8 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 				"SandBoxImage":       images.GetImage(m.Runtime, m.KubeConf, "pause").ImageName(),
 				"Auths":              registry.DockerRegistryAuthEntries(m.KubeConf.Cluster.Registry.Auths),
 				"DataRoot":           templates.DataRoot(m.KubeConf),
+				"FsType":             constants.FsType,
+				"ZfsRootPath":        cc.ZfsSnapshotter,
 			},
 		},
 		Parallel: true,
@@ -174,6 +206,8 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 	}
 
 	return []task.Interface{
+		fsReset,
+		createZfsMount,
 		syncContainerd,
 		syncCrictlBinaries,
 		generateContainerdService,
@@ -229,15 +263,13 @@ func UninstallDocker(m *UninstallContainerModule) []task.Interface {
 }
 
 func UninstallContainerd(m *UninstallContainerModule) []task.Interface {
+
 	disableContainerd := &task.RemoteTask{
-		Name:  "UninstallContainerd",
-		Desc:  "Uninstall containerd",
-		Hosts: m.Runtime.GetHostsByRole(common.K8s),
-		// Prepare: &prepare.PrepareCollection{
-		// 	&ContainerdExist{Not: false},
-		// },
+		Name:     "UninstallContainerd",
+		Desc:     "Uninstall containerd",
+		Hosts:    m.Runtime.GetHostsByRole(common.K8s),
 		Action:   new(DisableContainerd),
-		Parallel: true,
+		Parallel: false,
 	}
 
 	return []task.Interface{
@@ -321,4 +353,33 @@ func MigrateACri(p *CriMigrateModule) []task.Interface {
 	}
 
 	return p.Tasks
+}
+
+type DeleteZfsMountModule struct {
+	common.KubeModule
+	Skip bool
+}
+
+func (i *DeleteZfsMountModule) IsSkip() bool {
+	return i.Skip
+}
+
+func (m *DeleteZfsMountModule) Init() {
+	m.Name = "DeleteZfsMount"
+
+	zfsReset := &task.RemoteTask{
+		Name:  "DeleteZfsMount",
+		Hosts: m.Runtime.GetHostsByRole(common.K8s),
+		Prepare: &prepare.PrepareCollection{
+			new(ZfsResetPrepare),
+		},
+		Action:   new(ZfsReset),
+		Parallel: false,
+		Retry:    5,
+		Delay:    5 * time.Second,
+	}
+
+	m.Tasks = []task.Interface{
+		zfsReset,
+	}
 }

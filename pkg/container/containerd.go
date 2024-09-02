@@ -25,8 +25,10 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/container/templates"
 	"bytetrade.io/web3os/installer/pkg/core/action"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
@@ -38,6 +40,65 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
+
+type CreateZfsMount struct {
+	common.KubeAction
+}
+
+func (t *CreateZfsMount) Execute(runtime connector.Runtime) error {
+	if constants.FsType != "zfs" {
+		return nil
+	}
+	var cmd = fmt.Sprintf("zfs create -o mountpoint=%s %s/containerd", cc.ZfsSnapshotter, constants.DefaultZfsPrefixName)
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			logger.Debugf("zfs %s/containerd already exists", constants.DefaultZfsPrefixName)
+			return nil
+		}
+		logger.Errorf("create zfs mount error %v", err)
+	}
+	return nil
+}
+
+type ZfsReset struct {
+	common.KubeAction
+}
+
+func (t *ZfsReset) Execute(runtime connector.Runtime) error {
+	if _, err := util.GetCommand("zfs"); err != nil {
+		return err
+	}
+
+	res, _ := runtime.GetRunner().SudoCmdExt("zfs list -t all", false, false)
+	if res != "" {
+		scanner := bufio.NewScanner(strings.NewReader(res))
+		for scanner.Scan() {
+			line := scanner.Text()
+			fields := strings.Fields(line)
+			if len(fields) < 5 {
+				continue
+			}
+
+			var name = fields[0]
+
+			if !strings.Contains(name, fmt.Sprintf("%s/containerd", constants.DefaultZfsPrefixName)) {
+				continue
+			}
+			var mp = fields[4]
+			if !strings.Contains(mp, "legacy") {
+				continue
+			}
+
+			if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("zfs destroy %s -frR", name), false, false); err == nil {
+				fmt.Printf("delete zfs device %s\n", name)
+			}
+		}
+	}
+
+	runtime.GetRunner().SudoCmdExt(fmt.Sprintf("zfs destroy %s/containerd -frR", constants.DefaultZfsPrefixName), false, false)
+
+	return nil
+}
 
 type SyncContainerd struct {
 	common.KubeAction

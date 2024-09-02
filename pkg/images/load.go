@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -82,7 +83,6 @@ type LoadImages struct {
 }
 
 func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
-
 	var minikubepath = getMinikubePath(t.PipelineCache)
 	var minikubeprofile = t.KubeConf.Arg.MinikubeProfile
 	var containerManager = t.KubeConf.Cluster.Kubernetes.ContainerManager
@@ -108,6 +108,9 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 
 	var mf = filterMinikubeImages(runtime.GetRunner(), host.GetOs(), minikubepath, manifests, minikubeprofile)
 	for index, imageRepoTag := range mf {
+		if imageRepoTag == "" {
+			continue
+		}
 		reserr = nil
 		if inspectImage(runtime.GetRunner(), containerManager, imageRepoTag) == nil {
 			logger.Debugf("%s already exists", imageRepoTag)
@@ -150,6 +153,11 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 
 		var imgFileName = filepath.Base(imageFileName)
 		var loadCmd string
+		var loadParm string
+
+		if constants.FsType == "zfs" {
+			loadParm = "--snapshotter=zfs"
+		}
 
 		if runtime.GetRunner().Host.GetOs() == common.Darwin {
 			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
@@ -163,9 +171,9 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 				loadCmd = "ctr" // not implement
 			case "containerd":
 				if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
-					loadCmd = fmt.Sprintf("env PATH=$PATH gunzip -c %s | ctr -n k8s.io images import -", imageFileName)
+					loadCmd = fmt.Sprintf("env PATH=$PATH gunzip -c %s | ctr -n k8s.io images import %s -", imageFileName, loadParm)
 				} else {
-					loadCmd = fmt.Sprintf("env PATH=$PATH ctr -n k8s.io images import %s", imageFileName)
+					loadCmd = fmt.Sprintf("env PATH=$PATH ctr -n k8s.io images import %s %s", imageFileName, loadParm)
 				}
 			case "isula":
 				loadCmd = "isula" // not implement

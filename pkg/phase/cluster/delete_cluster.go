@@ -34,6 +34,7 @@ func DeleteClusterPhase(runtime *common.KubeRuntime) []module.Module {
 		&loadbalancer.DeleteVIPModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
 		&kubesphere.DeleteCacheModule{},
 		&storage.RemoveStorageModule{},
+		&container.DeleteZfsMountModule{Skip: p},
 		&k3s.UninstallK3sModule{},
 		&filesystem.DeleteInstalledModule{},
 	}
