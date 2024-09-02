@@ -7,6 +7,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func NewCmdDownloadWizard() *cobra.Command {
+	o := options.NewCliDownloadWizardOptions()
+	cmd := &cobra.Command{
+		Use:   "download-wizard",
+		Short: "Download Terminus Installation Wizard",
+		Run: func(cmd *cobra.Command, args []string) {
+
+			if err := pipelines.DownloadInstallationWizard(o); err != nil {
+				logger.Errorf("download terminus installation wizard error: %v", err)
+			}
+		},
+	}
+
+	o.AddFlags(cmd)
+	return cmd
+}
+
 func NewCmdDownload() *cobra.Command {
 	o := options.NewCliDownloadOptions()
 	cmd := &cobra.Command{

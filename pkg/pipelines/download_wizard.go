@@ -7,7 +7,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/phase/download"
 )
 
-func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
+func DownloadInstallationWizard(opts *options.CliDownloadWizardOptions) error {
 	arg := common.NewArgument()
 	arg.SetTerminusVersion(opts.Version)
 
@@ -16,20 +16,15 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 		return err
 	}
 
-	manifest := opts.Manifest
 	home := runtime.GetHomeDir()
-	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
-	}
-
 	baseDir := opts.BaseDir
 	if baseDir == "" {
 		baseDir = home + "/.terminus"
 	}
 
-	p := download.NewDownloadPackage(manifest, baseDir, runtime)
+	p := download.NewDownloadWizard(baseDir, opts.Md5sum, runtime)
 	if err := p.Start(); err != nil {
-		logger.Errorf("download package failed %v", err)
+		logger.Errorf("download wizard failed %v", err)
 		return err
 	}
 
