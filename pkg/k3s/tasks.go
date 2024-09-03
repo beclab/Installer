@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
 
@@ -222,6 +223,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"system-reserved": "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
 		"eviction-hard":   "memory.available<5%,nodefs.available<10%",
 		"config":          "/etc/rancher/k3s/kubelet.config",
+		"containerd":      container.DefaultContainerdCRISocket,
 	}
 	defaultKubeProxyArgs := map[string]string{
 		"proxy-mode": "ipvs",
