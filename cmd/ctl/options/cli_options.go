@@ -21,7 +21,6 @@ func (o *CliKubeInitializeOptions) AddFlags(cmd *cobra.Command) {
 }
 
 type CliTerminusUninstallOptions struct {
-	Proxy         string
 	MiniKube      bool
 	DeleteCRI     bool
 	DeleteCache   bool
@@ -39,7 +38,6 @@ func NewCliTerminusUninstallOptions() *CliTerminusUninstallOptions {
 }
 
 func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&o.Proxy, "proxy", "", "Set proxy address, e.g., 192.168.50.32 or your-proxy-domain")
 	cmd.Flags().BoolVar(&o.MiniKube, "minikube", false, "Set minikube flag")
 	cmd.Flags().BoolVar(&o.DeleteCRI, "delete-cri", false, "Delete CRI, default: false")
 	cmd.Flags().BoolVar(&o.DeleteCache, "delete-cache", false, "Delete Cache, default: false")
