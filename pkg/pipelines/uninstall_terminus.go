@@ -16,7 +16,7 @@ import (
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	var kubeVersion = phase.GetCurrentKubeVersion()
-	var deleteCache, err = formatDeleteCache(opt.Quiet, opt.DeleteCache)
+	var deleteCache, err = formatDeleteCache(opt.Quiet, opt.DeleteCache, opt.MiniKube, opt.Phase)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,11 @@ func formatParms(key, val string) string {
 	return ""
 }
 
-func formatDeleteCache(quiet, deleteCache bool) (bool, error) {
+func formatDeleteCache(quiet, deleteCache, minikube bool, phase string) (bool, error) {
+	if !minikube && phase != "download" {
+		return false, nil
+	}
+
 	var input string
 	var err error
 	if !quiet {
