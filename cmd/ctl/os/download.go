@@ -15,7 +15,7 @@ func NewCmdDownloadWizard() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.DownloadInstallationWizard(o); err != nil {
-				logger.Errorf("download terminus installation wizard error: %v", err)
+				logger.Fatalf("download terminus installation wizard error: %v", err)
 			}
 		},
 	}

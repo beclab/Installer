@@ -120,8 +120,10 @@ func (m *PreparedModule) Init() {
 	m.Name = "PrepareFinished"
 
 	prepareFinished := &task.LocalTask{
-		Name:   "PrepareFinished",
-		Action: new(PrepareFinished),
+		Name: "PrepareFinished",
+		Action: &PrepareFinished{
+			BaseDir: m.BaseDir,
+		},
 	}
 
 	m.Tasks = []task.Interface{
