@@ -19,7 +19,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
 	var arg = common.NewArgument()
 	arg.SetTerminusVersion(terminusVersion)
-	arg.SetKubernetesVersion(common.K8s, common.DefaultKubernetesVersion)
+	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetProxy(opts.RegistryMirrors, opts.RegistryMirrors)
 	arg.SetGPU(true, true)
 	arg.SetStorage(createStorage(opts))
