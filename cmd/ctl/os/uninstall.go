@@ -23,7 +23,7 @@ func NewCmdUninstallOs() *cobra.Command {
 		Use:   "uninstall",
 		Short: "Uninstall Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
-			logger.Infof("options: version: %s, minikube: %v, deletecache: %v, deletecri: %v, storage-type: %s, storage-bucket: %s",
+			logger.Infof("options: minikube: %v, deletecache: %v, deletecri: %v, storage-type: %s, storage-bucket: %s",
 				o.UninstallOptions.MiniKube, o.UninstallOptions.DeleteCache, o.UninstallOptions.DeleteCRI, o.UninstallOptions.StorageType, o.UninstallOptions.StorageBucket)
 
 			if err := pipelines.UninstallTerminusPipeline(o.UninstallOptions); err != nil {

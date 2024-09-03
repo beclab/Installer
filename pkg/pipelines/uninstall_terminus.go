@@ -7,20 +7,16 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
-	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
-	"bytetrade.io/web3os/installer/pkg/core/module"
-	"bytetrade.io/web3os/installer/pkg/core/pipeline"
 	"bytetrade.io/web3os/installer/pkg/phase"
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
-	"bytetrade.io/web3os/installer/pkg/storage"
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	var kubeVersion = phase.GetCurrentKubeVersion()
-	var deleteCache, err = formatDeleteCache(opt.Quiet, opt.DeleteCache)
+	var deleteCache, err = formatDeleteCache(opt.Quiet, opt.DeleteCache, opt.MiniKube, opt.Phase)
 	if err != nil {
 		return err
 	}
@@ -35,6 +31,11 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
 	})
 
+	phaseName := opt.Phase
+	if err := checkPhase(phaseName); err != nil {
+		return err
+	}
+
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return err
@@ -46,28 +47,9 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		baseDir = home + "/.terminus"
 	}
 
-	phase := opt.Phase
-	if err := checkPhase(phase); err != nil {
-		return err
-	}
-
-	var m = []module.Module{&precheck.GreetingsModule{}, &precheck.GetSysInfoModel{}}
-	switch constants.OsType {
-	case common.Darwin:
-		m = append(m, cluster.DeleteMinikubePhase(*arg, runtime)...)
-	default:
-		m = append(m, &precheck.GetStorageKeyModule{}, &storage.RemoveMountModule{})
-		m = append(m, cluster.DeleteClusterPhase(baseDir, phase, runtime)...)
-	}
-
-	p := pipeline.Pipeline{
-		Name:    "Delete Terminus",
-		Runtime: runtime,
-		Modules: m,
-	}
-
+	var p = cluster.UninstallTerminus(baseDir, phaseName, arg, runtime)
 	if err := p.Start(); err != nil {
-		logger.Errorf("uninstall failed: %v", err)
+		logger.Errorf("uninstall terminus failed: %v", err)
 		return err
 	}
 
@@ -112,7 +94,11 @@ func formatParms(key, val string) string {
 	return ""
 }
 
-func formatDeleteCache(quiet, deleteCache bool) (bool, error) {
+func formatDeleteCache(quiet, deleteCache, minikube bool, phase string) (bool, error) {
+	if !minikube && phase != "download" {
+		return false, nil
+	}
+
 	var input string
 	var err error
 	if !quiet {
