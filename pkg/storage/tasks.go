@@ -332,7 +332,7 @@ type DeleteCaches struct {
 }
 
 func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
-	if t.Skip {
+	if !t.KubeConf.Arg.DeleteCache {
 		return nil
 	}
 	var cachesDirs []string
