@@ -71,7 +71,7 @@ func (m *RemoveMountModule) Init() {
 	m.Name = "RemoveMount"
 
 	downloadStorageCli := &task.RemoteTask{
-		Name:  "Download",
+		Name:  "DownloadStorageCli",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(CheckStorageVendor),
@@ -216,9 +216,11 @@ func (m *DeleteCacheModule) Init() {
 	m.Name = "DeleteCaches"
 
 	deleteCaches := &task.RemoteTask{
-		Name:     "DeleteCaches",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Action:   new(DeleteCaches),
+		Name:  "DeleteCaches",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Action: &DeleteCaches{
+			BaseDir: m.BaseDir,
+		},
 		Parallel: false,
 		Retry:    1,
 	}
