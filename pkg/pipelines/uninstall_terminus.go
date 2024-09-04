@@ -15,7 +15,6 @@ import (
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
-	phaseName := opt.Phase
 	var kubeVersion = phase.GetCurrentKubeVersion()
 	var deleteCache, err = formatDeleteCache(opt)
 	if err != nil {
@@ -32,7 +31,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
 	})
 
-	if err := checkPhase(phaseName, opt.All); err != nil {
+	if err := checkPhase(opt.Phase, opt.All); err != nil {
 		return err
 	}
 
@@ -47,7 +46,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		baseDir = home + "/.terminus"
 	}
 
-	var p = cluster.UninstallTerminus(baseDir, phaseName, arg, runtime)
+	var p = cluster.UninstallTerminus(baseDir, opt.Phase, arg, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("uninstall terminus failed: %v", err)
 		return err

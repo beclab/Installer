@@ -383,3 +383,24 @@ func (m *DeleteZfsMountModule) Init() {
 		zfsReset,
 	}
 }
+
+type KillContainerdProcessModule struct {
+	common.KubeModule
+}
+
+func (m *KillContainerdProcessModule) Init() {
+	m.Name = "KillContainerdProcess"
+
+	killContainerdProcess := &task.RemoteTask{
+		Name:     "KillContainerdProcess",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Action:   new(KillContainerdProcess),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		killContainerdProcess,
+	}
+
+}

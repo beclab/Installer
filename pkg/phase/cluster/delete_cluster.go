@@ -12,7 +12,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/kubesphere"
-	"bytetrade.io/web3os/installer/pkg/loadbalancer"
 	"bytetrade.io/web3os/installer/pkg/storage"
 )
 
@@ -82,7 +81,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&k3s.DeleteClusterModule{},
 			&os.ClearOSEnvironmentModule{},
 			&certs.UninstallAutoRenewCertsModule{},
-			&loadbalancer.DeleteVIPModule{Skip: !p.runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
+			&container.KillContainerdProcessModule{},
 			&k3s.UninstallK3sModule{},
 		)
 	}
@@ -95,11 +94,11 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 	}
 
 	if p.convert() >= PhasePrepare {
-		p.modules = append([]module.Module{
+		p.modules = append(p.modules, []module.Module{
 			&container.DeleteZfsMountModule{},
 			&storage.RemoveStorageModule{},
 			&container.UninstallContainerModule{},
-		}, p.modules...)
+		}...)
 	}
 	return p
 }
@@ -110,13 +109,11 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 	}
 
 	if p.convert() >= PhaseDownload {
-		p.modules = append(
-			[]module.Module{
-				&filesystem.DeleteInstalledModule{
-					BaseDir: p.baseDir,
-				},
+		p.modules = append(p.modules, []module.Module{
+			&filesystem.DeleteInstalledModule{
+				BaseDir: p.baseDir,
 			},
-			p.modules...)
+		}...)
 	}
 
 	return p

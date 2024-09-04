@@ -213,39 +213,6 @@ type DisableContainerd struct {
 func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 	_, _ = runtime.GetRunner().SudoCmd("systemctl disable containerd && systemctl stop containerd", false, false)
 
-	var pids []string
-	var childpids []string
-	var cmd = "ps -ef | grep containerd-shim | grep -v grep | awk '{print $2}'"
-	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	if err == nil || stdout != "" {
-		scanner := bufio.NewScanner(strings.NewReader(stdout))
-		for scanner.Scan() {
-			line := scanner.Text()
-			fields := strings.Fields(line)
-			if len(fields) > 1 {
-				pid := fields[1]
-				pids = append(pids, pid)
-			}
-		}
-
-		if len(pids) > 0 {
-			for _, pid := range pids {
-				var p = getProcessIds(pid, runtime)
-				childpids = append(childpids, p...)
-			}
-		}
-	}
-
-	var allPids []string
-	allPids = append(allPids, childpids...)
-	allPids = append(allPids, pids...)
-
-	if len(allPids) > 0 {
-		for _, pid := range allPids {
-			runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, false)
-		}
-	}
-
 	if err := umountPoints(runtime); err != nil {
 		return err
 	}
@@ -696,6 +663,46 @@ func (d *MigrateSelfNodeCri) Execute(runtime connector.Runtime) error {
 
 	if err := MigrateSelfNodeCriTasks(runtime, d.KubeAction); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("MigrateSelfNodeCriTasks failed:"))
+	}
+	return nil
+}
+
+type KillContainerdProcess struct {
+	common.KubeAction
+}
+
+func (t *KillContainerdProcess) Execute(runtime connector.Runtime) error {
+	var pids []string
+	var childpids []string
+	var cmd = "ps -ef | grep containerd-shim | grep -v grep | awk '{print $2}'"
+	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if err == nil || stdout != "" {
+		scanner := bufio.NewScanner(strings.NewReader(stdout))
+		for scanner.Scan() {
+			line := scanner.Text()
+			fields := strings.Fields(line)
+			if len(fields) > 1 {
+				pid := fields[1]
+				pids = append(pids, pid)
+			}
+		}
+
+		if len(pids) > 0 {
+			for _, pid := range pids {
+				var p = getProcessIds(pid, runtime)
+				childpids = append(childpids, p...)
+			}
+		}
+	}
+
+	var allPids []string
+	allPids = append(allPids, childpids...)
+	allPids = append(allPids, pids...)
+
+	if len(allPids) > 0 {
+		for _, pid := range allPids {
+			runtime.GetRunner().SudoCmdExt(fmt.Sprintf("kill -9 %s", pid), false, false)
+		}
 	}
 	return nil
 }
