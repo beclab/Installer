@@ -83,7 +83,8 @@ func (c *ChownOutputModule) Init() {
 
 type DeleteInstalledModule struct {
 	common.KubeModule
-	BaseDir string
+	PhaseFile string
+	BaseDir   string
 }
 
 func (m *DeleteInstalledModule) Init() {
@@ -91,8 +92,9 @@ func (m *DeleteInstalledModule) Init() {
 
 	deleteInstalled := &task.LocalTask{
 		Name: "DeleteInstalled",
-		Action: &DeleteInstalled{
-			BaseDir: m.BaseDir,
+		Action: &DeletePhaseFile{
+			PhaseFile: m.PhaseFile,
+			BaseDir:   m.BaseDir,
 		},
 	}
 

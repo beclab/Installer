@@ -72,31 +72,23 @@ func (l *LocalTaskChown) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type DeleteInstalled struct {
+type DeletePhaseFile struct {
 	common.KubeAction
-	BaseDir string
+	PhaseFile string
+	BaseDir   string
 }
 
-func (t *DeleteInstalled) Execute(runtime connector.Runtime) error {
-	var installed = []string{
-		path.Join(runtime.GetRootDir(), ".installed"),
-		path.Join(common.RunLockDir, ".installed"),
-		path.Join("/usr/local/var/run", ".installed"),
-		path.Join("/tmp/install_log"),
+func (t *DeletePhaseFile) Execute(runtime connector.Runtime) error {
+	home := runtime.GetHomeDir()
+	baseDir := t.BaseDir
+	if baseDir == "" {
+		baseDir = home + "/.terminus"
 	}
 
-	if t.BaseDir != "" {
-		installed = append(installed, t.BaseDir)
-	}
+	phaseFileName := path.Join(baseDir, t.PhaseFile)
 
-	for _, f := range installed {
-		if util.IsExist(f) {
-			if util.IsDir(f) {
-				util.RemoveDir(f)
-			} else {
-				util.RemoveFile(f)
-			}
-		}
+	if util.IsExist(phaseFileName) {
+		util.RemoveFile(phaseFileName)
 	}
 
 	return nil

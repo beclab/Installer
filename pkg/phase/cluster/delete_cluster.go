@@ -70,11 +70,11 @@ func (p *phaseBuilder) convert() UninstallPhaseType {
 
 func (p *phaseBuilder) fin() *phaseBuilder {
 	if p.minikube {
-		p.modules = append([]module.Module{
-			&kubesphere.DeleteCacheModule{},
-			&kubesphere.DeleteMinikubeModule{},
-			&filesystem.DeleteInstalledModule{},
-		}, p.modules...)
+		p.modules = append(p.modules,
+			[]module.Module{
+				&kubesphere.DeleteCacheModule{},
+				&kubesphere.DeleteMinikubeModule{},
+			}...)
 	} else {
 		p.modules = append(
 			[]module.Module{
@@ -107,6 +107,10 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&certs.UninstallAutoRenewCertsModule{},
 			&container.KillContainerdProcessModule{},
 			&k3s.UninstallK3sModule{},
+			&filesystem.DeleteInstalledModule{
+				PhaseFile: ".installed",
+				BaseDir:   p.baseDir,
+			},
 		)
 	}
 	return p
@@ -122,6 +126,10 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 			&container.DeleteZfsMountModule{},
 			&storage.RemoveStorageModule{},
 			&container.UninstallContainerModule{},
+			&filesystem.DeleteInstalledModule{
+				PhaseFile: ".prepared",
+				BaseDir:   p.baseDir,
+			},
 		}...)
 	}
 	return p
@@ -135,7 +143,8 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 	if p.convert() >= PhaseDownload {
 		p.modules = append(p.modules, []module.Module{
 			&filesystem.DeleteInstalledModule{
-				BaseDir: p.baseDir,
+				PhaseFile: ".download",
+				BaseDir:   p.baseDir,
 			},
 		}...)
 	}
