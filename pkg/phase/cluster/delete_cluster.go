@@ -73,20 +73,7 @@ func (p *phaseBuilder) fin() *phaseBuilder {
 			&kubesphere.DeleteCacheModule{},
 			&kubesphere.DeleteMinikubeModule{},
 		)
-	} else {
-		p.modules = append(p.modules,
-			&precheck.GetStorageKeyModule{},
-			&storage.RemoveMountModule{},
-		)
 	}
-
-	p.modules = append(
-		[]module.Module{
-			&precheck.GreetingsModule{},
-			&precheck.GetSysInfoModel{},
-		},
-		p.modules...)
-
 	return p
 }
 
@@ -97,6 +84,10 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 
 	if p.convert() >= PhaseInstall {
 		p.modules = append(p.modules,
+			&precheck.GreetingsModule{},
+			&precheck.GetSysInfoModel{},
+			&precheck.GetStorageKeyModule{},
+			&storage.RemoveMountModule{},
 			&kubernetes.ResetClusterModule{},
 			&k3s.DeleteClusterModule{},
 			&os.ClearOSEnvironmentModule{},
