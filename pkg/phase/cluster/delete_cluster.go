@@ -102,7 +102,6 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&os.ClearOSEnvironmentModule{},
 			&certs.UninstallAutoRenewCertsModule{},
 			&container.KillContainerdProcessModule{},
-			&k3s.UninstallK3sModule{},
 			&storage.DeleteUserDataModule{},
 			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".installed",
