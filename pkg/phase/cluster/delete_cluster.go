@@ -16,6 +16,7 @@ import (
 )
 
 type UninstallPhaseType int
+type UninstallPhaseString string
 
 const (
 	PhaseInvalid UninstallPhaseType = iota
@@ -23,6 +24,37 @@ const (
 	PhasePrepare
 	PhaseDownload
 )
+
+func (p UninstallPhaseType) String() string {
+	switch p {
+	case PhaseInvalid:
+		return "invalid"
+	case PhaseInstall:
+		return "install"
+	case PhasePrepare:
+		return "prepare"
+	case PhaseDownload:
+		return "download"
+	}
+	return ""
+}
+
+func (s UninstallPhaseString) String() string {
+	return string(s)
+}
+
+func (s UninstallPhaseString) Type() UninstallPhaseType {
+	switch s.String() {
+	case PhaseInstall.String():
+		return PhaseInstall
+	case PhasePrepare.String():
+		return PhasePrepare
+	case PhaseDownload.String():
+		return PhaseDownload
+	}
+	return PhaseInvalid
+
+}
 
 type phaseBuilder struct {
 	minikube bool
@@ -33,15 +65,7 @@ type phaseBuilder struct {
 }
 
 func (p *phaseBuilder) convert() UninstallPhaseType {
-	switch p.phase {
-	case "install":
-		return PhaseInstall
-	case "prepare":
-		return PhasePrepare
-	case "download":
-		return PhaseDownload
-	}
-	return PhaseInvalid
+	return UninstallPhaseString(p.phase).Type()
 }
 
 func (p *phaseBuilder) fin() *phaseBuilder {

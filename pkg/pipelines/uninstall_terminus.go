@@ -25,7 +25,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
 	arg.SetDeleteCache(deleteCache)
-	arg.SetDeleteCRI(opt.All || (opt.Phase == "prepare" || opt.Phase == "download"))
+	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))
 	arg.SetStorage(&common.Storage{
 		StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
 		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
@@ -46,7 +46,12 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		baseDir = home + "/.terminus"
 	}
 
-	var p = cluster.UninstallTerminus(baseDir, opt.Phase, arg, runtime)
+	phaseName := opt.Phase
+	if opt.All {
+		phaseName = cluster.PhaseDownload.String()
+	}
+
+	var p = cluster.UninstallTerminus(baseDir, phaseName, arg, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("uninstall terminus failed: %v", err)
 		return err
@@ -58,7 +63,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 
 func checkPhase(phase string, all bool) error {
 	if constants.OsType == common.Linux && !all {
-		if phase == "" || (phase != "install" && phase != "prepare" && phase != "download") {
+		if cluster.UninstallPhaseString(phase).Type() == cluster.PhaseInvalid {
 			return fmt.Errorf("Please specify the phase to uninstall, such as --phase install. Supported: install, prepare, download.")
 		}
 	}
