@@ -138,12 +138,11 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 	}
 
 	if p.convert() >= PhaseDownload {
-		p.modules = append(p.modules,
-			&filesystem.DeleteInstalledModule{
-				PhaseFile: ".download",
-				BaseDir:   p.baseDir,
+		p.modules = append(p.modules, []module.Module{
+			&storage.DeleteCacheModule{
+				BaseDir: p.baseDir,
 			},
-		)
+		}...)
 	}
 
 	return p

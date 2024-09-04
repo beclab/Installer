@@ -2,8 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"io/fs"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -305,5 +307,45 @@ func (t *DeleteTmp) Execute(runtime connector.Runtime) error {
 	if util.IsExist(tmpPath) {
 		util.RemoveDir(tmpPath)
 	}
+	return nil
+}
+
+type DeleteCaches struct {
+	common.KubeAction
+	BaseDir string
+	Skip    bool
+}
+
+func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
+	if t.Skip {
+		return nil
+	}
+	home := runtime.GetHomeDir()
+	baseDir := t.BaseDir
+	if baseDir == "" {
+		baseDir = home + "/.terminus"
+	}
+
+	var cachesDirs []string
+
+	filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
+		if path != baseDir {
+			if d.IsDir() {
+				cachesDirs = append(cachesDirs, path)
+				return filepath.SkipDir
+			}
+		}
+		return nil
+	},
+	)
+
+	if cachesDirs != nil && len(cachesDirs) > 0 {
+		for _, cachesDir := range cachesDirs {
+			if util.IsExist(cachesDir) {
+				util.RemoveDir(cachesDir)
+			}
+		}
+	}
+
 	return nil
 }
