@@ -79,13 +79,7 @@ type DeletePhaseFile struct {
 }
 
 func (t *DeletePhaseFile) Execute(runtime connector.Runtime) error {
-	home := runtime.GetHomeDir()
-	baseDir := t.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
-
-	phaseFileName := path.Join(baseDir, t.PhaseFile)
+	phaseFileName := path.Join(t.BaseDir, t.PhaseFile)
 
 	if util.IsExist(phaseFileName) {
 		util.RemoveFile(phaseFileName)

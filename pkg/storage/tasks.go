@@ -320,16 +320,10 @@ func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
 	if t.Skip {
 		return nil
 	}
-	home := runtime.GetHomeDir()
-	baseDir := t.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
-
 	var cachesDirs []string
 
-	filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-		if path != baseDir {
+	filepath.WalkDir(t.BaseDir, func(path string, d fs.DirEntry, err error) error {
+		if path != t.BaseDir {
 			if d.IsDir() {
 				cachesDirs = append(cachesDirs, path)
 				return filepath.SkipDir
