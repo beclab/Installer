@@ -15,24 +15,24 @@ import (
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
+	phaseName := opt.Phase
 	var kubeVersion = phase.GetCurrentKubeVersion()
-	var deleteCache, err = formatDeleteCache(opt.Quiet, opt.DeleteCache, opt.MiniKube, opt.Phase)
+	var deleteCache, err = formatDeleteCache(opt)
 	if err != nil {
 		return err
 	}
 
-	deleteCache = false
 	var arg = common.NewArgument()
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
 	arg.SetDeleteCache(deleteCache)
+	arg.SetDeleteCRI(opt.All || (opt.Phase == "prepare" || opt.Phase == "download"))
 	arg.SetStorage(&common.Storage{
 		StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
 		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
 	})
 
-	phaseName := opt.Phase
-	if err := checkPhase(phaseName); err != nil {
+	if err := checkPhase(phaseName, opt.All); err != nil {
 		return err
 	}
 
@@ -57,8 +57,8 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 
 }
 
-func checkPhase(phase string) error {
-	if constants.OsType == common.Linux {
+func checkPhase(phase string, all bool) error {
+	if constants.OsType == common.Linux && !all {
 		if phase == "" || (phase != "install" && phase != "prepare" && phase != "download") {
 			return fmt.Errorf("Please specify the phase to uninstall, such as --phase install. Supported: install, prepare, download.")
 		}
@@ -94,11 +94,20 @@ func formatParms(key, val string) string {
 	return ""
 }
 
-func formatDeleteCache(quiet, deleteCache, minikube bool, phase string) (bool, error) {
+func formatDeleteCache(opt *options.CliTerminusUninstallOptions) (bool, error) {
+	var all = opt.All
+	var minikube = opt.MiniKube
+	var quiet = opt.Quiet
+	if all {
+		opt.Phase = "download"
+	}
+
+	var phase = opt.Phase
+
 	if !minikube && phase != "download" {
 		return false, nil
 	}
-
+	var deleteCache = (all || phase == "download")
 	var input string
 	var err error
 	if !quiet {
