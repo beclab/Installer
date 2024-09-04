@@ -185,6 +185,28 @@ func (m *RemoveStorageModule) Init() {
 	}
 }
 
+type DeletePhaseFlagModule struct {
+	common.KubeModule
+	PhaseFile string
+	BaseDir   string
+}
+
+func (m *DeletePhaseFlagModule) Init() {
+	m.Name = "DeletePhaseFlag"
+
+	deletePhaseFlagFile := &task.LocalTask{
+		Name: "DeletePhaseFlag",
+		Action: &DeletePhaseFlagFile{
+			PhaseFile: m.PhaseFile,
+			BaseDir:   m.BaseDir,
+		},
+	}
+
+	m.Tasks = []task.Interface{
+		deletePhaseFlagFile,
+	}
+}
+
 type DeleteCacheModule struct {
 	common.KubeModule
 	BaseDir string
@@ -203,5 +225,45 @@ func (m *DeleteCacheModule) Init() {
 
 	m.Tasks = []task.Interface{
 		deleteCaches,
+	}
+}
+
+type DeleteUserDataModule struct {
+	common.KubeModule
+}
+
+func (m *DeleteUserDataModule) Init() {
+	m.Name = "DeleteUserData"
+
+	deleteTerminusUserData := &task.RemoteTask{
+		Name:     "DeleteUserData",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Action:   new(DeleteTerminusUserData),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		deleteTerminusUserData,
+	}
+}
+
+type DeleteTerminusDataModule struct {
+	common.KubeModule
+}
+
+func (m *DeleteTerminusDataModule) Init() {
+	m.Name = "DeleteTerminusData"
+
+	deleteTerminusData := &task.RemoteTask{
+		Name:     "DeleteTerminusData",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Action:   new(DeleteTerminusData),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		deleteTerminusData,
 	}
 }

@@ -288,7 +288,6 @@ func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
 		"/etc/systemd/system/minio.service",
 		"/etc/systemd/system/minio-operator.service",
 		"/etc/systemd/system/juicefs.service",
-		"/terminus/",
 	}
 
 	for _, f := range files {
@@ -307,6 +306,22 @@ func (t *DeleteTmp) Execute(runtime connector.Runtime) error {
 	if util.IsExist(tmpPath) {
 		util.RemoveDir(tmpPath)
 	}
+	return nil
+}
+
+type DeletePhaseFlagFile struct {
+	common.KubeAction
+	PhaseFile string
+	BaseDir   string
+}
+
+func (t *DeletePhaseFlagFile) Execute(runtime connector.Runtime) error {
+	phaseFileName := path.Join(t.BaseDir, t.PhaseFile)
+
+	if util.IsExist(phaseFileName) {
+		util.RemoveFile(phaseFileName)
+	}
+
 	return nil
 }
 
@@ -341,5 +356,50 @@ func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	return nil
+}
+
+type DeleteTerminusUserData struct {
+	common.KubeAction
+}
+
+func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
+	var baseDir = "/terminus/rootfs"
+	var userdata []string
+	filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
+		if path != baseDir {
+			if d.IsDir() && d.Name() != ".trash" {
+				userdata = append(userdata, path)
+				return filepath.SkipDir
+			}
+		}
+
+		return nil
+	},
+	)
+
+	userdata = append(userdata, []string{
+		"/terminus/share",
+		"/terminus/userdata",
+	}...)
+
+	for _, d := range userdata {
+		if util.IsExist(d) {
+			util.RemoveDir(d)
+		}
+	}
+
+	return nil
+}
+
+type DeleteTerminusData struct {
+	common.KubeAction
+}
+
+func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
+	var baseDir = "/terminus"
+	if util.IsExist(baseDir) {
+		return util.RemoveDir(baseDir)
+	}
 	return nil
 }

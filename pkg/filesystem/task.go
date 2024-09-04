@@ -19,9 +19,7 @@ package filesystem
 import (
 	"fmt"
 	"os/exec"
-	"path"
 
-	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -69,21 +67,5 @@ func (l *LocalTaskChown) Execute(runtime connector.Runtime) error {
 			return errors.Wrapf(errors.WithStack(err), "chown %s failed", l.Path)
 		}
 	}
-	return nil
-}
-
-type DeletePhaseFile struct {
-	common.KubeAction
-	PhaseFile string
-	BaseDir   string
-}
-
-func (t *DeletePhaseFile) Execute(runtime connector.Runtime) error {
-	phaseFileName := path.Join(t.BaseDir, t.PhaseFile)
-
-	if util.IsExist(phaseFileName) {
-		util.RemoveFile(phaseFileName)
-	}
-
 	return nil
 }

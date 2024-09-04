@@ -8,7 +8,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
-	"bytetrade.io/web3os/installer/pkg/filesystem"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/kubesphere"
@@ -104,7 +103,8 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&certs.UninstallAutoRenewCertsModule{},
 			&container.KillContainerdProcessModule{},
 			&k3s.UninstallK3sModule{},
-			&filesystem.DeleteInstalledModule{
+			&storage.DeleteUserDataModule{},
+			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".installed",
 				BaseDir:   p.baseDir,
 			},
@@ -123,7 +123,8 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 			&container.DeleteZfsMountModule{},
 			&storage.RemoveStorageModule{},
 			&container.UninstallContainerModule{},
-			&filesystem.DeleteInstalledModule{
+			&storage.DeleteTerminusDataModule{},
+			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".prepared",
 				BaseDir:   p.baseDir,
 			},
@@ -138,11 +139,9 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 	}
 
 	if p.convert() >= PhaseDownload {
-		p.modules = append(p.modules, []module.Module{
-			&storage.DeleteCacheModule{
-				BaseDir: p.baseDir,
-			},
-		}...)
+		p.modules = append(p.modules, &storage.DeleteCacheModule{
+			BaseDir: p.baseDir,
+		})
 	}
 
 	return p

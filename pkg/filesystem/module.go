@@ -80,25 +80,3 @@ func (c *ChownOutputModule) Init() {
 		output,
 	}
 }
-
-type DeleteInstalledModule struct {
-	common.KubeModule
-	PhaseFile string
-	BaseDir   string
-}
-
-func (m *DeleteInstalledModule) Init() {
-	m.Name = "DeleteInstalled"
-
-	deleteInstalled := &task.LocalTask{
-		Name: "DeleteInstalled",
-		Action: &DeletePhaseFile{
-			PhaseFile: m.PhaseFile,
-			BaseDir:   m.BaseDir,
-		},
-	}
-
-	m.Tasks = []task.Interface{
-		deleteInstalled,
-	}
-}
