@@ -413,10 +413,11 @@ func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
 	var dirs = []string{"/terminus", "/osdata"}
 	for _, dir := range dirs {
 		if util.IsExist(dir) {
-			return util.RemoveDir(dir)
+			if err := util.RemoveDir(dir); err != nil {
+				logger.Errorf("remove %s failed %v", dir, err)
+			}
 		}
 	}
-	logger.Infof("delete terminus data %v success ", dirs)
 
 	return nil
 }
