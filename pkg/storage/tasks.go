@@ -351,7 +351,9 @@ func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
 	if cachesDirs != nil && len(cachesDirs) > 0 {
 		for _, cachesDir := range cachesDirs {
 			if util.IsExist(cachesDir) {
-				util.RemoveDir(cachesDir)
+				if err := util.RemoveDir(cachesDir); err != nil {
+					logger.Errorf("remove %s failed %v", cachesDir, err)
+				}
 			}
 		}
 	}
@@ -385,7 +387,9 @@ func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
 
 	for _, d := range userdata {
 		if util.IsExist(d) {
-			util.RemoveDir(d)
+			if err := util.RemoveDir(d); err != nil {
+				logger.Errorf("remove %s failed %v", d, err)
+			}
 		}
 	}
 
@@ -397,9 +401,13 @@ type DeleteTerminusData struct {
 }
 
 func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
-	var baseDir = "/terminus"
-	if util.IsExist(baseDir) {
-		return util.RemoveDir(baseDir)
+	var dirs = []string{"/terminus", "/osdata"}
+	for _, dir := range dirs {
+		if util.IsExist(dir) {
+			return util.RemoveDir(dir)
+		}
 	}
+	logger.Infof("delete terminus data %v success ", dirs)
+
 	return nil
 }
