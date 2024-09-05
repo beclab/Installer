@@ -3,6 +3,7 @@ package os
 import (
 	"os"
 
+	"bytetrade.io/web3os/installer/cmd/ctl/helper"
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
@@ -26,7 +27,7 @@ func NewCmdInitializeOs() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize KubeSphere",
 		Run: func(cmd *cobra.Command, args []string) {
-
+			helper.InitLog("")
 			logger.Infof("options: version: %s, kube: %s, minikube: %v, minikubeprofile: %s, registry: %s",
 				version.VERSION, o.InitializeOptions.KubeType, o.InitializeOptions.MiniKube,
 				o.InitializeOptions.MiniKubeProfile, o.InitializeOptions.RegistryMirrors)

@@ -1,12 +1,15 @@
 package helper
 
 import (
+	"os"
 	"path"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 )
 
-func InitLog() {
-	logger.InitLog(path.Join(constants.WorkDir, "logs"))
+func InitLog(baseDir string) {
+	if baseDir == "" {
+		baseDir = path.Join(os.Getenv("HOME"), ".terminus")
+	}
+	logger.InitLog(path.Join(baseDir, "logs"))
 }

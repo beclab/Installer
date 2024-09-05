@@ -18,6 +18,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	var terminusVersion = opts.Version // utils.GetTerminusVersion(version)
 
 	var arg = common.NewArgument()
+	arg.SetBaseDir(opts.BaseDir)
 	arg.SetTerminusVersion(terminusVersion)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetProxy(opts.RegistryMirrors, opts.RegistryMirrors)
@@ -31,17 +32,18 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
+	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = home + "/installation.manifest"
+		// manifest = home + "/.terminus/installation.manifest"
 	}
 
-	baseDir := opts.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
+	// baseDir := opts.BaseDir
+	// if baseDir == "" {
+	// 	baseDir = home + "/.terminus"
+	// }
 
-	runtime.Arg.SetBaseDir(baseDir)
+	// runtime.Arg.SetBaseDir(baseDir)
 	runtime.Arg.SetManifest(manifest)
 
 	var p = system.PrepareSystemPhase(runtime)

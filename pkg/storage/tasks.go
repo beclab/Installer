@@ -103,6 +103,10 @@ type DownloadStorageCli struct {
 }
 
 func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
+	if _, err := util.GetCommand(common.CommandUnzip); err != nil {
+		runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, true)
+	}
+
 	var storageType = t.KubeConf.Arg.Storage.StorageType
 	var arch = fmt.Sprintf("%s-%s", constants.OsType, constants.OsArch)
 
@@ -182,7 +186,7 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 		storageAccessKey, storageSecretKey, storageToken, endpoint, storageClusterId,
 	)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		logger.Errorf("failed to unmount s3 bucket %s: %v", storageBucket, err)
 	}
 
@@ -337,13 +341,9 @@ func (t *DeletePhaseFlagFile) Execute(runtime connector.Runtime) error {
 type DeleteCaches struct {
 	common.KubeAction
 	BaseDir string
-	Skip    bool
 }
 
 func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
-	if !t.KubeConf.Arg.DeleteCache {
-		return nil
-	}
 	var cachesDirs []string
 
 	filepath.WalkDir(t.BaseDir, func(path string, d fs.DirEntry, err error) error {
@@ -410,12 +410,17 @@ type DeleteTerminusData struct {
 }
 
 func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
-	var dirs = []string{"/terminus", "/osdata"}
-	for _, dir := range dirs {
-		if util.IsExist(dir) {
-			if err := util.RemoveDir(dir); err != nil {
-				logger.Errorf("remove %s failed %v", dir, err)
-			}
+
+	if util.IsExist("/terminus") {
+		if err := util.RemoveDir("/terminus"); err != nil {
+			logger.Errorf("remove %s failed %v", "/terminus", err)
+		}
+	}
+
+	if util.IsExist("/osdata") {
+		runtime.GetRunner().SudoCmdExt("umount /osdata", false, true)
+		if err := util.RemoveDir("/osdata"); err != nil {
+			logger.Errorf("remove %s failed %v", "/osdata", err)
 		}
 	}
 

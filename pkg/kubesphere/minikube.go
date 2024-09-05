@@ -21,6 +21,47 @@ import (
 	"github.com/pkg/errors"
 )
 
+type CreateTerminus struct {
+	common.KubeAction
+}
+
+func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
+	minikube, err := util.GetCommand(common.CommandMinikube)
+	if err != nil {
+		return fmt.Errorf("Please install minikube on your machine")
+	}
+
+	var cmd = fmt.Sprintf("%s profile list|grep '%s'|grep Running", minikube, t.KubeConf.Arg.MinikubeProfile)
+	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
+	if stdout != "" {
+		return fmt.Errorf("minikube profile already exists")
+	}
+
+	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
+	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type CreateMinikubeModule struct {
+	common.KubeModule
+}
+
+func (m *CreateMinikubeModule) Init() {
+	m.Name = "CreateMinikube"
+
+	createTerminus := &task.LocalTask{
+		Name:   "Create",
+		Action: new(CreateTerminus),
+	}
+
+	m.Tasks = []task.Interface{
+		createTerminus,
+	}
+}
+
 type UninstallMinikube struct {
 	common.KubeAction
 }

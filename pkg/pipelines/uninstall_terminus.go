@@ -22,6 +22,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	}
 
 	var arg = common.NewArgument()
+	arg.SetBaseDir(opt.BaseDir)
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
 	arg.SetDeleteCache(deleteCache)
@@ -40,18 +41,18 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		return err
 	}
 
-	home := runtime.GetHomeDir()
-	baseDir := opt.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
+	// home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
+	// baseDir := opt.BaseDir
+	// if baseDir == "" {
+	// 	baseDir = home + "/.terminus"
+	// }
 
 	phaseName := opt.Phase
 	if opt.All {
 		phaseName = cluster.PhaseDownload.String()
 	}
 
-	var p = cluster.UninstallTerminus(baseDir, phaseName, arg, runtime)
+	var p = cluster.UninstallTerminus(phaseName, arg, runtime) // baseDir
 	if err := p.Start(); err != nil {
 		logger.Errorf("uninstall terminus failed: %v", err)
 		return err

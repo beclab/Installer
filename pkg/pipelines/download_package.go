@@ -9,6 +9,7 @@ import (
 
 func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	arg := common.NewArgument()
+	arg.SetBaseDir(opts.BaseDir)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 
@@ -18,17 +19,18 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
+	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = home + "/installation.manifest"
+		// manifest = home + "/.terminus/installation.manifest"
 	}
 
-	baseDir := opts.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
+	// baseDir := opts.BaseDir
+	// if baseDir == "" {
+	// 	baseDir = home + "/.terminus"
+	// }
 
-	p := download.NewDownloadPackage(manifest, baseDir, runtime)
+	p := download.NewDownloadPackage(manifest, home, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download package failed %v", err)
 		return err

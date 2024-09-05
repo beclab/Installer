@@ -43,7 +43,6 @@ func (p *PreloadImagesModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			// &MasterPullImages{Not: true},
 			&plugins.IsCloudInstance{Not: true},
-			// &CopyImageManifest{},
 			// &CheckImageManifest{},
 			&ContainerdInstalled{},
 		},

@@ -1,6 +1,7 @@
 package os
 
 import (
+	"bytetrade.io/web3os/installer/cmd/ctl/helper"
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
@@ -23,6 +24,7 @@ func NewCmdUninstallOs() *cobra.Command {
 		Use:   "uninstall",
 		Short: "Uninstall Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
+			helper.InitLog(o.UninstallOptions.BaseDir)
 			logger.Infof("options: minikube: %v, phase: %v, all: %v, storage-type: %s, storage-bucket: %s, base-dir: %s",
 				o.UninstallOptions.MiniKube, o.UninstallOptions.Phase, o.UninstallOptions.All,
 				o.UninstallOptions.StorageType, o.UninstallOptions.StorageBucket,

@@ -56,40 +56,42 @@ func (s UninstallPhaseString) Type() UninstallPhaseType {
 }
 
 type phaseBuilder struct {
-	minikube bool
-	phase    string
-	baseDir  string
-	modules  []module.Module
-	runtime  *common.KubeRuntime
+	phase   string
+	baseDir string
+	modules []module.Module
+	runtime *common.KubeRuntime
 }
 
 func (p *phaseBuilder) convert() UninstallPhaseType {
 	return UninstallPhaseString(p.phase).Type()
 }
 
-func (p *phaseBuilder) fin() *phaseBuilder {
-	if p.minikube {
-		p.modules = append(p.modules,
-			&kubesphere.DeleteCacheModule{},
-			&kubesphere.DeleteMinikubeModule{},
-		)
-	}
-	return p
-}
-
 func (p *phaseBuilder) phaseInstall() *phaseBuilder {
-	if p.minikube {
-		return p
-	}
-
 	if p.convert() >= PhaseInstall {
-		p.modules = append(p.modules,
+		_ = (&kubesphere.GetKubeType{}).Execute(p.runtime)
+
+		p.modules = []module.Module{
 			&precheck.GreetingsModule{},
 			&precheck.GetSysInfoModel{},
 			&precheck.GetStorageKeyModule{},
 			&storage.RemoveMountModule{},
-			&kubernetes.ResetClusterModule{},
-			&k3s.DeleteClusterModule{},
+		}
+
+		if p.runtime.Arg.Storage.StorageType == common.S3 || p.runtime.Arg.Storage.StorageType == common.OSS {
+			p.modules = append(p.modules, []module.Module{
+				&precheck.GetStorageKeyModule{},
+				&storage.RemoveMountModule{},
+			}...)
+		}
+
+		switch p.runtime.Cluster.Kubernetes.Type {
+		case common.K3s:
+			p.modules = append(p.modules, &k3s.DeleteClusterModule{})
+		default:
+			p.modules = append(p.modules, &kubernetes.ResetClusterModule{}, &kubernetes.UmountKubeModule{})
+		}
+
+		p.modules = append(p.modules,
 			&os.ClearOSEnvironmentModule{},
 			&certs.UninstallAutoRenewCertsModule{},
 			&container.KillContainerdProcessModule{},
@@ -104,10 +106,6 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 }
 
 func (p *phaseBuilder) phasePrepare() *phaseBuilder {
-	if p.minikube {
-		return p
-	}
-
 	if p.convert() >= PhasePrepare {
 		p.modules = append(p.modules,
 			&container.DeleteZfsMountModule{},
@@ -124,11 +122,7 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 }
 
 func (p *phaseBuilder) phaseDownload() *phaseBuilder {
-	if p.minikube {
-		return p
-	}
-
-	if p.convert() >= PhaseDownload {
+	if p.convert() >= PhaseDownload && p.runtime.Arg.DeleteCache {
 		p.modules = append(p.modules, &storage.DeleteCacheModule{
 			BaseDir: p.baseDir,
 		})
@@ -137,14 +131,31 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 	return p
 }
 
-func UninstallTerminus(baseDir, phase string, args *common.Argument, runtime *common.KubeRuntime) pipeline.Pipeline {
-	var builder = &phaseBuilder{
-		minikube: args.Minikube,
-		phase:    phase,
-		baseDir:  baseDir,
-		runtime:  runtime,
+func (p *phaseBuilder) phaseMacos() {
+	p.modules = []module.Module{
+		&precheck.GreetingsModule{},
+		&precheck.GetSysInfoModel{},
+		&kubesphere.DeleteCacheModule{},
+		&kubesphere.DeleteMinikubeModule{},
 	}
-	builder.phaseInstall().phasePrepare().phaseDownload().fin()
+}
+
+func UninstallTerminus(phase string, args *common.Argument, runtime *common.KubeRuntime) pipeline.Pipeline {
+	var builder = &phaseBuilder{
+		phase:   phase,
+		baseDir: runtime.GetHomeDir(),
+		runtime: runtime,
+	}
+
+	if args.Minikube {
+		builder.phaseMacos()
+	} else {
+		builder.
+			phaseInstall().
+			phasePrepare().
+			phaseDownload()
+	}
+
 	return pipeline.Pipeline{
 		Name:    "Uninstall Terminus",
 		Runtime: builder.runtime,

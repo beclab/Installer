@@ -3,6 +3,7 @@ package system
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
+	"bytetrade.io/web3os/installer/pkg/kubesphere"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
@@ -15,5 +16,7 @@ type macOsPhaseBuilder struct {
 
 func (m *macOsPhaseBuilder) build() []module.Module {
 	// TODO: install minikube
-	return []module.Module{}
+	return []module.Module{
+		&kubesphere.CreateMinikubeModule{},
+	}
 }

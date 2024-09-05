@@ -68,7 +68,7 @@ type RemoveMountModule struct {
 }
 
 func (m *RemoveMountModule) Init() {
-	m.Name = "RemoveMount"
+	m.Name = "DeleteS3Mount"
 
 	downloadStorageCli := &task.RemoteTask{
 		Name:  "DownloadStorageCli",

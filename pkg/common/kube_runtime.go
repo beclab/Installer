@@ -261,7 +261,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 		return nil, err
 	}
 
-	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(), arg.Debug, arg.IgnoreErr, arg.Provider)
+	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(), arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.Minikube)

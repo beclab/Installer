@@ -1,6 +1,7 @@
 package os
 
 import (
+	"bytetrade.io/web3os/installer/cmd/ctl/helper"
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
@@ -23,6 +24,8 @@ func NewCmdPrepare() *cobra.Command {
 		Use:   "prepare",
 		Short: "Prepare install",
 		Run: func(cmd *cobra.Command, args []string) {
+			helper.InitLog(o.PrepareOptions.BaseDir)
+
 			if err := pipelines.PrepareSystemPipeline(o.PrepareOptions); err != nil {
 				logger.Fatalf("prepare system error: %v", err)
 			}

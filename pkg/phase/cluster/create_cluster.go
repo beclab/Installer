@@ -24,10 +24,15 @@ import (
 	"bytetrade.io/web3os/installer/pkg/plugins/storage"
 )
 
-func NewDarwinClusterPhase(runtime *common.KubeRuntime) []module.Module {
+func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.InstallationManifest) []module.Module {
 	m := []module.Module{
 		&kubesphere.CheckMacOsCommandModule{},
-		&images.PreloadImagesModule{Skip: false},
+		&images.PreloadImagesModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: manifestMap,
+				BaseDir:  runtime.Arg.BaseDir,
+			},
+		},
 		&kubesphere.DeployMiniKubeModule{},
 		&kubesphere.DeployModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // todo relative ks-installer
 		&ksplugins.DeployKsPluginsModule{},

@@ -10,19 +10,20 @@ import (
 func DownloadInstallationWizard(opts *options.CliDownloadWizardOptions) error {
 	arg := common.NewArgument()
 	arg.SetTerminusVersion(opts.Version)
+	arg.SetBaseDir(opts.BaseDir)
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return err
 	}
 
-	home := runtime.GetHomeDir()
-	baseDir := opts.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
+	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
+	// baseDir := opts.BaseDir
+	// if baseDir == "" {
+	// 	baseDir = home + "/.terminus"
+	// }
 
-	p := download.NewDownloadWizard(baseDir, opts.Md5sum, runtime)
+	p := download.NewDownloadWizard(home, opts.Md5sum, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download wizard failed %v", err)
 		return err

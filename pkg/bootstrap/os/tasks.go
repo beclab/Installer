@@ -98,7 +98,7 @@ func (t *TimeSyncTask) Execute(runtime connector.Runtime) error {
 	cronContent := fmt.Sprintf(`#!/bin/sh
 	%s -b -u pool.ntp.org && %s -w
 	exit 0`, ntpdatePath, hwclockPath)
-	cronFile := path.Join(runtime.GetRootDir(), "cron.ntpdate")
+	cronFile := path.Join(runtime.GetHomeDir(), "cron.ntpdate")
 
 	if err := ioutil.WriteFile(cronFile, []byte(cronContent), 0700); err != nil {
 		logger.Errorf("Failed to write cron.ntpdate: %v", err)

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"path"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -35,8 +36,8 @@ type BaseRuntime struct {
 	connector       Connector
 	runner          *Runner
 	storage         storage.Provider
+	baseDir         string
 	homeDir         string
-	rootDir         string
 	workDir         string
 	verbose         bool
 	ignoreErr       bool
@@ -47,11 +48,12 @@ type BaseRuntime struct {
 	minikube        bool
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
 		storage:         sqlProvider,
+		baseDir:         baseDir,
 		verbose:         verbose,
 		ignoreErr:       ignoreErr,
 		allHosts:        make([]Host, 0, 0),
@@ -116,16 +118,26 @@ func (b *BaseRuntime) GenerateWorkDir() error {
 	if err != nil {
 		return errors.Wrap(err, "get current user failed")
 	}
-	homeDir := usr.HomeDir
+
+	// base-dir   $HOME/.terminus
+	var homeDir = b.baseDir
+	if b.baseDir == "" {
+		homeDir = path.Join(usr.HomeDir, ".terminus")
+	}
+
 	b.homeDir = homeDir
 
-	currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		return errors.Wrap(err, "get current dir failed")
-	}
-	b.rootDir = currentDir
+	// currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	// if err != nil {
+	// 	return errors.Wrap(err, "get current dir failed")
+	// }
 
-	rootPath := filepath.Join(currentDir, common.Pkg)
+	// currentDir := baseDir
+	// if baseDir == "" {
+	// 	currentDir = path.Join(homeDir, ".terminus")
+	// }
+
+	rootPath := filepath.Join(homeDir, common.Pkg)
 	if err := util.CreateDir(rootPath); err != nil {
 		return errors.Wrap(err, "create work dir failed")
 	}
@@ -142,10 +154,6 @@ func (b *BaseRuntime) GenerateWorkDir() error {
 
 func (b *BaseRuntime) GetHostWorkDir() string {
 	return filepath.Join(b.workDir, b.RemoteHost().GetName())
-}
-
-func (b *BaseRuntime) GetRootDir() string {
-	return b.rootDir
 }
 
 func (b *BaseRuntime) GetHomeDir() string {

@@ -40,6 +40,46 @@ import (
 	yamlV2 "gopkg.in/yaml.v2"
 )
 
+type GetKubeType struct {
+}
+
+func (t *GetKubeType) Execute(runtime *common.KubeRuntime) error {
+	if runtime.Cluster.Kubernetes.Type != "" {
+		return nil
+	}
+	getKubeType := common.K8s
+	k3sSrvExists := util.IsExist("/etc/systemd/system/k3s.service")
+
+	kubectl, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		if k3sSrvExists {
+			getKubeType = common.K3s
+		}
+		runtime.Arg.SetKubernetesVersion(getKubeType, "")
+		return nil
+	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	stdout, _, err := util.ExecWithContext(ctx, fmt.Sprintf("%s get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'", kubectl), false, false)
+	if err != nil {
+		if k3sSrvExists {
+			getKubeType = common.K3s
+		}
+		runtime.Arg.SetKubernetesVersion(getKubeType, "")
+		return nil
+	}
+
+	if stdout != "" {
+		if !strings.Contains(stdout, "k3s") {
+			getKubeType = common.K8s
+		}
+	}
+
+	runtime.Arg.SetKubernetesVersion(getKubeType, "")
+	return nil
+}
+
 type DeleteCache struct {
 	common.KubeAction
 }

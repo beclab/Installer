@@ -19,50 +19,12 @@ import (
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
-	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/cavaliergopher/grab/v3"
 )
 
 const MAX_IMPORT_RETRY int = 5
-
-type CopyImageManifest struct {
-	common.KubePrepare
-}
-
-func (p *CopyImageManifest) PreCheck(runtime connector.Runtime) (bool, error) {
-	var src = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, cc.ImagesDir)
-	var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir)
-	if !util.IsExist(dst) {
-		util.Mkdir(dst)
-	}
-
-	var imageMf = path.Join(src, cc.ManifestImage)
-	var imageNodeMf = path.Join(src, cc.ManifestImageNode)
-
-	if util.IsExist(imageMf) {
-		util.CopyFile(imageMf, path.Join(dst, cc.ManifestImage))
-	}
-
-	if util.IsExist(imageNodeMf) {
-		util.CopyFile(imageNodeMf, path.Join(dst, cc.ManifestImageNode))
-	}
-
-	var rootImagesPath = path.Join(runtime.GetRootDir(), cc.ImagesDir, cc.ManifestImage)
-	var homeImagesPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
-	if !util.IsExist(homeImagesPath) && util.IsExist(rootImagesPath) {
-		util.CopyFile(rootImagesPath, homeImagesPath)
-	}
-
-	var rootImagesNodePath = path.Join(runtime.GetRootDir(), cc.ImagesDir, cc.ManifestImageNode)
-	var homeImagesNodePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImageNode)
-	if !util.IsExist(homeImagesNodePath) && util.IsExist(rootImagesNodePath) {
-		util.CopyFile(rootImagesNodePath, homeImagesNodePath)
-	}
-
-	return true, nil
-}
 
 type CheckImageManifest struct {
 	common.KubePrepare

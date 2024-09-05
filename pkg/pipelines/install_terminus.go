@@ -15,11 +15,18 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-	if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
-		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
+	if !opts.MiniKube {
+		if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
+			return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
+		}
+	} else {
+		if err := checkMacOSParams(opts.MiniKube, opts.MiniKubeProfile); err != nil {
+			return err
+		}
 	}
 
 	arg := common.NewArgument()
+	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
@@ -37,17 +44,12 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
+	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = home + "/installation.manifest"
+		// manifest = home + "/.terminus/installation.manifest"
 	}
 
-	baseDir := opts.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
-
-	runtime.Arg.SetBaseDir(baseDir)
 	runtime.Arg.SetManifest(manifest)
 
 	var p = cluster.CreateTerminus(*arg, runtime)

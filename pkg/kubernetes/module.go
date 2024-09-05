@@ -355,11 +355,31 @@ func (r *ResetClusterModule) Init() {
 		Hosts:    r.Runtime.GetHostsByRole(common.K8s),
 		Prepare:  new(CheckKubeadmExist),
 		Action:   new(KubeadmReset),
-		Parallel: true,
+		Parallel: false,
 	}
 
 	r.Tasks = []task.Interface{
 		kubeadmReset,
+	}
+}
+
+type UmountKubeModule struct {
+	common.KubeModule
+}
+
+func (c *UmountKubeModule) Init() {
+	c.Name = "UmountKubeModule(k8s)"
+
+	umountKubelet := &task.RemoteTask{
+		Name:     "Umountkube(k8s)",
+		Hosts:    c.Runtime.GetHostsByRole(common.K8s),
+		Action:   new(UmountKubelet),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	c.Tasks = []task.Interface{
+		umountKubelet,
 	}
 }
 
