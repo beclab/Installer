@@ -64,6 +64,7 @@ type Argument struct {
 	DeleteCache      bool
 	Role             string
 	Type             string
+	Kubetype         string
 
 	// Extra args
 	ExtraAddon string // addon yaml config
@@ -212,9 +213,16 @@ func (a *Argument) IsProxmox() bool {
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 	if kubeVersion != "" {
 		a.KubernetesVersion = kubeVersion
+		isk3s := strings.Contains(a.KubernetesVersion, "k3s")
+		if isk3s {
+			a.Kubetype = K8s
+		} else {
+			a.Kubetype = K3s
+		}
 		return
 	}
 
+	a.Kubetype = kubeType
 	switch kubeType {
 	case K8s:
 		a.KubernetesVersion = DefaultK8sVersion

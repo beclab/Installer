@@ -56,8 +56,6 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 	m := []module.Module{
 		&os.ConfigureOSModule{},
 		&k3s.StatusModule{},
-		// &k3s.InstallContainerModule{},
-		// &images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
 		&etcd.PreCheckModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
@@ -68,7 +66,6 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 			Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.ConfigureModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.BackupModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
-		// &loadbalancer.K3sKubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
 		&k3s.InstallKubeBinariesModule{
 			ManifestModule: manifest.ManifestModule{
 				BaseDir:  runtime.Arg.BaseDir,
@@ -79,8 +76,6 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&dns.ClusterDNSModule{},
 		&k3s.StatusModule{},
 		&k3s.JoinNodesModule{},
-		// &images.CopyImagesToRegistryModule{Skip: skipPushImages},
-		// &loadbalancer.K3sHaproxyModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabled()},
 		&network.DeployNetworkPluginModule{},
 		&kubernetes.ConfigureKubernetesModule{},
 		&filesystem.ChownModule{},
@@ -99,7 +94,6 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&ksplugins.DeployPrometheusModule{},
 		&ksplugins.DeployKsCoreModule{},
 		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // check ks-apiserver phase
-		&k3s.PatchK3sModule{},                                                    // todo Originally, it was placed after install_gpu, and needs to be tested
 	}
 
 	return m
@@ -118,15 +112,8 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 	m := []module.Module{
 		&precheck.NodePreCheckModule{},
 		&confirm.InstallConfirmModule{Skip: runtime.Arg.SkipConfirmCheck},
-		// &artifact.UnArchiveModule{Skip: noArtifact},
-		// &os.RepositoryModule{Skip: noArtifact || !runtime.Arg.InstallPackages},
 		&os.ConfigureOSModule{},
-		// &binaries.NodeBinariesModule{},
 		&kubernetes.StatusModule{},
-		// &container.InstallContainerModule{},
-		// &images.CopyImagesToRegistryModule{Skip: skipPushImages},
-		// &images.PreloadImagesModule{Skip: runtime.Arg.SkipPullImages},
-		// &images.PullModule{Skip: runtime.Arg.SkipPullImages},
 		&etcd.PreCheckModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
@@ -144,13 +131,10 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 				Manifest: manifestMap,
 			},
 		},
-		// &loadbalancer.KubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
 		&kubernetes.InitKubernetesModule{},
 		&dns.ClusterDNSModule{},
 		&kubernetes.StatusModule{},
 		&kubernetes.JoinNodesModule{},
-		// &loadbalancer.KubevipModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabledVip()},
-		// &loadbalancer.HaproxyModule{Skip: !runtime.Cluster.ControlPlaneEndpoint.IsInternalLBEnabled()},
 		&network.DeployNetworkPluginModule{},
 		&kubernetes.ConfigureKubernetesModule{},
 		&filesystem.ChownModule{},

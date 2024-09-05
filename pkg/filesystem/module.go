@@ -61,22 +61,3 @@ func (c *ChownWorkDirModule) Init() {
 		userKubeDir,
 	}
 }
-
-type ChownOutputModule struct {
-	common.ArtifactModule
-}
-
-func (c *ChownOutputModule) Init() {
-	c.Name = "ChownOutputModule"
-	c.Desc = "Change file and dir owner"
-
-	output := &task.LocalTask{
-		Name:   "Chown output file",
-		Desc:   "Chown output file",
-		Action: &LocalTaskChown{Path: c.Manifest.Arg.Output},
-	}
-
-	c.Tasks = []task.Interface{
-		output,
-	}
-}

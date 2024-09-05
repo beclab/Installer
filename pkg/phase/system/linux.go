@@ -9,6 +9,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
+	"bytetrade.io/web3os/installer/pkg/daemon"
 	"bytetrade.io/web3os/installer/pkg/gpu"
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/k3s"
@@ -127,5 +128,15 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 			}
 
 		}).withGPU(l.runtime)...).
+		addModule(terminusBoxModuleBuilder(func() []module.Module {
+			return []module.Module{
+				&daemon.InstallTerminusdBinaryModule{
+					ManifestModule: manifest.ManifestModule{
+						Manifest: l.manifestMap,
+						BaseDir:  l.runtime.Arg.BaseDir,
+					},
+				},
+			}
+		}).inBox(l.runtime)...).
 		addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
 }
