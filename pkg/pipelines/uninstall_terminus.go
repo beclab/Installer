@@ -103,31 +103,28 @@ func formatDeleteCache(opt *options.CliTerminusUninstallOptions) (bool, error) {
 	var minikube = opt.MiniKube
 	var quiet = opt.Quiet
 	if all {
-		opt.Phase = "download"
+		opt.Phase = cluster.PhaseDownload.String()
 	}
 
 	var phase = opt.Phase
-
-	if !minikube && phase != "download" {
+	if !minikube && phase != cluster.PhaseDownload.String() {
 		return false, nil
 	}
-	var deleteCache = (all || phase == "download")
+
+	var deleteCache = (all || phase == cluster.PhaseDownload.String())
 	var input string
 	var err error
 	if !quiet {
-		if !deleteCache {
+		if deleteCache && !all {
 			input, err = readDeleteCacheInput()
 			if err != nil {
 				return false, err
 			}
 		} else {
-			input = "true"
+			input = common.YES
 		}
+		return strings.EqualFold(input, common.YES), nil
 	} else {
-		if deleteCache {
-			input = "true"
-		}
+		return deleteCache, nil
 	}
-
-	return strings.EqualFold(input, common.TRUE), nil
 }
