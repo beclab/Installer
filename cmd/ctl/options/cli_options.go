@@ -99,6 +99,8 @@ type CliPrepareSystemOptions struct {
 	StorageClusterId  string
 	StorageSyncSecret string // backup.sync_secret --> env.BACKUP_SECRET, only for cloud
 	WSL               bool
+	Minikube          bool
+	MinikubeProfile   string
 }
 
 func NewCliPrepareSystemOptions() *CliPrepareSystemOptions {
@@ -121,4 +123,6 @@ func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.StorageClusterId, "cluster-id", "", "")
 	cmd.Flags().StringVar(&o.StorageSyncSecret, "sync-secret", "", "")
 	cmd.Flags().BoolVar(&o.WSL, "wsl", false, "Windows platform requires setting WSL parameters, Default: false")
+	cmd.Flags().BoolVar(&o.Minikube, "minikube", false, "MacOS platform requires setting Minikube parameters, Default: false")
+	cmd.Flags().StringVar(&o.MinikubeProfile, "profile", "", "MacOS platform requires setting Minikube Profile parameters")
 }
