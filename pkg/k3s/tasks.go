@@ -55,7 +55,8 @@ type PatchK3s struct {
 }
 
 func (t *PatchK3s) Execute(runtime connector.Runtime) error {
-	var p = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "deploy", "patch-k3s.yaml")
+	// var p = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "deploy", "patch-k3s.yaml")
+	var p = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "deploy", "patch-k3s.yaml")
 	if !util.IsExist(p) {
 		return nil
 	}

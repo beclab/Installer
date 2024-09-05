@@ -31,7 +31,8 @@ type CheckImageManifest struct {
 }
 
 func (p *CheckImageManifest) PreCheck(runtime connector.Runtime) (bool, error) {
-	var imageManifest = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
+	// var imageManifest = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ManifestDir, cc.ManifestImage)
+	var imageManifest = path.Join(runtime.GetBaseDir(), cc.ManifestDir, cc.ManifestImage)
 
 	if utils.IsExist(imageManifest) {
 		return true, nil

@@ -21,7 +21,8 @@ func (t *InstallMonitorDashboardCrd) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 
-	var p = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
+	// var p = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
+	var p = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
 	var cmd = fmt.Sprintf("%s apply -f %s", kubectlpath, p)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return err

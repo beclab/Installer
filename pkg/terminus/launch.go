@@ -53,7 +53,8 @@ func (t *InstallLaunch) Execute(runtime connector.Runtime) error {
 	var secret, _ = utils.GeneratePassword(16)
 
 	var launchName = fmt.Sprintf("launcher-%s", t.KubeConf.Arg.User.UserName)
-	var launchPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "launcher")
+	// var launchPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "launcher")
+	var launchPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "launcher")
 	var parms = make(map[string]interface{})
 	var sets = make(map[string]interface{})
 	sets["bfl.appKey"] = key

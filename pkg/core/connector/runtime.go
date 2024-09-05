@@ -36,8 +36,8 @@ type BaseRuntime struct {
 	connector       Connector
 	runner          *Runner
 	storage         storage.Provider
-	baseDir         string
 	homeDir         string
+	baseDir         string
 	workDir         string
 	verbose         bool
 	ignoreErr       bool
@@ -53,13 +53,17 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		ObjName:         name,
 		connector:       connector,
 		storage:         sqlProvider,
-		baseDir:         baseDir,
 		verbose:         verbose,
 		ignoreErr:       ignoreErr,
 		allHosts:        make([]Host, 0, 0),
 		roleHosts:       make(map[string][]Host),
 		deprecatedHosts: make(map[string]string),
 		cmdSed:          util.FormatSed(constants.OsType == common.Darwin),
+	}
+
+	if err := base.GenerateBaseDir(baseDir); err != nil {
+		fmt.Printf("[ERRO]: Failed to create base dir: %s\n", err)
+		os.Exit(1)
 	}
 	if err := base.GenerateWorkDir(); err != nil {
 		fmt.Printf("[ERRO]: Failed to create KubeKey work dir: %s\n", err)
@@ -113,19 +117,35 @@ func (b *BaseRuntime) SetConnector(c Connector) {
 	b.connector = c
 }
 
-func (b *BaseRuntime) GenerateWorkDir() error {
+func (b *BaseRuntime) GenerateBaseDir(baseDir string) error {
 	usr, err := user.Current()
 	if err != nil {
 		return errors.Wrap(err, "get current user failed")
 	}
+	homeDir := usr.HomeDir
+	b.homeDir = homeDir
+
+	if baseDir == "" {
+		b.baseDir = path.Join(homeDir, ".terminus")
+	}
+	b.baseDir = baseDir
+
+	return nil
+}
+
+func (b *BaseRuntime) GenerateWorkDir() error {
+	// usr, err := user.Current()
+	// if err != nil {
+	// 	return errors.Wrap(err, "get current user failed")
+	// }
 
 	// base-dir   $HOME/.terminus
-	var homeDir = b.baseDir
-	if b.baseDir == "" {
-		homeDir = path.Join(usr.HomeDir, ".terminus")
-	}
+	// var homeDir = b.baseDir
+	// if b.baseDir == "" {
+	// 	homeDir = path.Join(usr.HomeDir, ".terminus")
+	// }
 
-	b.homeDir = homeDir
+	// b.homeDir = homeDir
 
 	// currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	// if err != nil {
@@ -137,7 +157,7 @@ func (b *BaseRuntime) GenerateWorkDir() error {
 	// 	currentDir = path.Join(homeDir, ".terminus")
 	// }
 
-	rootPath := filepath.Join(homeDir, common.Pkg)
+	rootPath := filepath.Join(b.baseDir, common.Pkg)
 	if err := util.CreateDir(rootPath); err != nil {
 		return errors.Wrap(err, "create work dir failed")
 	}
@@ -158,6 +178,10 @@ func (b *BaseRuntime) GetHostWorkDir() string {
 
 func (b *BaseRuntime) GetHomeDir() string {
 	return b.homeDir
+}
+
+func (b *BaseRuntime) GetBaseDir() string {
+	return b.baseDir
 }
 
 func (b *BaseRuntime) GetWorkDir() string {

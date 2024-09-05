@@ -121,6 +121,9 @@ func getLevel(level string) (l zapcore.Level) {
 }
 
 func Sync() error {
+	if logger == nil {
+		return nil
+	}
 	return logger.Sync()
 }
 

@@ -22,7 +22,8 @@ type UpdateSettingsValuePrepare struct {
 }
 
 func (p *UpdateSettingsValuePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
-	var settingsFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
+	// var settingsFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
+	var settingsFile = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
 	var data = util.Data{}
 
 	settingsStr, err := util.Render(settingstemplates.SettingsValue, data)
@@ -54,7 +55,8 @@ func (t *InstallSettings) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	var settingsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings")
+	// var settingsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings")
+	var settingsPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings")
 	if !util.IsExist(settingsPath) {
 		return fmt.Errorf("settings not exists")
 	}

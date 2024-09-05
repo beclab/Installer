@@ -67,7 +67,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		// FIXME: completely install supported
-		&terminus.CheckPreparedModule{BaseDir: runtime.Arg.BaseDir, Force: true},
+		&terminus.CheckPreparedModule{BaseDir: runtime.GetBaseDir(), Force: true},
 		// &plugins.CopyEmbed{},
 		// &terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion},
 

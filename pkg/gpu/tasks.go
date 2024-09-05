@@ -47,7 +47,8 @@ type CopyEmbedGpuFiles struct {
 }
 
 func (t *CopyEmbedGpuFiles) Execute(runtime connector.Runtime) error {
-	var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir)
+	// var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir)
+	var dst = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir)
 	if err := utils.CopyEmbed(assets, ".", dst); err != nil {
 		return err
 	}
@@ -201,7 +202,8 @@ func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 	}
 
 	var fixName = "cuda_lib_fix.sh"
-	var fixPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
+	// var fixPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
+	var fixPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
 	if err := util.WriteFile(fixPath, []byte(templateStr), cc.FileMode0755); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fixPath))
 	}
@@ -244,8 +246,8 @@ type InstallPlugin struct {
 
 func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
 	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	var pluginFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvidia-device-plugin.yml")
-
+	// var pluginFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvidia-device-plugin.yml")
+	var pluginFile = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "nvidia-device-plugin.yml")
 	var cmd = fmt.Sprintf("%s create -f %s", kubectl, pluginFile)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
@@ -277,22 +279,26 @@ type InstallGPUShared struct {
 func (t *InstallGPUShared) Execute(runtime connector.Runtime) error {
 	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
 
-	fileName := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system.yaml")
+	// fileName := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system.yaml")
+	fileName := path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 
-	fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system-quotas.yaml")
+	// fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system-quotas.yaml")
+	fileName = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system-quotas.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 
-	fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "device-plugin.yaml")
+	// fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "device-plugin.yaml")
+	fileName = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "device-plugin.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 
-	fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "scheduler.yaml")
+	// fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "scheduler.yaml")
+	fileName = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "scheduler.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}

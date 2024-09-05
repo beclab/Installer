@@ -85,7 +85,8 @@ type DeleteCache struct {
 }
 
 func (t *DeleteCache) Execute(runtime connector.Runtime) error {
-	var cacheDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ImagesDir)
+	// var cacheDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ImagesDir)
+	var cacheDir = path.Join(runtime.GetBaseDir(), cc.ImagesDir)
 	if err := util.RemoveDir(cacheDir); err != nil {
 		return err
 	}

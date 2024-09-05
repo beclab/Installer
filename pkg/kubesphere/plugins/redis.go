@@ -97,7 +97,8 @@ func (t *DeployRedis) Execute(runtime connector.Runtime) error {
 	}
 
 	var appName = common.ChartNameRedis
-	var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appName)
+	// var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appName)
+	var appPath = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, appName)
 
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubesphereSystem)
 	if err != nil {

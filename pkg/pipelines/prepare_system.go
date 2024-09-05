@@ -32,10 +32,9 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
+	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/installation.manifest"
-		// manifest = home + "/.terminus/installation.manifest"
+		manifest = home + "/.terminus/installation.manifest"
 	}
 
 	// baseDir := opts.BaseDir

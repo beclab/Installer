@@ -33,13 +33,13 @@ func (l *linuxPhaseBuilder) base() phase {
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 			},
 		},
 		&patch.InstallDepsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 			},
 		},
 		&os.ConfigSystemModule{},
@@ -53,20 +53,20 @@ func (l *linuxPhaseBuilder) storage() phase {
 		&storage.InstallMinioModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 			},
 			Skip: l.runtime.Arg.Storage.StorageType != common.Minio,
 		},
 		&storage.InstallRedisModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 			},
 		},
 		&storage.InstallJuiceFsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 			},
 		},
 	}
@@ -79,7 +79,7 @@ func (l *linuxPhaseBuilder) installContainerModule() []module.Module {
 			&k3s.InstallContainerModule{
 				ManifestModule: manifest.ManifestModule{
 					Manifest: l.manifestMap,
-					BaseDir:  l.runtime.Arg.BaseDir,
+					BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 				},
 			},
 		}
@@ -88,7 +88,7 @@ func (l *linuxPhaseBuilder) installContainerModule() []module.Module {
 			&container.InstallContainerModule{
 				ManifestModule: manifest.ManifestModule{
 					Manifest: l.manifestMap,
-					BaseDir:  l.runtime.Arg.BaseDir,
+					BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 				},
 				NoneCluster: true,
 			}, //
@@ -111,7 +111,7 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				&images.PreloadImagesModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.Arg.BaseDir,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 					},
 				}, //
 			}
@@ -121,7 +121,7 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				&gpu.InstallDepsModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.Arg.BaseDir,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 					},
 				},
 				&gpu.RestartContainerdModule{},
@@ -133,10 +133,11 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				&daemon.InstallTerminusdBinaryModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.Arg.BaseDir,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 					},
 				},
 			}
 		}).inBox(l.runtime)...).
-		addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
+		addModule(&terminus.PreparedModule{BaseDir: l.runtime.GetBaseDir()})
+	// addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
 }

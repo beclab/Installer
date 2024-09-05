@@ -28,7 +28,8 @@ type DownloadStorageBinaries struct {
 func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
 	var arch = constants.OsArch
 
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	// var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	var prePath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir)
 	terminus := files.NewKubeBinary("terminus-cli", arch, version.VERSION, path.Join(prePath, cc.WizardDir))
 	minio := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
 	miniooperator := files.NewKubeBinary("minio-operator", arch, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, prePath)
@@ -110,7 +111,8 @@ func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	var storageType = t.KubeConf.Arg.Storage.StorageType
 	var arch = fmt.Sprintf("%s-%s", constants.OsType, constants.OsArch)
 
-	var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	// var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
+	var prePath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir)
 	var binary *files.KubeBinary
 	switch storageType {
 	case "s3":

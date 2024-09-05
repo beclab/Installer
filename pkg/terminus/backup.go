@@ -18,7 +18,8 @@ type CreateBackupConfigMap struct {
 }
 
 func (t *CreateBackupConfigMap) Execute(runtime connector.Runtime) error {
-	var backupConfigMapFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, configmaptemplates.BackupConfigMap.Name())
+	// var backupConfigMapFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, configmaptemplates.BackupConfigMap.Name())
+	var backupConfigMapFile = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, configmaptemplates.BackupConfigMap.Name())
 	var data = util.Data{
 		"CloudInstance":     cloudValue(t.KubeConf.Arg.IsCloudInstance),
 		"StorageBucket":     t.KubeConf.Arg.Storage.StorageBucket,

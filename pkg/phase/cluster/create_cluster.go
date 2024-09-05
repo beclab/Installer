@@ -30,7 +30,7 @@ func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 		&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
-				BaseDir:  runtime.Arg.BaseDir,
+				BaseDir:  runtime.GetBaseDir(),
 			},
 		},
 		&kubesphere.DeployMiniKubeModule{},
@@ -65,7 +65,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.Arg.BaseDir,
+				BaseDir:  runtime.GetBaseDir(),
 				Manifest: manifestMap,
 			},
 			Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
@@ -73,7 +73,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&etcd.BackupModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&k3s.InstallKubeBinariesModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.Arg.BaseDir,
+				BaseDir:  runtime.GetBaseDir(),
 				Manifest: manifestMap,
 			},
 		},
@@ -123,7 +123,7 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.Arg.BaseDir,
+				BaseDir:  runtime.GetBaseDir(),
 				Manifest: manifestMap,
 			},
 			Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey,
@@ -132,7 +132,7 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 		&etcd.BackupModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&kubernetes.InstallKubeBinariesModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.Arg.BaseDir,
+				BaseDir:  runtime.GetBaseDir(),
 				Manifest: manifestMap,
 			},
 		},

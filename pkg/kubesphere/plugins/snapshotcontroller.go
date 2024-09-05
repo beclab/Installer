@@ -27,7 +27,8 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 
-	var buildFilesDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir)
+	// var buildFilesDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir)
+	var buildFilesDir = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir)
 	var scrd = path.Join(buildFilesDir, "snapshot-controller", "crds", "snapshot.storage.k8s.io_volumesnapshot.yaml")
 	var cmd = fmt.Sprintf("%s apply -f %s --force", kubectlpath, scrd)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
@@ -40,7 +41,8 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 	}
 
 	var appName = common.ChartNameSnapshotController
-	var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appName)
+	// var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appName)
+	var appPath = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, appName)
 
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubeSystem)
 	if err != nil {

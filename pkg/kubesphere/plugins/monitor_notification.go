@@ -38,7 +38,8 @@ func (t *CreateMonitorNotification) Execute(runtime connector.Runtime) error {
 	}
 
 	var appName = common.ChartNameMonitorNotification
-	var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "notification-manager")
+	// var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "notification-manager")
+	var appPath = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "notification-manager")
 
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubesphereMonitoringSystem)
 	if err != nil {

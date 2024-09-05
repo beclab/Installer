@@ -95,7 +95,8 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	var osPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "system")
+	// var osPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "system")
+	var osPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "system")
 	var gpuType = getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share)
 	var storageDomain = getBucket(t.KubeConf.Arg.Storage.StorageDomain) // s3_bucket=${S3_BUCKET}
 	var storageBucket = t.KubeConf.Arg.Storage.StorageBucket

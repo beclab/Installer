@@ -45,9 +45,11 @@ type Connector interface {
 type ModuleRuntime interface {
 	GetObjName() string
 	SetObjName(name string)
+	GenerateBaseDir(baseDir string) error
 	GenerateWorkDir() error
 	GetHostWorkDir() string
 	GetHomeDir() string
+	GetBaseDir() string
 	GetWorkDir() string
 	GetIgnoreErr() bool
 	GetAllHosts() []Host

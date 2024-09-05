@@ -107,7 +107,7 @@ func (t *SocatTask) Execute(runtime connector.Runtime) error {
 			return err
 		}
 	}
-	if err := util.ChangeDir(runtime.GetHomeDir()); err != nil {
+	if err := util.ChangeDir(runtime.GetBaseDir()); err != nil {
 		logger.Errorf("failed to change dir %v", err)
 		return err
 	}
@@ -160,7 +160,7 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 			return err
 		}
 	}
-	if err := util.ChangeDir(runtime.GetHomeDir()); err != nil {
+	if err := util.ChangeDir(runtime.GetBaseDir()); err != nil {
 		logger.Errorf("failed to change dir %v", err)
 		return err
 	}

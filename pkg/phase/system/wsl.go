@@ -31,13 +31,13 @@ func (l *wslPhaseBuilder) base() phase {
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
 			},
 		},
 		&patch.InstallDepsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
 			},
 		},
 		&os.ConfigSystemModule{},
@@ -51,7 +51,7 @@ func (l *wslPhaseBuilder) installContainerModule() []module.Module {
 			&k3s.InstallContainerModule{
 				ManifestModule: manifest.ManifestModule{
 					Manifest: l.manifestMap,
-					BaseDir:  l.runtime.Arg.BaseDir,
+					BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
 				},
 			},
 		}
@@ -60,7 +60,7 @@ func (l *wslPhaseBuilder) installContainerModule() []module.Module {
 			&container.InstallContainerModule{
 				ManifestModule: manifest.ManifestModule{
 					Manifest: l.manifestMap,
-					BaseDir:  l.runtime.Arg.BaseDir,
+					BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
 				},
 				NoneCluster: true,
 			}, //
@@ -75,7 +75,7 @@ func (l *wslPhaseBuilder) build() []module.Module {
 		addModule(&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.Arg.BaseDir,
+				BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
 			},
 		}).
 		addModule(gpuModuleBuilder(func() []module.Module {
@@ -83,12 +83,13 @@ func (l *wslPhaseBuilder) build() []module.Module {
 				&gpu.InstallDepsModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.Arg.BaseDir,
+						BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
 					},
 				},
 				&gpu.RestartContainerdModule{},
 			}
 
 		}).withGPU(l.runtime)...).
-		addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
+		addModule(&terminus.PreparedModule{BaseDir: l.runtime.GetBaseDir()})
+	// addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
 }

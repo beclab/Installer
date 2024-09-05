@@ -48,6 +48,7 @@ type GenerateTerminusdServiceEnv struct {
 }
 
 func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
+	var baseDir = runtime.GetBaseDir()
 	templateAction := action.Template{
 		Name:     "TerminusdServiceEnv",
 		Template: templates.TerminusdEnv,
@@ -55,7 +56,7 @@ func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
 		Data: util.Data{
 			"Version":  g.KubeConf.Arg.TerminusVersion,
 			"KubeType": g.KubeConf.Arg.Kubetype,
-			"BaseDir":  g.KubeConf.Arg.BaseDir,
+			"BaseDir":  baseDir, // g.KubeConf.Arg.BaseDir,
 		},
 	}
 

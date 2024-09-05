@@ -17,13 +17,19 @@ func DownloadInstallationWizard(opts *options.CliDownloadWizardOptions) error {
 		return err
 	}
 
-	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
+	// home := runtime.GetHomeDir()
 	// baseDir := opts.BaseDir
 	// if baseDir == "" {
 	// 	baseDir = home + "/.terminus"
 	// }
 
-	p := download.NewDownloadWizard(home, opts.Md5sum, runtime)
+	baseDir := runtime.GetBaseDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}
+	// baseDir := opts.BaseDir
+	// if baseDir == "" {
+	// 	baseDir = home + "/.terminus"
+	// }
+
+	p := download.NewDownloadWizard(baseDir, opts.Md5sum, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download wizard failed %v", err)
 		return err

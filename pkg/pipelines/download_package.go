@@ -19,10 +19,9 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
+	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/installation.manifest"
-		// manifest = home + "/.terminus/installation.manifest"
+		manifest = home + "/.terminus/installation.manifest"
 	}
 
 	// baseDir := opts.BaseDir
@@ -30,7 +29,9 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	// 	baseDir = home + "/.terminus"
 	// }
 
-	p := download.NewDownloadPackage(manifest, home, runtime)
+	baseDir := runtime.GetBaseDir()
+
+	p := download.NewDownloadPackage(manifest, baseDir, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download package failed %v", err)
 		return err

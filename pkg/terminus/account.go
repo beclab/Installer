@@ -24,7 +24,8 @@ type UpdateAccountValues struct {
 }
 
 func (p *UpdateAccountValues) PreCheck(runtime connector.Runtime) (bool, error) {
-	var accountFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account", accounttemplates.AccountValues.Name())
+	// var accountFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account", accounttemplates.AccountValues.Name())
+	var accountFile = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account", accounttemplates.AccountValues.Name())
 	var data = util.Data{
 		"UserName":   p.KubeConf.Arg.User.UserName,
 		"Password":   p.KubeConf.Arg.User.Password,
@@ -61,7 +62,8 @@ func (t *InstallAccount) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	var accountPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account")
+	// var accountPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account")
+	var accountPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account")
 	if !util.IsExist(accountPath) {
 		return fmt.Errorf("account not exists")
 	}

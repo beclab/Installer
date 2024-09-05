@@ -17,7 +17,7 @@
 package common
 
 const (
-	TerminusKey        = ".terminus"
+	// TerminusKey        = ".terminus"
 	ManifestDir        = "manifest"
 	ImageCacheDir      = "images"
 	PackageCacheDir    = "pkg"

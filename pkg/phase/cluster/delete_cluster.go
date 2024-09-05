@@ -143,7 +143,7 @@ func (p *phaseBuilder) phaseMacos() {
 func UninstallTerminus(phase string, args *common.Argument, runtime *common.KubeRuntime) pipeline.Pipeline {
 	var builder = &phaseBuilder{
 		phase:   phase,
-		baseDir: runtime.GetHomeDir(),
+		baseDir: runtime.GetBaseDir(),
 		runtime: runtime,
 	}
 
