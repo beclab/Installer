@@ -89,6 +89,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&precheck.GetStorageKeyModule{},
 			&storage.RemoveMountModule{},
 			&kubernetes.ResetClusterModule{},
+			&kubernetes.UmountKubeModule{},
 			&k3s.DeleteClusterModule{},
 			&os.ClearOSEnvironmentModule{},
 			&certs.UninstallAutoRenewCertsModule{},

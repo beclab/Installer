@@ -178,6 +178,7 @@ const (
 	CommandDocker    = "docker"
 	CommandHelm      = "helm"
 	CommandMinikube  = "minikube"
+	CommandUnzip     = "unzip"
 
 	CacheCommandHelmPath     = "helm_bin_path"
 	CacheCommandKubectlPath  = "kubectl_bin_path"

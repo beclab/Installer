@@ -17,6 +17,7 @@
 package kubernetes
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -496,6 +497,45 @@ func (k *KubeadmReset) Execute(runtime connector.Runtime) error {
 		resetCmd = resetCmd + " --cri-socket " + k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint
 	}
 	_, _ = runtime.GetRunner().SudoCmd(resetCmd, false, true)
+	return nil
+}
+
+type UmountKubelet struct {
+	common.KubeAction
+}
+
+func (u *UmountKubelet) Execute(runtime connector.Runtime) error {
+	if !util.IsExist("/proc/self/mounts") {
+		return nil
+	}
+
+	var cmd = fmt.Sprintf("cat /proc/self/mounts |grep 'kubelet' | sort -r")
+	var stdout, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	if stdout == "" {
+		return nil
+	}
+
+	var mounts []string
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		mounts = append(mounts, fields[1])
+	}
+
+	if mounts == nil || len(mounts) == 0 {
+		return nil
+	}
+
+	logger.Infof("kubelet mounts %v", mounts)
+
+	for _, m := range mounts {
+		runtime.GetRunner().SudoCmdExt(fmt.Sprintf("umount %s", m), false, true)
+	}
+
 	return nil
 }
 
