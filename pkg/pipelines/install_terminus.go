@@ -15,8 +15,14 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-	if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
-		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
+	if !opts.MiniKube {
+		if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
+			return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
+		}
+	} else {
+		if err := checkMacOSParams(opts.MiniKube, opts.MiniKubeProfile); err != nil {
+			return err
+		}
 	}
 
 	arg := common.NewArgument()

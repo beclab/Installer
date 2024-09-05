@@ -10,7 +10,6 @@ import (
 
 func NewDefaultCommand() *cobra.Command {
 	helper.GetMachineInfo()
-	helper.InitLog()
 
 	cmds := &cobra.Command{
 		Use:               "Terminus Cli",

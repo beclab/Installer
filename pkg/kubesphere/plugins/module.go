@@ -8,24 +8,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-type CopyManifestModule struct {
-	common.KubeModule
-}
-
-func (m *CopyManifestModule) Init() {
-	m.Name = "CopyManifest"
-
-	copyManifest := &task.LocalTask{
-		Name:    "CopyManifest",
-		Prepare: &IsCloudInstance{Not: true},
-		Action:  new(CopyManifest),
-	}
-
-	m.Tasks = []task.Interface{
-		copyManifest,
-	}
-}
-
 type GenerateCachedModule struct {
 	common.KubeModule
 }

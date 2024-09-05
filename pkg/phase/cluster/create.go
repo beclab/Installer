@@ -3,6 +3,7 @@ package cluster
 import (
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
@@ -14,17 +15,21 @@ import (
 
 // only install kubesphere
 func InitKube(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipeline {
+	manifestMap, err := manifest.ReadAll(runtime.Arg.Manifest)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.GenerateCachedModule{},
-		&plugins.CopyManifestModule{},
 		&plugins.CopyEmbed{},
 	}
 
 	var kubeModules []module.Module
 	if args.Minikube {
-		kubeModules = NewDarwinClusterPhase(runtime)
+		kubeModules = NewDarwinClusterPhase(runtime, manifestMap)
 	} else {
 		if runtime.Cluster.Kubernetes.Type == common.K3s {
 			// FIXME:
@@ -79,18 +84,21 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	}
 
 	var kubeModules []module.Module
-	if runtime.Cluster.Kubernetes.Type == common.K3s {
-		kubeModules = NewK3sCreateClusterPhase(runtime, manifestMap)
+	if constants.OsType == common.Darwin {
+		kubeModules = NewDarwinClusterPhase(runtime, manifestMap)
 	} else {
-		kubeModules = NewCreateClusterPhase(runtime, manifestMap)
+		if runtime.Cluster.Kubernetes.Type == common.K3s {
+			kubeModules = NewK3sCreateClusterPhase(runtime, manifestMap)
+		} else {
+			kubeModules = NewCreateClusterPhase(runtime, manifestMap)
+		}
+		kubeModules = append(kubeModules,
+			// &gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
+			// &gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
+			// &gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
+			&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
+		)
 	}
-
-	kubeModules = append(kubeModules,
-		// &gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
-		// &gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
-		// &gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
-		&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
-	)
 
 	m = append(m, kubeModules...)
 

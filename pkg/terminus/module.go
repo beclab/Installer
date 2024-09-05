@@ -55,26 +55,6 @@ func (m *InstallWizardDownloadModule) Init() {
 	}
 }
 
-type CopyToWizardModule struct {
-	common.KubeModule
-}
-
-func (m *CopyToWizardModule) Init() {
-	m.Name = "CopyToInstallWizard"
-
-	copyToWizard := &task.RemoteTask{
-		Name:     "CopyToInstallWizard",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(CopyToWizard),
-		Parallel: false,
-		Retry:    1,
-	}
-
-	m.Tasks = []task.Interface{
-		copyToWizard,
-	}
-}
-
 type DownloadFullInstallerModule struct {
 	common.KubeModule
 	Skip bool
@@ -86,29 +66,6 @@ func (r *DownloadFullInstallerModule) IsSkip() bool {
 
 func (m *DownloadFullInstallerModule) Init() {
 	m.Name = "DownloadFullInstaller"
-}
-
-type TidyPackageModule struct {
-	common.KubeModule
-	Skip bool
-}
-
-func (r *TidyPackageModule) IsSkip() bool {
-	return r.Skip
-}
-
-func (m *TidyPackageModule) Init() {
-	m.Name = "TidyInstallerPackage"
-
-	tidyInstallerPackage := &task.LocalTask{
-		Name:   "TidyInstallerPacker",
-		Action: new(TidyInstallerPackage),
-		Retry:  1,
-	}
-
-	m.Tasks = []task.Interface{
-		tidyInstallerPackage,
-	}
 }
 
 type PreparedModule struct {
