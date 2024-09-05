@@ -211,6 +211,12 @@ type DisableContainerd struct {
 }
 
 func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
+	if stdout, err := runtime.GetRunner().SudoCmdExt("systemctl status containerd", false, false); err != nil {
+		if strings.Contains(stdout, "could not be found") {
+			return nil
+		}
+		return err
+	}
 	_, _ = runtime.GetRunner().SudoCmd("systemctl disable containerd && systemctl stop containerd", false, false)
 
 	if err := umountPoints(runtime); err != nil {
