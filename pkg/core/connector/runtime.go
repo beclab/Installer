@@ -120,7 +120,7 @@ func (b *BaseRuntime) GenerateWorkDir() error {
 	}
 
 	// base-dir   $HOME/.terminus
-	var homeDir string
+	var homeDir = b.baseDir
 	if b.baseDir == "" {
 		homeDir = path.Join(usr.HomeDir, ".terminus")
 	}

@@ -26,6 +26,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	arg := common.NewArgument()
+	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
@@ -43,17 +44,12 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
+	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = home + "/installation.manifest"
+		// manifest = home + "/.terminus/installation.manifest"
 	}
 
-	baseDir := opts.BaseDir
-	if baseDir == "" {
-		baseDir = home + "/.terminus"
-	}
-
-	runtime.Arg.SetBaseDir(baseDir)
 	runtime.Arg.SetManifest(manifest)
 
 	var p = cluster.CreateTerminus(*arg, runtime)
