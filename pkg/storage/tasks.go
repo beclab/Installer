@@ -341,13 +341,9 @@ func (t *DeletePhaseFlagFile) Execute(runtime connector.Runtime) error {
 type DeleteCaches struct {
 	common.KubeAction
 	BaseDir string
-	Skip    bool
 }
 
 func (t *DeleteCaches) Execute(runtime connector.Runtime) error {
-	if !t.KubeConf.Arg.DeleteCache {
-		return nil
-	}
 	var cachesDirs []string
 
 	filepath.WalkDir(t.BaseDir, func(path string, d fs.DirEntry, err error) error {

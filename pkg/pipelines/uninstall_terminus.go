@@ -41,7 +41,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		return err
 	}
 
-	home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
+	// home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
 	// baseDir := opt.BaseDir
 	// if baseDir == "" {
 	// 	baseDir = home + "/.terminus"
@@ -52,7 +52,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		phaseName = cluster.PhaseDownload.String()
 	}
 
-	var p = cluster.UninstallTerminus(home, phaseName, arg, runtime) // baseDir
+	var p = cluster.UninstallTerminus(phaseName, arg, runtime) // baseDir
 	if err := p.Start(); err != nil {
 		logger.Errorf("uninstall terminus failed: %v", err)
 		return err
