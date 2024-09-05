@@ -156,11 +156,16 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 	// exp https://terminus-os-us-west-1.s3.us-west-1.amazonaws.com
 	// s3  s3://terminus-os-us-west-1
 
-	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
-	storageAccessKey := t.KubeConf.Arg.Storage.StorageAccessKey
-	storageSecretKey := t.KubeConf.Arg.Storage.StorageSecretKey
-	storageToken := t.KubeConf.Arg.Storage.StorageToken
-	storageClusterId := t.KubeConf.Arg.Storage.StorageClusterId
+	storage := t.KubeConf.Arg.Storage
+	if storage.StorageAccessKey == "" || storage.StorageSecretKey == "" {
+		return nil
+	}
+
+	storageBucket := storage.StorageBucket
+	storageAccessKey := storage.StorageAccessKey
+	storageSecretKey := storage.StorageSecretKey
+	storageToken := storage.StorageToken
+	storageClusterId := storage.StorageClusterId
 
 	_, a, f := strings.Cut(storageBucket, "://")
 	if !f {
@@ -177,9 +182,8 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 		storageAccessKey, storageSecretKey, storageToken, endpoint, storageClusterId,
 	)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount s3 bucket %s: %v", storageBucket, err)
-		return err
 	}
 
 	return nil
@@ -190,11 +194,16 @@ type UnMountOSS struct {
 }
 
 func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
-	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
-	storageAccessKey := t.KubeConf.Arg.Storage.StorageAccessKey
-	storageSecretKey := t.KubeConf.Arg.Storage.StorageSecretKey
-	storageToken := t.KubeConf.Arg.Storage.StorageToken
-	storageClusterId := t.KubeConf.Arg.Storage.StorageClusterId
+	storage := t.KubeConf.Arg.Storage
+	if storage.StorageAccessKey == "" || storage.StorageSecretKey == "" {
+		return nil
+	}
+
+	storageBucket := storage.StorageBucket
+	storageAccessKey := storage.StorageAccessKey
+	storageSecretKey := storage.StorageSecretKey
+	storageToken := storage.StorageToken
+	storageClusterId := storage.StorageClusterId
 
 	// exp: https://name.area.aliyuncs.com
 	// oss  oss://name
@@ -216,7 +225,7 @@ func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
 
 	var cmd = fmt.Sprintf("/usr/local/sbin/ossutil64 rm %s/%s/ --endpoint=%s --access-key-id=%s --access-key-secret=%s --sts-token=%s -r -f", ossName, storageClusterId, ossEndpoint, storageAccessKey, storageSecretKey, storageToken)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount oss bucket %s: %v", storageBucket, err)
 	}
 
