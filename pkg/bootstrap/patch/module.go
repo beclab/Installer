@@ -29,38 +29,8 @@ func (m *InstallDepsModule) Init() {
 		Retry:    1,
 	}
 
-	installSocat := &task.RemoteTask{
-		Name:    "InstallSocat",
-		Hosts:   m.Runtime.GetAllHosts(),
-		Prepare: &CheckDepsPrepare{Command: common.CommandSocat},
-		Action: &SocatTask{
-			ManifestAction: manifest.ManifestAction{
-				BaseDir:  m.BaseDir,
-				Manifest: m.Manifest,
-			},
-		},
-		Parallel: false,
-		Retry:    1,
-	}
-
-	installConntrack := &task.RemoteTask{
-		Name:    "InstallConntrack",
-		Hosts:   m.Runtime.GetAllHosts(),
-		Prepare: &CheckDepsPrepare{Command: common.CommandConntrack},
-		Action: &ConntrackTask{
-			ManifestAction: manifest.ManifestAction{
-				BaseDir:  m.BaseDir,
-				Manifest: m.Manifest,
-			},
-		},
-		Parallel: false,
-		Retry:    1,
-	}
-
 	m.Tasks = []task.Interface{
 		patchOs,
 		enableSSHTask,
-		installSocat,
-		installConntrack,
 	}
 }

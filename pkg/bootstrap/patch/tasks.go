@@ -51,16 +51,23 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		fallthrough
 	case common.Ubuntu, common.Raspbian:
 		if !t.KubeConf.Arg.IsProxmox() {
+			if _, err := runtime.GetRunner().SudoCmd("add-apt-repository universe multiverse -y", false, true); err != nil {
+				logger.Errorf("add os repo error %v", err)
+				return err
+			}
+
 			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, true); err != nil {
 				logger.Errorf("update os error %v", err)
 				return err
 			}
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd("apt --fix-broken install -y", false, true); err != nil {
-			logger.Errorf("fix-broken install error %v", err)
-			return err
-		}
+		logger.Debug("apt update success")
+
+		// if _, err := runtime.GetRunner().SudoCmd("apt --fix-broken install -y", false, true); err != nil {
+		// 	logger.Errorf("fix-broken install error %v", err)
+		// 	return err
+		// }
 
 		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y -qq %s", debianFrontend, constants.PkgManager, pre_reqs), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", pre_reqs, err)
