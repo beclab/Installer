@@ -6,6 +6,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
+	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
 func NewDownloadPackage(mainifest, baseDir string, runtime *common.KubeRuntime) *pipeline.Pipeline {
@@ -13,6 +14,7 @@ func NewDownloadPackage(mainifest, baseDir string, runtime *common.KubeRuntime) 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
+		&terminus.TerminusUninstallScriptModule{},
 		&download.PackageDownloadModule{Manifest: mainifest, BaseDir: baseDir},
 	}
 

@@ -149,6 +149,24 @@ func WriteFile(fileName string, content []byte) error {
 	return nil
 }
 
+func AppendFile(fileName string, content string) error {
+	if !IsExist(fileName) {
+		return errors.Errorf("file %s not exist", fileName)
+	}
+
+	file, err := os.OpenFile(fileName, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err = file.WriteString(content); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func Tar(src, dst, trimPrefix string) error {
 	fw, err := os.Create(dst)
 	if err != nil {

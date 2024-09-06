@@ -144,6 +144,9 @@ type GenerateTerminusUninstallScript struct {
 }
 
 func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) error {
+	if t.KubeConf.Arg.Minikube {
+		return nil
+	}
 	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.TerminusUninstallScriptValues.Name())
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
