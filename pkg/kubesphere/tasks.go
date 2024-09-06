@@ -90,6 +90,9 @@ func (t *DeleteCache) Execute(runtime connector.Runtime) error {
 	if err := util.RemoveDir(cacheDir); err != nil {
 		return err
 	}
+	if util.IsExist(path.Join(runtime.GetBaseDir(), ".prepared")) {
+		util.RemoveFile(path.Join(runtime.GetBaseDir(), ".prepared"))
+	}
 	logger.Debugf("delete caches success")
 	return nil
 }
