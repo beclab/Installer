@@ -68,6 +68,8 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&precheck.GetSysInfoModel{},
 		// FIXME: completely install supported
 		&terminus.CheckPreparedModule{BaseDir: runtime.GetBaseDir(), Force: true},
+		&terminus.TerminusPhaseStateModule{},
+		&terminus.TerminusUninstallScriptModule{},
 		// &plugins.CopyEmbed{},
 		// &terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion},
 
@@ -99,7 +101,6 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 			&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
 		)
 	}
-
 	m = append(m, kubeModules...)
 
 	return &pipeline.Pipeline{

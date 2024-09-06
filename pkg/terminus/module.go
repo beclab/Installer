@@ -106,3 +106,37 @@ func (m *CheckPreparedModule) Init() {
 		checkPrepared,
 	}
 }
+
+type TerminusUninstallScriptModule struct {
+	common.KubeModule
+}
+
+func (m *TerminusUninstallScriptModule) Init() {
+	m.Name = "GenerateTerminusUninstallScript"
+
+	uninstallScript := &task.LocalTask{
+		Name:   "GenerateTerminusUninstallScript",
+		Action: &GenerateTerminusUninstallScript{},
+	}
+
+	m.Tasks = []task.Interface{
+		uninstallScript,
+	}
+}
+
+type TerminusPhaseStateModule struct {
+	common.KubeModule
+}
+
+func (m *TerminusPhaseStateModule) Init() {
+	m.Name = "GeneratePhaseState"
+
+	installedState := &task.LocalTask{
+		Name:   "GenerateInstalledPhase",
+		Action: &GenerateInstalledPhaseState{},
+	}
+
+	m.Tasks = []task.Interface{
+		installedState,
+	}
+}

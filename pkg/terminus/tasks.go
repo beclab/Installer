@@ -2,6 +2,7 @@ package terminus
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -11,7 +12,9 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
+	uninstalltemplate "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
+
 	"github.com/pkg/errors"
 )
 
@@ -133,5 +136,41 @@ func (t *CheckPepared) Execute(runtime connector.Runtime) error {
 		return errors.New("terminus is not prepared well, cannot continue actions")
 	}
 
+	return nil
+}
+
+type GenerateTerminusUninstallScript struct {
+	common.KubeAction
+}
+
+func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) error {
+	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.TerminusUninstallScriptValues.Name())
+	data := util.Data{
+		"BaseDir": runtime.GetBaseDir(),
+		"Phase":   "install",
+	}
+
+	uninstallScriptStr, err := util.Render(uninstalltemplate.TerminusUninstallScriptValues, data)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "render uninstall template failed")
+	}
+
+	if err := util.WriteFile(uninstallPath, []byte(uninstallScriptStr), cc.FileMode0755); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", uninstallPath))
+	}
+
+	return nil
+}
+
+type GenerateInstalledPhaseState struct {
+	common.KubeAction
+	Phase string
+}
+
+func (t *GenerateInstalledPhaseState) Execute(runtime connector.Runtime) error {
+	var phaseState = path.Join(runtime.GetBaseDir(), ".installed")
+	if err := util.WriteFile(phaseState, nil, cc.FileMode0644); err != nil {
+		return err
+	}
 	return nil
 }
