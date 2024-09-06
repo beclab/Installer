@@ -57,7 +57,6 @@ func (s UninstallPhaseString) Type() UninstallPhaseType {
 
 type phaseBuilder struct {
 	phase   string
-	baseDir string
 	modules []module.Module
 	runtime *common.KubeRuntime
 }
@@ -78,10 +77,10 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 		}
 
 		if p.runtime.Arg.Storage.StorageType == common.S3 || p.runtime.Arg.Storage.StorageType == common.OSS {
-			p.modules = append(p.modules, []module.Module{
+			p.modules = append(p.modules,
 				&precheck.GetStorageKeyModule{},
 				&storage.RemoveMountModule{},
-			}...)
+			)
 		}
 
 		switch p.runtime.Cluster.Kubernetes.Type {
@@ -98,7 +97,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&storage.DeleteUserDataModule{},
 			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".installed",
-				BaseDir:   p.baseDir,
+				BaseDir:   p.runtime.GetBaseDir(),
 			},
 		)
 	}
@@ -114,7 +113,7 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 			&storage.DeleteTerminusDataModule{},
 			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".prepared",
-				BaseDir:   p.baseDir,
+				BaseDir:   p.runtime.GetBaseDir(),
 			},
 		)
 	}
@@ -124,7 +123,7 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 	if p.convert() >= PhaseDownload && p.runtime.Arg.DeleteCache {
 		p.modules = append(p.modules, &storage.DeleteCacheModule{
-			BaseDir: p.baseDir,
+			BaseDir: p.runtime.GetBaseDir(),
 		})
 	}
 
@@ -143,7 +142,6 @@ func (p *phaseBuilder) phaseMacos() {
 func UninstallTerminus(phase string, args *common.Argument, runtime *common.KubeRuntime) pipeline.Pipeline {
 	var builder = &phaseBuilder{
 		phase:   phase,
-		baseDir: runtime.GetBaseDir(),
 		runtime: runtime,
 	}
 

@@ -41,12 +41,6 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		return err
 	}
 
-	// home := runtime.GetHomeDir() // GetHomeDir = $HOME/.terminus or --base-dir: {target}/.terminus
-	// baseDir := opt.BaseDir
-	// if baseDir == "" {
-	// 	baseDir = home + "/.terminus"
-	// }
-
 	phaseName := opt.Phase
 	if opt.All {
 		phaseName = cluster.PhaseDownload.String()

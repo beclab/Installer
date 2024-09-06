@@ -26,6 +26,7 @@ const (
 	GpuDir             = "gpu"
 
 	// KubeKey = "kubekey"
+	Cli               = "cli"
 	KubeKey           = "pkg"
 	Pkg               = "pkg"
 	InstallDir        = "install-wizard"

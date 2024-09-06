@@ -125,39 +125,17 @@ func (b *BaseRuntime) GenerateBaseDir(baseDir string) error {
 	homeDir := usr.HomeDir
 	b.homeDir = homeDir
 
+	b.baseDir = baseDir
 	if baseDir == "" {
 		b.baseDir = path.Join(homeDir, ".terminus")
 	}
-	b.baseDir = baseDir
 
 	return nil
 }
 
 func (b *BaseRuntime) GenerateWorkDir() error {
-	// usr, err := user.Current()
-	// if err != nil {
-	// 	return errors.Wrap(err, "get current user failed")
-	// }
 
-	// base-dir   $HOME/.terminus
-	// var homeDir = b.baseDir
-	// if b.baseDir == "" {
-	// 	homeDir = path.Join(usr.HomeDir, ".terminus")
-	// }
-
-	// b.homeDir = homeDir
-
-	// currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	// if err != nil {
-	// 	return errors.Wrap(err, "get current dir failed")
-	// }
-
-	// currentDir := baseDir
-	// if baseDir == "" {
-	// 	currentDir = path.Join(homeDir, ".terminus")
-	// }
-
-	rootPath := filepath.Join(b.baseDir, common.Pkg)
+	rootPath := filepath.Join(b.baseDir, common.Cli)
 	if err := util.CreateDir(rootPath); err != nil {
 		return errors.Wrap(err, "create work dir failed")
 	}
