@@ -144,6 +144,7 @@ type GenerateTerminusUninstallScript struct {
 }
 
 func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) error {
+	filePath := path.Join(runtime.GetBaseDir(), uninstalltemplate.TerminusUninstallScriptValues.Name())
 	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.TerminusUninstallScriptValues.Name())
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
@@ -155,8 +156,12 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 		return errors.Wrap(errors.WithStack(err), "render uninstall template failed")
 	}
 
-	if err := util.WriteFile(uninstallPath, []byte(uninstallScriptStr), cc.FileMode0755); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", uninstallPath))
+	if err := util.WriteFile(filePath, []byte(uninstallScriptStr), cc.FileMode0755); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", filePath))
+	}
+
+	if err := runtime.GetRunner().SudoScp(filePath, uninstallPath); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", filePath, uninstallPath))
 	}
 
 	return nil

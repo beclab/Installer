@@ -46,7 +46,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		phaseName = cluster.PhaseDownload.String()
 	}
 
-	var p = cluster.UninstallTerminus(phaseName, arg, runtime) // baseDir
+	var p = cluster.UninstallTerminus(phaseName, arg, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("uninstall terminus failed: %v", err)
 		return err
@@ -97,12 +97,16 @@ func formatDeleteCache(opt *options.CliTerminusUninstallOptions) (bool, error) {
 	var all = opt.All
 	var minikube = opt.MiniKube
 	var quiet = opt.Quiet
+	if minikube && opt.Phase == cluster.PhaseInstall.String() {
+		opt.Phase = cluster.PhasePrepare.String()
+	}
+
 	if all {
 		opt.Phase = cluster.PhaseDownload.String()
 	}
 
 	var phase = opt.Phase
-	if !minikube && phase != cluster.PhaseDownload.String() {
+	if phase != cluster.PhaseDownload.String() {
 		return false, nil
 	}
 

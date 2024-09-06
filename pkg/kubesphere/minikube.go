@@ -77,6 +77,10 @@ func (t *UninstallMinikube) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
+	if util.IsExist(path.Join(runtime.GetBaseDir(), ".installed")) {
+		util.RemoveFile(path.Join(runtime.GetBaseDir(), ".installed"))
+	}
+
 	return nil
 }
 

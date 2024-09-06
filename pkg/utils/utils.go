@@ -229,6 +229,16 @@ func ArchAlias(arch string) string {
 	}
 }
 
+func UbuntuVersionAlias(version string) string {
+	if strings.Contains(version, "24.") {
+		return "noble"
+	} else if strings.Contains(version, "22.") {
+		return "jammy"
+	} else {
+		return "focal"
+	}
+}
+
 func Random() int {
 	rand.Seed(time.Now().UnixNano())
 	randomInt := rand.Intn(50000)

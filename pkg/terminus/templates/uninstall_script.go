@@ -10,6 +10,11 @@ var TerminusUninstallScriptValues = template.Must(template.New("terminus-uninsta
 	dedent.Dedent(`#!/bin/sh
 set -x
 
-sudo -E /bin/bash -c "terminus-cli terminus uninstall --base-dir {{ .BaseDir }} --phase {{ .Phase }}"
+os_type=$(uname -s)
+if [ "${os_type}" == "Darwin" ]; then
+		sudo -E /bin/bash -c "terminus-cli terminus uninstall --base-dir {{ .BaseDir }} --phase {{ .Phase }} --minikube"
+else
+		sudo -E /bin/bash -c "terminus-cli terminus uninstall --base-dir {{ .BaseDir }} --phase {{ .Phase }}"
+fi
 
 `)))
