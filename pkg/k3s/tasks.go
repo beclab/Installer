@@ -412,8 +412,9 @@ type CopyK3sKubeConfig struct {
 func (c *CopyK3sKubeConfig) Execute(runtime connector.Runtime) error {
 	createConfigDirCmd := "mkdir -p /root/.kube && mkdir -p $HOME/.kube"
 	getKubeConfigCmd := "cp -f /etc/rancher/k3s/k3s.yaml /root/.kube/config"
+	chmodKubeConfigCmd := "chmod 0600 /root/.kube/config"
 
-	cmd := strings.Join([]string{createConfigDirCmd, getKubeConfigCmd}, " && ")
+	cmd := strings.Join([]string{createConfigDirCmd, getKubeConfigCmd, chmodKubeConfigCmd}, " && ")
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "copy k3s kube config failed")
 	}
