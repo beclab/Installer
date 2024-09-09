@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ import (
 func GetMachineInfo() {
 	getWorkDir()
 	getHost()
+	getOs()
 	getCpu()
 	getFs()
 	getDisk()
@@ -51,6 +53,16 @@ func getHost() {
 	constants.VirtualizationRole = host[6]
 	constants.VirtualizationSystem = host[7]
 	constants.OsKernel = host[8] // maybe with WSL2
+}
+
+func getOs() {
+	cmd := exec.Command("sh", "-c", "uname -a")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Println("uname -a failed:", err)
+		return
+	}
+	constants.OsDetail = string(output)
 }
 
 func getCpu() {

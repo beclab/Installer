@@ -164,6 +164,7 @@ type GetSysInfoTask struct {
 }
 
 func (t *GetSysInfoTask) Execute(runtime connector.Runtime) error {
+	logger.Infof("os info, all: %s", constants.OsDetail)
 	logger.Infof("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, version: %s, arch: %s",
 		constants.CurrentUser, constants.HostName, constants.HostId, constants.OsType, constants.OsPlatform, constants.OsVersion, constants.OsArch)
 	logger.Infof("kernel info, version: %s", constants.OsKernel)
