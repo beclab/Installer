@@ -104,6 +104,14 @@ func (m *PreCheckOsModule) Init() {
 		Retry:    0,
 	}
 
+	correctHostname := &task.RemoteTask{
+		Name:     "CorrectHostname",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Action:   new(CorrectHostname),
+		Parallel: false,
+		Retry:    0,
+	}
+
 	disableDNS := &task.RemoteTask{
 		Name:     "DisableLocalDNS",
 		Hosts:    m.Runtime.GetAllHosts(),
@@ -115,6 +123,7 @@ func (m *PreCheckOsModule) Init() {
 	m.Tasks = []task.Interface{
 		patchAppArmor,
 		raspbianCheck,
+		correctHostname,
 		disableDNS,
 	}
 }

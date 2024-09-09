@@ -244,3 +244,12 @@ func Random() int {
 	randomInt := rand.Intn(50000)
 	return randomInt
 }
+
+func ContainsUppercase(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 'A' && s[i] <= 'Z' {
+			return true
+		}
+	}
+	return false
+}
