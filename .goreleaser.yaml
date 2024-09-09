@@ -112,8 +112,6 @@ archives:
       - none*
 checksum:
   name_template: "checksums.txt"
-snapshot:
-  name_template: "{{ .Version }}-next-{{.ShortCommit}}"
 changelog:
   skip: true
   sort: asc
@@ -121,3 +119,6 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+release:
+  prerelease: true
+  draft: false
