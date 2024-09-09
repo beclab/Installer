@@ -19,7 +19,7 @@ var (
 	OsKernel             string
 	VirtualizationRole   string
 	VirtualizationSystem string
-	OsDetail             string
+	OsInfo               string
 	CpuModel             string
 	CpuLogicalCount      int
 	CpuPhysicalCount     int

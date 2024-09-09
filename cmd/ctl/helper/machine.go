@@ -56,13 +56,13 @@ func getHost() {
 }
 
 func getOs() {
-	cmd := exec.Command("sh", "-c", "uname -a")
+	cmd := exec.Command("sh", "-c", "echo -n $(uname -a)")
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Println("uname -a failed:", err)
 		return
 	}
-	constants.OsDetail = string(output)
+	constants.OsInfo = string(output)
 }
 
 func getCpu() {

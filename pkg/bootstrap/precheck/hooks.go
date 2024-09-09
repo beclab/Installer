@@ -34,7 +34,7 @@ func (h *PrintMachineInfoHook) Try() error {
 	fmt.Printf("MACHINE, hostname: %s, cpu: %d, mem: %s, disk: %s, local-ip: %s\n",
 		constants.HostName, constants.CpuPhysicalCount, utils.FormatBytes(int64(constants.MemTotal)),
 		utils.FormatBytes(int64(constants.DiskTotal)), constants.LocalIp)
-	fmt.Printf("OS, all: %s\n", constants.OsDetail)
+	fmt.Printf("OS, info: %s\n", constants.OsInfo)
 	fmt.Printf("SYSTEM, os: %s, platform: %s, arch: %s, version: %s\nKERNEL: version: %s\n", constants.OsType, constants.OsPlatform, constants.OsArch, constants.OsVersion, constants.OsKernel)
 	fmt.Printf("FS, type: %s, zfsmount: %s\n", constants.FsType, constants.DefaultZfsPrefixName)
 	fmt.Printf("VIRTUAL, role: %s, system: %s\n", constants.VirtualizationRole, constants.VirtualizationSystem)
