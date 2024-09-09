@@ -1,11 +1,8 @@
 package patch
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"path"
-	"regexp"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/binaries"
@@ -15,7 +12,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/manifest"
-	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
 type EnableSSHTask struct {
@@ -28,52 +24,6 @@ func (t *EnableSSHTask) Execute(runtime connector.Runtime) error {
 		if _, err := runtime.GetRunner().SudoCmdExt("systemctl enable --now ssh", false, false); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-type UpdateSourceList struct {
-	common.KubeAction
-}
-
-func (t *UpdateSourceList) Execute(runtime connector.Runtime) error {
-	if constants.OsPlatform != common.Ubuntu {
-		return nil
-	}
-	var aptSourceListPath = "/etc/apt/sources.list"
-	if !util.IsExist(aptSourceListPath) {
-		return nil
-	}
-
-	var pattern = `^deb\s+http://archive\.ubuntu\.com/ubuntu\s+\w+\s+universe`
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Open(aptSourceListPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	found := false
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if re.MatchString(line) {
-			found = true
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("failed to scan %s: %v", aptSourceListPath, err)
-	}
-
-	if !found {
-		var content = fmt.Sprintf("\ndeb http://archive.ubuntu.com/ubuntu %s universe\n\n", utils.UbuntuVersionAlias(constants.OsVersion))
-		return utils.AppendFile(aptSourceListPath, content)
 	}
 
 	return nil
