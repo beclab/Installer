@@ -37,6 +37,22 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
+type CorrectHostname struct {
+	common.KubeAction
+}
+
+func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
+	if !utils.ContainsUppercase(constants.HostName) {
+		return nil
+	}
+	hostname := strings.ToLower(constants.HostName)
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
+		return err
+	}
+	constants.HostName = hostname
+	return nil
+}
+
 type RaspbianCheckTask struct {
 	common.KubeAction
 }
