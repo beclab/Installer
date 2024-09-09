@@ -27,7 +27,7 @@ OS_PLATFORM=%s
 OS_ARCH=%s
 OS_VERSION=%s
 OS_KERNEL=%s
-OS_DETAIL=%s`, constants.OsType, constants.OsPlatform, constants.OsArch, constants.OsVersion, constants.OsKernel, constants.OsDetail)
+OS_INFO=%s`, constants.OsType, constants.OsPlatform, constants.OsArch, constants.OsVersion, constants.OsKernel, constants.OsDetail)
 		},
 	}
 	return cmd
