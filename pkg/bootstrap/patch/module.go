@@ -14,6 +14,14 @@ type InstallDepsModule struct {
 func (m *InstallDepsModule) Init() {
 	m.Name = "InstallDeps"
 
+	updateSourceList := &task.RemoteTask{
+		Name:     "UpdateSourceList",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Action:   new(UpdateSourceList),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	patchOs := &task.RemoteTask{
 		Name:   "PatchOs",
 		Hosts:  m.Runtime.GetAllHosts(),
@@ -30,6 +38,7 @@ func (m *InstallDepsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		updateSourceList,
 		patchOs,
 		enableSSHTask,
 	}
