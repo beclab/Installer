@@ -85,7 +85,7 @@ type PatchTask struct {
 
 func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	var cmd string
-	var debianFrontend string
+	var debianFrontend = "DEBIAN_FRONTEND=noninteractive"
 	var pre_reqs = "apt-transport-https ca-certificates curl"
 
 	if _, err := util.GetCommand(common.CommandGPG); err != nil {
@@ -96,10 +96,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	}
 
 	switch constants.OsPlatform {
-	case common.Debian:
-		debianFrontend = "DEBIAN_FRONTEND=noninteractive"
-		fallthrough
-	case common.Ubuntu, common.Raspbian:
+	case common.Ubuntu, common.Debian, common.Raspbian:
 		if !t.KubeConf.Arg.IsProxmox() {
 			if _, err := runtime.GetRunner().SudoCmd("add-apt-repository universe multiverse -y", false, true); err != nil {
 				logger.Errorf("add os repo error %v", err)
