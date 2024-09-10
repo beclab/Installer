@@ -47,7 +47,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 
 	switch constants.OsPlatform {
 	case common.Ubuntu, common.Debian, common.Raspbian:
-		if !t.KubeConf.Arg.IsProxmox() {
+		if !t.KubeConf.Arg.IsProxmox() && !t.KubeConf.Arg.IsRaspbian() {
 			if _, err := runtime.GetRunner().SudoCmd("add-apt-repository universe multiverse -y", false, true); err != nil {
 				logger.Errorf("add os repo error %v", err)
 				return err
