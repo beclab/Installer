@@ -36,19 +36,6 @@ func (m *InstallDepsModule) Init() {
 	installCudaDeps := &task.RemoteTask{
 		Name:  "InstallCudaKeyRing",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			&common.OsType{
-				OsType: common.Ubuntu, // ! only ubuntu
-			},
-			&common.OsVersion{
-				OsVersion: map[string]bool{
-					"20.04": true,
-					"22.04": true,
-					"24.04": false,
-				},
-			},
-		},
 		Action: &InstallCudaDeps{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
@@ -63,7 +50,6 @@ func (m *InstallDepsModule) Init() {
 		Name:  "InstallNvidiaDriver",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
 			&common.Skip{
 				Not: !m.KubeConf.Arg.WSL,
 			},
@@ -76,9 +62,6 @@ func (m *InstallDepsModule) Init() {
 	updateCudaSource := &task.RemoteTask{
 		Name:  "UpdateNvidiaToolkitSource",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-		},
 		Action: &UpdateCudaSource{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
@@ -90,11 +73,8 @@ func (m *InstallDepsModule) Init() {
 	}
 
 	installNvidiaContainerToolkit := &task.RemoteTask{
-		Name:  "InstallNvidiaToolkit",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-		},
+		Name:     "InstallNvidiaToolkit",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
 		Action:   new(InstallNvidiaContainerToolkit),
 		Parallel: false,
 		Retry:    1,
