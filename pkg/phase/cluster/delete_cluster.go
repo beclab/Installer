@@ -137,7 +137,7 @@ func (p *phaseBuilder) phaseMacos() {
 		&precheck.GetSysInfoModel{},
 	}
 	if p.convert() >= PhasePrepare {
-		p.modules = append(p.modules, &kubesphere.DeleteMinikubeModule{})
+		p.modules = append(p.modules, &kubesphere.DeleteMinikubeModule{}, &certs.UninstallCertsFilesModule{})
 	}
 	if p.convert() >= PhaseDownload && p.runtime.Arg.DeleteCache {
 		p.modules = append(p.modules, &kubesphere.DeleteCacheModule{})
