@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/tabwriter"
@@ -27,7 +28,9 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/certs/templates"
 	"bytetrade.io/web3os/installer/pkg/common"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -412,5 +415,17 @@ func (u *UninstallAutoRenewCerts) Execute(runtime connector.Runtime) error {
 		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, false)
 	}
 
+	return nil
+}
+
+type UninstallCertsFiles struct {
+	common.KubeAction
+}
+
+func (t *UninstallCertsFiles) Execute(runtime connector.Runtime) error {
+	var p = path.Join(runtime.GetBaseDir(), cc.Cli)
+	if util.IsExist(p) {
+		return util.RemoveDir(p)
+	}
 	return nil
 }

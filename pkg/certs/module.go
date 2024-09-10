@@ -214,3 +214,22 @@ func (u *UninstallAutoRenewCertsModule) Init() {
 		uninstall,
 	}
 }
+
+type UninstallCertsFilesModule struct {
+	common.KubeModule
+}
+
+func (m *UninstallCertsFilesModule) Init() {
+	m.Name = "UninstallCertsFilesModule"
+
+	uninstall := &task.RemoteTask{
+		Name:     "UninstallCertsFiles",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Action:   new(UninstallCertsFiles),
+		Parallel: true,
+	}
+
+	m.Tasks = []task.Interface{
+		uninstall,
+	}
+}
