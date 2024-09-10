@@ -62,7 +62,7 @@ type InstallCudaDeps struct {
 }
 
 func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
-	var fileId = fmt.Sprintf("%s-%s_cuda-keyring_%s",
+	var fileId = fmt.Sprintf("%s-%s_cuda-keyring_%s-1",
 		strings.ToLower(constants.OsPlatform), constants.OsVersion,
 		kubekeyapiv1alpha2.DefaultCudaKeyringVersion)
 
