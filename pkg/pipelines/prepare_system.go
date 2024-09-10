@@ -2,6 +2,8 @@ package pipelines
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -16,13 +18,15 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	}
 
 	var terminusVersion = opts.Version // utils.GetTerminusVersion(version)
+	var gpuEnable = strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1")
+	var gpuShare = strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1")
 
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetTerminusVersion(terminusVersion)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetProxy(opts.RegistryMirrors, opts.RegistryMirrors)
-	arg.SetGPU(true, true)
+	arg.SetGPU(gpuEnable, gpuShare)
 	arg.SetStorage(createStorage(opts))
 	arg.SetWSL(opts.WSL)
 
