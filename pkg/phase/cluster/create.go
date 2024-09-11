@@ -94,9 +94,6 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 			kubeModules = NewCreateClusterPhase(runtime, manifestMap)
 		}
 		kubeModules = append(kubeModules,
-			// &gpu.InstallDepsModule{Skip: !runtime.Arg.GPU.Enable},
-			// &gpu.RestartK3sServiceModule{Skip: !runtime.Arg.GPU.Enable},
-			// &gpu.RestartContainerdModule{Skip: !runtime.Arg.GPU.Enable},
 			&gpu.InstallPluginModule{Skip: !runtime.Arg.GPU.Enable},
 		)
 	}

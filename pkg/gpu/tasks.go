@@ -3,6 +3,7 @@ package gpu
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -183,43 +184,45 @@ type PatchK3sDriver struct { // patch k3s on wsl
 }
 
 func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
-	var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
-	driverPath, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
-	if err != nil {
-		return err
-	}
+	if t.KubeConf.Arg.WSL {
+		var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
+		driverPath, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
+		if err != nil {
+			return err
+		}
 
-	if driverPath == "" {
-		logger.Debugf("cuda driver not found")
-		return nil
-	} else {
-		logger.Debugf("cuda driver found: %s", driverPath)
-	}
+		if driverPath == "" {
+			logger.Debugf("cuda driver not found")
+			return nil
+		} else {
+			logger.Debugf("cuda driver found: %s", driverPath)
+		}
 
-	templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", k3sGpuTemplates.K3sCudaFixValues.Name()))
-	}
+		templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", k3sGpuTemplates.K3sCudaFixValues.Name()))
+		}
 
-	var fixName = "cuda_lib_fix.sh"
-	// var fixPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
-	var fixPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
-	if err := util.WriteFile(fixPath, []byte(templateStr), cc.FileMode0755); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fixPath))
-	}
+		var fixName = "cuda_lib_fix.sh"
+		// var fixPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
+		var fixPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
+		if err := util.WriteFile(fixPath, []byte(templateStr), cc.FileMode0755); err != nil {
+			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fixPath))
+		}
 
-	var dstName = path.Join(common.BinDir, fixName)
-	if err := runtime.GetRunner().SudoScp(fixPath, dstName); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fixPath, dstName))
-	}
+		var dstName = path.Join(common.BinDir, fixName)
+		if err := runtime.GetRunner().SudoScp(fixPath, dstName); err != nil {
+			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fixPath, dstName))
+		}
 
-	cmd = fmt.Sprintf("echo 'ExecStartPre=-/usr/local/bin/%s' >> /etc/systemd/system/k3s.service", fixName)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
-		return err
-	}
+		cmd = fmt.Sprintf("echo 'ExecStartPre=-/usr/local/bin/%s' >> /etc/systemd/system/k3s.service", fixName)
+		if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+			return err
+		}
 
-	if _, err := runtime.GetRunner().SudoCmdExt("systemctl daemon-reload", false, false); err != nil {
-		return err
+		if _, err := runtime.GetRunner().SudoCmdExt("systemctl daemon-reload", false, false); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -246,8 +249,13 @@ type InstallPlugin struct {
 
 func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
 	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	// var pluginFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvidia-device-plugin.yml")
-	var pluginFile = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "nvidia-device-plugin.yml")
+
+	var pluginPath = filepath.Dir(t.KubeConf.Arg.Manifest)
+	var pluginFile = path.Join(pluginPath, "deploy", "nvidia-device-plugin.yml")
+	if !util.IsExist(pluginFile) {
+		logger.Errorf("plugin file not exist: %s", pluginFile)
+		return nil
+	}
 	var cmd = fmt.Sprintf("%s create -f %s", kubectl, pluginFile)
 	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
 		return err
@@ -262,7 +270,7 @@ type CheckGpuStatus struct {
 
 func (t *CheckGpuStatus) Execute(runtime connector.Runtime) error {
 	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	cmd := fmt.Sprintf("%s get pod  -n gpu-system -l 'app=orionx-container-runtime' -o jsonpath='{.items[*].status.phase}'", kubectl)
+	cmd := fmt.Sprintf("%s get pod  -n kube-system -l 'name=nvidia-device-plugin-ds' -o jsonpath='{.items[*].status.phase}'", kubectl)
 
 	rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
 	if rphase == "Running" {
@@ -279,26 +287,23 @@ type InstallGPUShared struct {
 func (t *InstallGPUShared) Execute(runtime connector.Runtime) error {
 	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
 
-	// fileName := path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system.yaml")
-	fileName := path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system.yaml")
+	var pluginPath = filepath.Dir(t.KubeConf.Arg.Manifest)
+	var fileName = path.Join(pluginPath, "deploy", "nvshare-system.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 
-	// fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system-quotas.yaml")
-	fileName = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "nvshare-system-quotas.yaml")
+	fileName = path.Join(pluginPath, "deploy", "nvshare-system-quotas.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 
-	// fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "device-plugin.yaml")
-	fileName = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "device-plugin.yaml")
+	fileName = path.Join(pluginPath, "deploy", "device-plugin.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}
 
-	// fileName = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir, "scheduler.yaml")
-	fileName = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir, "scheduler.yaml")
+	fileName = path.Join(pluginPath, "deploy", "scheduler.yaml")
 	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
 		return err
 	}

@@ -51,7 +51,7 @@ func (m *InstallDepsModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			&common.Skip{
-				Not: !m.KubeConf.Arg.WSL,
+				Not: m.KubeConf.Arg.WSL,
 			},
 		},
 		Action:   new(InstallCudaDriver),
@@ -106,7 +106,6 @@ func (m *RestartK3sServiceModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			new(PatchWslK3s),
 		},
 		Action:   new(PatchK3sDriver),
 		Parallel: false,
@@ -133,9 +132,9 @@ func (m *RestartContainerdModule) Init() {
 	restartContainerd := &task.RemoteTask{
 		Name:  "RestartContainerd",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-		},
+		// Prepare: &prepare.PrepareCollection{
+		// 	new(common.OnlyFirstMaster),
+		// },
 		Action:   new(RestartContainerd),
 		Parallel: false,
 		Retry:    1,
