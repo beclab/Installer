@@ -35,7 +35,6 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
-	arg.SetWSL(opts.WSL)
 	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)
 	arg.SetGPU(gpuEnable, gpuShare)
 

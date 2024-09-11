@@ -57,7 +57,6 @@ type CliTerminusInstallOptions struct {
 	RegistryMirrors string
 	MiniKube        bool
 	MiniKubeProfile string
-	WSL             bool
 	BaseDir         string
 	Manifest        string
 }
@@ -73,7 +72,6 @@ func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
 	cmd.Flags().BoolVar(&o.MiniKube, "minikube", false, "MacOS platform requires setting minikube parameters, Default: false")
 	cmd.Flags().StringVar(&o.MiniKubeProfile, "profile", "", "Set minikube profile name")
-	cmd.Flags().BoolVar(&o.WSL, "wsl", false, "Windows platform requires setting WSL parameters, Default: false")
 	cmd.Flags().StringVar(&o.BaseDir, "base-dir", "", "Set pre-install package base dir , default value $HOME/.terminus")
 	cmd.Flags().StringVar(&o.Manifest, "manifest", "", "Set pre-install package manifest file , default value $HOME/.terminus/installation.manifest")
 }

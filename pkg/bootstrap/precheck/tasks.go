@@ -541,3 +541,13 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 
 	return nil
 }
+
+type RemoveChattr struct {
+	common.KubeAction
+}
+
+func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
+	runtime.GetRunner().SudoCmd("chattr -i /etc/hosts", false, true)
+	runtime.GetRunner().SudoCmd("chattr -i /etc/resolv.conf", false, true)
+	return nil
+}

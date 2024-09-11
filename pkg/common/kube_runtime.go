@@ -150,6 +150,7 @@ func NewArgument() *Argument {
 			StorageType: Minio,
 		},
 		GPU: &GPU{},
+		WSL: strings.Contains(constants.OsKernel, "-WSL"),
 	}
 }
 
@@ -202,10 +203,6 @@ func (a *Argument) SetMinikube(minikube bool, profile string) {
 	a.MinikubeProfile = profile
 }
 
-func (a *Argument) SetWSL(wsl bool) {
-	a.WSL = wsl
-}
-
 func (a *Argument) IsProxmox() bool {
 	return strings.Contains(constants.OsKernel, "-pve")
 }
@@ -246,9 +243,6 @@ func (a *Argument) SetManifest(manifest string) {
 func (a *Argument) ArgValidate() error {
 	if a.Minikube && constants.OsType != Darwin {
 		return fmt.Errorf("arch invalid, only support --minikube for macOS")
-	}
-	if a.WSL && !strings.Contains(constants.OsKernel, "WSL") {
-		return fmt.Errorf("arch invalid, only support --wsl for Windows")
 	}
 
 	return nil

@@ -28,7 +28,6 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	arg.SetProxy(opts.RegistryMirrors, opts.RegistryMirrors)
 	arg.SetGPU(gpuEnable, gpuShare)
 	arg.SetStorage(createStorage(opts))
-	arg.SetWSL(opts.WSL)
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {

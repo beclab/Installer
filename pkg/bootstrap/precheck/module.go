@@ -27,6 +27,26 @@ import (
 	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
+type RemoveChattrModule struct {
+	common.KubeModule
+}
+
+func (m *RemoveChattrModule) Init() {
+	m.Name = "RemoveChattr"
+
+	removeChattr := &task.RemoteTask{
+		Name:     "RemoveChattr",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Action:   new(RemoveChattr),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	m.Tasks = []task.Interface{
+		removeChattr,
+	}
+}
+
 type GetStorageKeyModule struct {
 	common.KubeModule
 }
