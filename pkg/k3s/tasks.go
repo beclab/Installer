@@ -225,6 +225,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"eviction-hard":   "memory.available<5%,nodefs.available<10%",
 		"config":          "/etc/rancher/k3s/kubelet.config",
 		"containerd":      container.DefaultContainerdCRISocket,
+		"cgroup-driver":   "systemd",
 	}
 	defaultKubeProxyArgs := map[string]string{
 		"proxy-mode": "ipvs",
@@ -249,13 +250,12 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"ClusterDns":        g.KubeConf.Cluster.CorednsClusterIP(),
 		"CertSANs":          g.KubeConf.Cluster.GenerateCertSANs(),
 		"PauseImage":        images.GetImage(runtime, g.KubeConf, "pause").ImageName(),
+		"Container":         fmt.Sprintf("unix://%s", container.DefaultContainerdCRISocket),
 		"ApiserverArgs":     kubeApiserverArgs,
 		"ControllerManager": kubeControllerManager,
 		"SchedulerArgs":     kubeSchedulerArgs,
 		"KubeletArgs":       kubeletArgs,
 		"KubeProxyArgs":     kubeProxyArgs,
-		"Container":         "--container-runtime-endpoint=unix:///run/containerd/containerd.sock",
-		"CgroupDriver":      "--kubelet-arg=cgroup-driver=systemd",
 	}
 
 	templateAction := action.Template{

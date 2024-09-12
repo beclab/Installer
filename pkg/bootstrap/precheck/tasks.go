@@ -67,13 +67,13 @@ func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 
-			_, err = runtime.GetRunner().SudoCmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, false)
+			_, err = runtime.GetRunner().SudoCmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().SudoCmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, false)
+			_, err = runtime.GetRunner().SudoCmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
