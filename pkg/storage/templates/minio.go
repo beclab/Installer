@@ -22,8 +22,8 @@ Group=minio
 ProtectProc=invisible
 
 EnvironmentFile=-/etc/default/minio
-ExecStartPre=/bin/bash -c "if [ -z \"\${MINIO_VOLUMES}\" ]; then echo \"Variable MINIO_VOLUMES not set in /etc/default/minio\"; exit 1; fi"
-ExecStart={{ .MinioCommand }} server \$MINIO_OPTS \$MINIO_VOLUMES
+ExecStartPre=/bin/bash -c "if [ -z \"${MINIO_VOLUMES}\" ]; then echo \"Variable MINIO_VOLUMES not set in /etc/default/minio\"; exit 1; fi"
+ExecStart={{ .MinioCommand }} server $MINIO_OPTS $MINIO_VOLUMES
 
 # MinIO RELEASE.2023-05-04T21-44-30Z adds support for Type=notify (https://www.freedesktop.org/software/systemd/man/systemd.service.html#Type=)
 # This may improve systemctl setups where other services use After=minio.server
