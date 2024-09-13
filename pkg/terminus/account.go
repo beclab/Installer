@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -14,18 +15,17 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	accounttemplates "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
-	"github.com/pkg/errors"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type UpdateAccountValues struct {
-	common.KubePrepare
+	common.KubeAction
 }
 
-func (p *UpdateAccountValues) PreCheck(runtime connector.Runtime) (bool, error) {
-	// var accountFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account", accounttemplates.AccountValues.Name())
-	var accountFile = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account", accounttemplates.AccountValues.Name())
+func (p *UpdateAccountValues) Execute(runtime connector.Runtime) error {
+	var installPath = filepath.Dir(p.KubeConf.Arg.Manifest)
+	var accountFile = path.Join(installPath, "wizard", "config", "account", accounttemplates.AccountValues.Name())
 	var data = util.Data{
 		"UserName":   p.KubeConf.Arg.User.UserName,
 		"Password":   p.KubeConf.Arg.User.Password,
@@ -35,14 +35,14 @@ func (p *UpdateAccountValues) PreCheck(runtime connector.Runtime) (bool, error) 
 
 	accountStr, err := util.Render(accounttemplates.AccountValues, data)
 	if err != nil {
-		return false, errors.Wrap(errors.WithStack(err), "render account template failed")
+		return err
 	}
 
 	if err := util.WriteFile(accountFile, []byte(accountStr), cc.FileMode0644); err != nil {
-		return false, errors.Wrap(errors.WithStack(err), fmt.Sprintf("write account %s failed", accountFile))
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 type InstallAccount struct {
@@ -62,8 +62,9 @@ func (t *InstallAccount) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	// var accountPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account")
-	var accountPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "account")
+	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)
+	var accountPath = path.Join(installPath, "wizard", "config", "account")
+
 	if !util.IsExist(accountPath) {
 		return fmt.Errorf("account not exists")
 	}

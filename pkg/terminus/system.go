@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -45,11 +45,11 @@ func (t *CheckCitusState) Execute(runtime connector.Runtime) error {
 	return fmt.Errorf("Citus State is Pending")
 }
 
-type InstallOsSystemPrepare struct {
+type InstallSystemPrepare struct {
 	common.KubePrepare
 }
 
-func (p *InstallOsSystemPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
+func (p *InstallSystemPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
 	kubectlpath, _ := p.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
 	if kubectlpath == "" {
 		kubectlpath, err := util.GetCommand(common.CommandKubectl)
@@ -76,11 +76,11 @@ func (p *InstallOsSystemPrepare) PreCheck(runtime connector.Runtime) (bool, erro
 	return true, nil
 }
 
-type InstallOsSystem struct {
+type InstallSystem struct {
 	common.KubeAction
 }
 
-func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
+func (t *InstallSystem) Execute(runtime connector.Runtime) error {
 	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheRedisPassword)
 
 	config, err := ctrl.GetConfig()
@@ -95,8 +95,8 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	// var osPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "system")
-	var osPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "system")
+	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)
+	var systemPath = path.Join(runtime.GetBaseDir(), installPath, "wizard", "config", "system")
 	var gpuType = getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share)
 	var storageDomain = getBucket(t.KubeConf.Arg.Storage.StorageDomain) // s3_bucket=${S3_BUCKET}
 	var storageBucket = t.KubeConf.Arg.Storage.StorageBucket
@@ -118,7 +118,7 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 	parms["force"] = true
 	parms["set"] = sets
 
-	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameAccount, osPath, "", common.NamespaceOsSystem, parms, false); err != nil {
+	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameAccount, systemPath, "", common.NamespaceOsSystem, parms, false); err != nil {
 		return err
 	}
 
@@ -132,11 +132,11 @@ type InstallOsModule struct {
 func (m *InstallOsModule) Init() {
 	m.Name = "InstallOsSystem"
 
-	installOsSystem := &task.RemoteTask{
+	installSystem := &task.RemoteTask{
 		Name:     "InstallOsSystem",
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
 		Prepare:  new(common.IsMaster),
-		Action:   &InstallOsSystem{},
+		Action:   &InstallSystem{},
 		Parallel: false,
 		Retry:    1,
 	}
@@ -162,7 +162,7 @@ func (m *InstallOsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		installOsSystem,
+		installSystem,
 		checkAppServiceState,
 		checkCitusState,
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -22,8 +23,8 @@ type UpdateSettingsValuePrepare struct {
 }
 
 func (p *UpdateSettingsValuePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
-	// var settingsFile = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
-	var settingsFile = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
+	var installPath = filepath.Dir(p.KubeConf.Arg.Manifest)
+	var settingsFile = path.Join(installPath, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
 	var data = util.Data{}
 
 	settingsStr, err := util.Render(settingstemplates.SettingsValue, data)
@@ -55,8 +56,8 @@ func (t *InstallSettings) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	// var settingsPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings")
-	var settingsPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "settings")
+	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)
+	var settingsPath = path.Join(runtime.GetBaseDir(), installPath, "wizard", "config", "settings")
 	if !util.IsExist(settingsPath) {
 		return fmt.Errorf("settings not exists")
 	}
