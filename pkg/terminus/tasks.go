@@ -149,6 +149,7 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
 		"Phase":   "install",
+		"Version": t.KubeConf.Arg.TerminusVersion,
 	}
 
 	uninstallScriptStr, err := util.Render(uninstalltemplate.TerminusUninstallScriptValues, data)

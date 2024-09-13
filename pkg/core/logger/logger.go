@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"go.uber.org/zap"
@@ -39,8 +40,8 @@ func InitLog(logDir string) {
 		}
 	}
 
-	p := path.Join(logDir, "terminus_install.log")
-	file, err := os.OpenFile(p, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
+	logName := path.Join(logDir, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
+	file, err := os.OpenFile(logName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
 	if err != nil {
 		panic(err)
 	}

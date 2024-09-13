@@ -64,7 +64,6 @@ func (h *Handler) handlerInstall(req *restful.Request, resp *restful.Response) {
 		SKipPushImages:   false,
 		ContainerManager: common.Containerd,
 		RegistryMirrors:  GetEnv("REGISTRY_MIRRORS", reqModel.Config.RegistryMirrors),
-		Proxy:            GetEnv("PROXY", reqModel.Config.Proxy),
 	}
 
 	switch reqModel.Config.KubeType {

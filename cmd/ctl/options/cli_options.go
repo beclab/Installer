@@ -53,7 +53,6 @@ func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
 type CliTerminusInstallOptions struct {
 	Version         string
 	KubeType        string
-	Proxy           string
 	RegistryMirrors string
 	MiniKube        bool
 	MiniKubeProfile string
@@ -68,7 +67,6 @@ func NewCliTerminusInstallOptions() *CliTerminusInstallOptions {
 func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.Version, "version", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
 	cmd.Flags().StringVar(&o.KubeType, "kube", "k3s", "Set kube type, e.g., k3s or k8s")
-	cmd.Flags().StringVar(&o.Proxy, "proxy", "", "Set proxy address, e.g., 192.168.50.32 or your-proxy-domain")
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
 	cmd.Flags().BoolVar(&o.MiniKube, "minikube", false, "MacOS platform requires setting minikube parameters, Default: false")
 	cmd.Flags().StringVar(&o.MiniKubeProfile, "profile", "", "Set minikube profile name")
@@ -91,7 +89,6 @@ type CliPrepareSystemOptions struct {
 	StorageToken      string // only for juicefs
 	StorageClusterId  string
 	StorageSyncSecret string // backup.sync_secret --> env.BACKUP_SECRET, only for cloud
-	WSL               bool
 	Minikube          bool
 	MinikubeProfile   string
 }
@@ -115,7 +112,6 @@ func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.StorageToken, "storage-token", "", "This parameter needs to be set when the storage-type is S3")
 	cmd.Flags().StringVar(&o.StorageClusterId, "cluster-id", "", "")
 	cmd.Flags().StringVar(&o.StorageSyncSecret, "sync-secret", "", "")
-	cmd.Flags().BoolVar(&o.WSL, "wsl", false, "Windows platform requires setting WSL parameters, Default: false")
 	cmd.Flags().BoolVar(&o.Minikube, "minikube", false, "MacOS platform requires setting Minikube parameters, Default: false")
 	cmd.Flags().StringVar(&o.MinikubeProfile, "profile", "", "MacOS platform requires setting Minikube Profile parameters")
 }

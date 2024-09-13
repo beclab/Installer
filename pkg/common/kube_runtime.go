@@ -67,11 +67,8 @@ type Argument struct {
 	Kubetype         string
 
 	// Extra args
-	ExtraAddon string // addon yaml config
-
-	// Registry mirrors
+	ExtraAddon      string // addon yaml config
 	RegistryMirrors string
-	Proxy           string
 
 	// master node ssh config
 	MasterHost              string
@@ -149,7 +146,10 @@ func NewArgument() *Argument {
 		Storage: &Storage{
 			StorageType: Minio,
 		},
-		GPU: &GPU{},
+		GPU: &GPU{
+			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
+			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
+		},
 		WSL: strings.Contains(constants.OsKernel, "-WSL"),
 	}
 }
@@ -181,8 +181,7 @@ func (a *Argument) SetTerminusVersion(version string) {
 	a.TerminusVersion = version
 }
 
-func (a *Argument) SetProxy(proxy string, registryMirrors string) {
-	a.Proxy = proxy
+func (a *Argument) SetRegistryMirrors(registryMirrors string) {
 	a.RegistryMirrors = registryMirrors
 }
 

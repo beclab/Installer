@@ -2,8 +2,6 @@ package pipelines
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -17,16 +15,11 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 		return fmt.Errorf("Kubernetes %s is already installed", ksVersion)
 	}
 
-	var terminusVersion = opts.Version // utils.GetTerminusVersion(version)
-	var gpuEnable = strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1")
-	var gpuShare = strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1")
-
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
-	arg.SetTerminusVersion(terminusVersion)
+	arg.SetTerminusVersion(opts.Version)
 	arg.SetKubernetesVersion(opts.KubeType, "")
-	arg.SetProxy(opts.RegistryMirrors, opts.RegistryMirrors)
-	arg.SetGPU(gpuEnable, gpuShare)
+	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(createStorage(opts))
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
@@ -40,12 +33,6 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 		manifest = home + "/.terminus/installation.manifest"
 	}
 
-	// baseDir := opts.BaseDir
-	// if baseDir == "" {
-	// 	baseDir = home + "/.terminus"
-	// }
-
-	// runtime.Arg.SetBaseDir(baseDir)
 	runtime.Arg.SetManifest(manifest)
 
 	var p = system.PrepareSystemPhase(runtime)

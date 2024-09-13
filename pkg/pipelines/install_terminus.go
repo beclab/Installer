@@ -4,9 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	ctrl "bytetrade.io/web3os/installer/controllers"
@@ -27,16 +25,12 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 		}
 	}
 
-	var gpuEnable = strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1")
-	var gpuShare = strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1")
-
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
-	arg.SetProxy(opts.Proxy, opts.RegistryMirrors)
-	arg.SetGPU(gpuEnable, gpuShare)
+	arg.SetRegistryMirrors(opts.RegistryMirrors)
 
 	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
 		return err
