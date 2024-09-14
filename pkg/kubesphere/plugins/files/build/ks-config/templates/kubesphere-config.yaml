@@ -14,7 +14,7 @@ data:
       kubectlImage: kubesphere/kubectl:v1.22.0
       jwtSecret: "{{ .Values.Release.JwtSecret }}"
       oauthOptions:
-        accessTokenMaxAge: 1209600000000000
+        accessTokenMaxAge: 31536000000000000
         clients:
         - name: kubesphere
           secret: kubesphere
