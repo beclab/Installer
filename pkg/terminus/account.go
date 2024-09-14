@@ -10,7 +10,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	accounttemplates "bytetrade.io/web3os/installer/pkg/terminus/templates"
@@ -92,12 +91,8 @@ func (m *InstallAccountModule) Init() {
 	m.Name = "InstallAccount"
 
 	installAccount := &task.RemoteTask{
-		Name:  "InstallAccount",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.IsMaster),
-			new(UpdateAccountValues),
-		},
+		Name:     "InstallAccount",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
 		Action:   &InstallAccount{},
 		Parallel: false,
 		Retry:    1,

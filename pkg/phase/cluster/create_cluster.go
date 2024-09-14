@@ -27,6 +27,7 @@ import (
 func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.InstallationManifest) []module.Module {
 	m := []module.Module{
 		&kubesphere.CheckMacOsCommandModule{},
+		&ksplugins.CopyEmbed{},
 		&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
