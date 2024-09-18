@@ -32,11 +32,11 @@ func NewRPM() Interface {
 }
 
 func (r *RedhatPackageManager) Backup(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("mv /etc/yum.repos.d /etc/yum.repos.d.kubekey.bak", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("mv /etc/yum.repos.d /etc/yum.repos.d.kubekey.bak", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("mkdir -p /etc/yum.repos.d", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("mkdir -p /etc/yum.repos.d", false, false); err != nil {
 		return err
 	}
 	r.backup = true
@@ -52,7 +52,7 @@ func (r *RedhatPackageManager) Add(runtime connector.Runtime, path string) error
 		return fmt.Errorf("linux repository must be backuped before")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("rm -rf /etc/yum.repos.d/*", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("rm -rf /etc/yum.repos.d/*", false, false); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 EOF
 `, path)
-	if _, err := runtime.GetRunner().SudoCmd(content, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(content, false, false); err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ EOF
 }
 
 func (r *RedhatPackageManager) Update(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("yum clean all && yum makecache", true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("yum clean all && yum makecache", true, false); err != nil {
 		return err
 	}
 	return nil
@@ -91,18 +91,18 @@ func (r *RedhatPackageManager) Install(runtime connector.Runtime, pkg ...string)
 	}
 
 	str := strings.Join(pkg, " ")
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("yum install -y %s", str), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("yum install -y %s", str), true, false); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (r *RedhatPackageManager) Reset(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("rm -rf /etc/yum.repos.d", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("rm -rf /etc/yum.repos.d", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("mv /etc/yum.repos.d.kubekey.bak /etc/yum.repos.d", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("mv /etc/yum.repos.d.kubekey.bak /etc/yum.repos.d", false, false); err != nil {
 		return err
 	}
 

@@ -46,7 +46,7 @@ func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 	hostname := strings.ToLower(constants.HostName)
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
 		return err
 	}
 	constants.HostName = hostname
@@ -61,19 +61,19 @@ func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 	// if util.IsExist(common.RaspbianCmdlineFile) || util.IsExist(common.RaspbianFirmwareFile) {
 	if constants.OsPlatform == common.Raspbian {
 		if _, err := util.GetCommand(common.CommandIptables); err != nil {
-			_, err = runtime.GetRunner().SudoCmd("apt install -y iptables", false, false)
+			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
 			if err != nil {
 				logger.Errorf("%s install iptables error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
+			_, err = runtime.GetRunner().Host.Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
+			_, err = runtime.GetRunner().Host.Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
@@ -100,7 +100,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 			_, _ = runtime.GetRunner().SudoCmdExt("systemctl disable systemd-resolved.service", false, true)
 
 			if utils.IsExist("/usr/bin/systemd-resolve") {
-				_, _ = runtime.GetRunner().SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
+				_, _ = runtime.GetRunner().Host.SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
 			}
 			ok, err := utils.IsSymLink("/etc/resolv.conf")
 			if err != nil {
@@ -108,7 +108,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 			if ok {
-				if _, err := runtime.GetRunner().SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
+				if _, err := runtime.GetRunner().Host.SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
 					logger.Errorf("unlink /etc/resolv.conf error %v", err)
 					return err
 				}
@@ -119,15 +119,15 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		} else {
-			if _, err := runtime.GetRunner().SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
 				logger.Errorf("backup /etc/resolv.conf error %v", err)
 				return err
 			}
 		}
 	}
 
-	if stdout, _ := runtime.GetRunner().SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", constants.LocalIp, constants.HostName), false, true); err != nil {
+	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", constants.LocalIp, constants.HostName), false, true); err != nil {
 			return err
 		}
 	}
@@ -155,20 +155,20 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 
 	if constants.CloudVendor == common.AliYun {
 		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
-		if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("exec %s error %v", cmd, err)
 			return err
 		}
 	}
 
 	cmd = `echo "nameserver 1.0.0.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
 
 	cmd = `echo "nameserver 1.1.1.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
@@ -291,24 +291,24 @@ func (g *GetKubeConfig) Execute(runtime connector.Runtime) error {
 				return err
 			} else {
 				if exist {
-					if _, err := runtime.GetRunner().Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
+					if _, err := runtime.GetRunner().Host.Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
 						return err
 					}
-					if _, err := runtime.GetRunner().SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
+					if _, err := runtime.GetRunner().Host.SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
 						return err
 					}
-					userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+					userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
 					if err != nil {
 						return errors.Wrap(errors.WithStack(err), "get user id failed")
 					}
 
-					userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+					userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
 					if err != nil {
 						return errors.Wrap(errors.WithStack(err), "get user group id failed")
 					}
 
 					chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
-					if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
+					if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
 						return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
 					}
 				}
@@ -324,7 +324,7 @@ type GetAllNodesK8sVersion struct {
 
 func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 	var nodeK8sVersion string
-	kubeletVersionInfo, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubelet --version", false, false)
+	kubeletVersionInfo, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubelet --version", false, false)
 	if err != nil {
 		return errors.Wrap(err, "get current kubelet version failed")
 	}
@@ -332,7 +332,7 @@ func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 
 	host := runtime.RemoteHost()
 	if host.IsRole(common.Master) {
-		apiserverVersion, err := runtime.GetRunner().SudoCmd(
+		apiserverVersion, err := runtime.GetRunner().Host.SudoCmd(
 			"cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'image:' | rev | cut -d ':' -f1 | rev",
 			false, false)
 		if err != nil {
@@ -390,7 +390,7 @@ type KsVersionCheck struct {
 }
 
 func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
-	ksVersionStr, err := runtime.GetRunner().SudoCmd(
+	ksVersionStr, err := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get deploy -n  kubesphere-system ks-console -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if err != nil {
@@ -401,7 +401,7 @@ func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	ccKsVersionStr, ccErr := runtime.GetRunner().SudoCmd(
+	ccKsVersionStr, ccErr := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get ClusterConfiguration ks-installer -n  kubesphere-system  -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if ccErr == nil && ksVersionStr == "v3.1.0" {
@@ -467,13 +467,13 @@ type GetKubernetesNodesStatus struct {
 }
 
 func (g *GetKubernetesNodesStatus) Execute(runtime connector.Runtime) error {
-	nodeStatus, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
+	nodeStatus, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
 	if err != nil {
 		return err
 	}
 	g.PipelineCache.Set(common.ClusterNodeStatus, nodeStatus)
 
-	cri, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
+	cri, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
 	if err != nil {
 		return err
 	}
@@ -547,7 +547,7 @@ type RemoveChattr struct {
 }
 
 func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
-	runtime.GetRunner().SudoCmd("chattr -i /etc/hosts", false, true)
-	runtime.GetRunner().SudoCmd("chattr -i /etc/resolv.conf", false, true)
+	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/hosts", false, true)
+	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/resolv.conf", false, true)
 	return nil
 }

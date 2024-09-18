@@ -108,7 +108,6 @@ type Host interface {
 	GetCache() *cache.Cache
 	SetCache(c *cache.Cache)
 
-	Echo()
 	Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
 	ExecExt(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
 	Fetch(local, remote string, printOutput bool, printLine bool) error
@@ -117,6 +116,7 @@ type Host interface {
 	DirExist(remote string) (bool, error)
 	Cmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExt(cmd string, printOutput bool, printLine bool) (string, error)
+	SudoCmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	MkDirAll(path string, mode string) error
 }

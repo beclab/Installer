@@ -18,25 +18,25 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-type UpdateSettingsValuePrepare struct {
-	common.KubePrepare
+type SetSettingsValues struct {
+	common.KubeAction
 }
 
-func (p *UpdateSettingsValuePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
+func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 	var installPath = filepath.Dir(p.KubeConf.Arg.Manifest)
 	var settingsFile = path.Join(installPath, "wizard", "config", "settings", settingstemplates.SettingsValue.Name())
 	var data = util.Data{}
 
 	settingsStr, err := util.Render(settingstemplates.SettingsValue, data)
 	if err != nil {
-		return false, errors.Wrap(errors.WithStack(err), "render settings template failed")
+		return errors.Wrap(errors.WithStack(err), "render settings template failed")
 	}
 
 	if err := util.WriteFile(settingsFile, []byte(settingsStr), cc.FileMode0644); err != nil {
-		return false, errors.Wrap(errors.WithStack(err), fmt.Sprintf("write settings %s failed", settingsFile))
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write settings %s failed", settingsFile))
 	}
 
-	return true, nil
+	return nil
 }
 
 type InstallSettings struct {
@@ -81,7 +81,6 @@ func (m *InstallSettingsModule) Init() {
 	installSettings := &task.RemoteTask{
 		Name:     "InstallAccount",
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Prepare:  new(common.IsMaster),
 		Action:   &InstallSettings{},
 		Parallel: false,
 		Retry:    1,

@@ -35,7 +35,7 @@ type GetCommandKubectl struct {
 
 func (p *GetCommandKubectl) PreCheck(runtime connector.Runtime) (bool, error) {
 
-	cmd, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("command -v %s", CommandKubectl), false, false)
+	cmd, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("command -v %s", CommandKubectl), false, false)
 	if err != nil {
 		return true, nil
 	}
@@ -64,7 +64,7 @@ func (p *GetMasterNum) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	var cmd = fmt.Sprintf("%s get node | awk '{if(NR>1){print $3}}' | grep master | wc -l", kubectlpath)
-	var stdout, err = runtime.GetRunner().SudoCmd(cmd, false, false)
+	var stdout, err = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get master num failed")
 	}
@@ -87,7 +87,7 @@ func (p *GetNodeNum) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	var cmd = fmt.Sprintf("%s get node | wc -l", kubectlpath)
-	var stdout, err = runtime.GetRunner().SudoCmd(cmd, false, false)
+	var stdout, err = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get node num failed")
 	}

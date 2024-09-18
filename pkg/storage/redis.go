@@ -25,7 +25,7 @@ type CheckRedisServiceState struct {
 func (t *CheckRedisServiceState) Execute(runtime connector.Runtime) error {
 	var rpwd, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 	var cmd = fmt.Sprintf("%s -h %s -a %s ping", RedisCliFile, constants.LocalIp, rpwd)
-	if pong, _ := runtime.GetRunner().SudoCmd(cmd, false, false); !strings.Contains(pong, "PONG") {
+	if pong, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false); !strings.Contains(pong, "PONG") {
 		return fmt.Errorf("failed to connect redis server: %s:6379", constants.LocalIp)
 	}
 
@@ -37,26 +37,26 @@ type EnableRedisService struct {
 }
 
 func (t *EnableRedisService) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmdExt("sysctl -w vm.overcommit_memory=1 net.core.somaxconn=10240", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("sysctl -w vm.overcommit_memory=1 net.core.somaxconn=10240", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt("systemctl daemon-reload", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt("systemctl restart redis-server", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl restart redis-server", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt("systemctl enable redis-server", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable redis-server", false, false); err != nil {
 		return err
 	}
 
 	var cmd = "( sleep 10 && systemctl --no-pager status redis-server ) || ( systemctl restart redis-server && sleep 3 && systemctl --no-pager status redis-server ) || ( systemctl restart redis-server && sleep 3 && systemctl --no-pager status redis-server )"
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
 
 	cmd = fmt.Sprintf("awk '/requirepass/{print \\$NF}' %s", RedisConfigFile)
-	rpwd, _ := runtime.GetRunner().SudoCmd(cmd, false, false)
+	rpwd, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if rpwd == "" {
 		return fmt.Errorf("get redis password failed")
 	}
@@ -139,23 +139,23 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 
 	path := redis.FilePath(t.BaseDir)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf /tmp/redis-* && cp -f %s /tmp/%s && cd /tmp && tar xf ./%s", path, redis.Filename, redis.Filename), false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf /tmp/redis-* && cp -f %s /tmp/%s && cd /tmp && tar xf ./%s", path, redis.Filename, redis.Filename), false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "untar redis failed")
 	}
 
 	unpackPath := strings.TrimSuffix(redis.Filename, ".tar.gz")
 	var cmd = fmt.Sprintf("cd /tmp/%s && cp ./* /usr/local/bin/ && rm -rf ./%s",
 		unpackPath, unpackPath)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
 	// if _, err := runtime.GetRunner().SudoCmdExt("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
 	// 	return err
 	// }
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisServerFile, RedisServerInstalledFile, RedisServerFile), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisServerFile, RedisServerInstalledFile, RedisServerFile), false, true); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisCliFile, RedisCliInstalledFile, RedisCliFile), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisCliFile, RedisCliInstalledFile, RedisCliFile), false, true); err != nil {
 		return err
 	}
 

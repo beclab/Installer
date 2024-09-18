@@ -69,7 +69,7 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 			kubectlpath,
 			common.NamespaceKubesphereSystem, common.ChartNameRedis)
 
-		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("failed to backup %s svc: %v", common.ChartNameRedis, err)
 			return errors.Wrap(errors.WithStack(err), "backup redis svc failed")
 		}
@@ -129,7 +129,7 @@ func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
 		time.Now().Format("2006-01-02T15:04:05Z"))
 	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
 
-	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
+	_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch redis status failed")
 	}

@@ -1,9 +1,11 @@
 package terminus
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -178,5 +180,28 @@ func (t *GenerateInstalledPhaseState) Execute(runtime connector.Runtime) error {
 	if err := util.WriteFile(phaseState, nil, cc.FileMode0644); err != nil {
 		return err
 	}
+	return nil
+}
+
+type CheckAllServicesRunning struct {
+	common.KubeAction
+	services map[string]string
+}
+
+func (t *CheckAllServicesRunning) Execute(runtime connector.Runtime) error {
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	for ns, label := range t.services {
+		if phase, _ := runtime.GetRunner().SudoCmdExtWithContext(ctx, fmt.Sprintf("%s get pods -n %s -l '%s' -o jsonpath='{.items[*].status.phase}'", kubectlpath, ns, label), false, true); phase != "Running" {
+			return fmt.Errorf("service %s(%s) is not running, waiting ...", label, phase)
+		}
+	}
+
 	return nil
 }

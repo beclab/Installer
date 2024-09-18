@@ -110,7 +110,7 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 	path := juicefs.FilePath(t.BaseDir)
 
 	var cmd = fmt.Sprintf("rm -rf /tmp/juicefs* && cp -f %s /tmp/%s && cd /tmp && tar -zxf ./%s && chmod +x juicefs && install juicefs /usr/local/bin && install juicefs /sbin/mount.juicefs && rm -rf ./LICENSE ./README.md ./README_CN.md ./juicefs*", path, juicefs.Filename, juicefs.Filename)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
@@ -120,7 +120,7 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 	cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
 	cmd = cmd + storageStr
 
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
@@ -149,15 +149,15 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write juicefs service %s failed", JuiceFsServiceFile))
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("systemctl restart juicefs", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl restart juicefs", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("systemctl enable juicefs", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable juicefs", false, false); err != nil {
 		return err
 	}
 
@@ -169,11 +169,11 @@ type CheckJuiceFsState struct {
 }
 
 func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("systemctl --no-pager -n 0 status juicefs", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl --no-pager -n 0 status juicefs", false, false); err != nil {
 		return fmt.Errorf("JuiceFs Pending")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("test -d %s/.trash", JuiceFsMountPointDir), false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("test -d %s/.trash", JuiceFsMountPointDir), false, false); err != nil {
 		return err
 	}
 

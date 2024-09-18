@@ -37,7 +37,7 @@ func (g *InstallTerminusdBinary) Execute(runtime connector.Runtime) error {
 	}
 
 	installCmd := fmt.Sprintf("tar -zxf %s && cp -f terminusd /usr/local/bin/ && chmod +x /usr/local/bin/terminusd && rm -rf terminusd*", dst)
-	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install terminusd binaries failed")
 	}
 	return nil
@@ -91,7 +91,7 @@ type EnableTerminusdService struct {
 }
 
 func (e *EnableTerminusdService) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("systemctl enable --now terminusd",
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable --now terminusd",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "enable terminusd failed")
 	}

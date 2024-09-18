@@ -20,7 +20,7 @@ func (p *CheckDepsPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
 		return false, nil
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("command -v %s", p.Command), false, false); err == nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("command -v %s", p.Command), false, false); err == nil {
 		return false, nil
 	}
 

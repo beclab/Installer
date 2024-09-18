@@ -52,7 +52,7 @@ func (k *K3sStatus) SearchVersion(runtime connector.Runtime) error {
 
 func (k *K3sStatus) SearchKubeConfig(runtime connector.Runtime) error {
 	kubeCfgCmd := "cat /etc/rancher/k3s/k3s.yaml"
-	if kubeConfigStr, err := runtime.GetRunner().SudoCmd(kubeCfgCmd, false, false); err != nil {
+	if kubeConfigStr, err := runtime.GetRunner().Host.SudoCmd(kubeCfgCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "search cluster kubeconfig failed")
 	} else {
 		k.KubeConfig = kubeConfigStr
@@ -62,7 +62,7 @@ func (k *K3sStatus) SearchKubeConfig(runtime connector.Runtime) error {
 
 func (k *K3sStatus) SearchNodeToken(runtime connector.Runtime) error {
 	nodeTokenBase64Cmd := "cat /var/lib/rancher/k3s/server/node-token"
-	output, err := runtime.GetRunner().SudoCmd(nodeTokenBase64Cmd, true, false)
+	output, err := runtime.GetRunner().Host.SudoCmd(nodeTokenBase64Cmd, true, false)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get cluster node token failed")
 	}
@@ -71,7 +71,7 @@ func (k *K3sStatus) SearchNodeToken(runtime connector.Runtime) error {
 }
 
 func (k *K3sStatus) SearchInfo(runtime connector.Runtime) error {
-	output, err := runtime.GetRunner().SudoCmd(
+	output, err := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl --no-headers=true get nodes -o custom-columns=:metadata.name,:status.nodeInfo.kubeletVersion,:status.addresses",
 		true, false)
 	if err != nil {

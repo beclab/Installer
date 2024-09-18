@@ -45,44 +45,11 @@ func (t *CheckCitusState) Execute(runtime connector.Runtime) error {
 	return fmt.Errorf("Citus State is Pending")
 }
 
-type InstallSystemPrepare struct {
-	common.KubePrepare
-}
-
-func (p *InstallSystemPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
-	kubectlpath, _ := p.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath, err := util.GetCommand(common.CommandKubectl)
-		if err != nil {
-			return false, fmt.Errorf("kubectl not found")
-		}
-
-		p.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
-	}
-
-	redisPwd, _ := p.PipelineCache.GetMustString(common.CacheRedisPassword)
-	if redisPwd == "" {
-		var cmd = fmt.Sprintf("%s get secret -n kubesphere-system redis-secret -o jsonpath='{.data.auth}' |base64 -d", kubectlpath)
-		stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
-		if err != nil {
-			return false, err
-		}
-		if stdout == "" {
-			return false, fmt.Errorf("redis secret not exists")
-		}
-		p.PipelineCache.Set(common.CacheRedisPassword, stdout)
-	}
-
-	return true, nil
-}
-
 type InstallSystem struct {
 	common.KubeAction
 }
 
 func (t *InstallSystem) Execute(runtime connector.Runtime) error {
-	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheRedisPassword)
-
 	config, err := ctrl.GetConfig()
 	if err != nil {
 		return err
@@ -90,6 +57,18 @@ func (t *InstallSystem) Execute(runtime connector.Runtime) error {
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceOsSystem)
 	if err != nil {
 		return err
+	}
+
+	redisPassword, err := getRedisPassword(runtime)
+	if err != nil {
+		return err
+	}
+
+	sharedLib := "/terminus/share"
+	if !util.IsExist(sharedLib) {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", sharedLib, sharedLib), false, false); err != nil {
+			return err
+		}
 	}
 
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
@@ -114,6 +93,7 @@ func (t *InstallSystem) Execute(runtime connector.Runtime) error {
 	sets["backup.sync_secret"] = storageSyncSecret
 	sets["gpu"] = gpuType
 	sets["s3_bucket"] = storageDomain
+	sets["sharedlib"] = sharedLib
 	sets["fs_type"] = fsType
 	parms["force"] = true
 	parms["set"] = sets
@@ -204,4 +184,22 @@ func getFsType(wsl bool) string {
 		return "fs"
 	}
 	return "jfs"
+}
+
+func getRedisPassword(runtime connector.Runtime) (string, error) {
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return "", fmt.Errorf("kubectl not found")
+	}
+
+	var cmd = fmt.Sprintf("%s get secret -n kubesphere-system redis-secret -o jsonpath='{.data.auth}' |base64 -d", kubectlpath)
+	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	if err != nil {
+		return "", err
+	}
+	if stdout == "" {
+		return "", fmt.Errorf("redis secret not exists")
+	}
+
+	return stdout, nil
 }

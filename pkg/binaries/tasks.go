@@ -37,7 +37,7 @@ func (t *InstallAppArmorTask) Execute(runtime connector.Runtime) error {
 		logger.Fatal("failed to download apparmor: %v", err)
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("dpkg -i %s", fileName), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("dpkg -i %s", fileName), false, true); err != nil {
 		logger.Errorf("failed to install apparmor: %v", err)
 		return err
 	}

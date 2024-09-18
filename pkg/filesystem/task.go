@@ -49,7 +49,7 @@ func (c *ChownFileAndDir) Execute(runtime connector.Runtime) error {
 		}
 
 		chownKubeConfig := fmt.Sprintf("chown -R %s:%s %s", userId, userGroupId, c.Path)
-		if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
 			return errors.Wrapf(errors.WithStack(err), "chown user %s failed", c.Path)
 		}
 	}

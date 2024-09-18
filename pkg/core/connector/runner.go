@@ -121,7 +121,7 @@ func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOut
 		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
 		stdout, err = r.Host.CmdExtWithContext(ctx, cmd, printOutput, printLine)
 	} else {
-		stdout, _, err = r.Host.Exec(SudoPrefix(cmd), printOutput, printLine)
+		stdout, err = r.Host.CmdExtWithContext(ctx, SudoPrefix(cmd), printOutput, printLine)
 		// stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
 	}
 

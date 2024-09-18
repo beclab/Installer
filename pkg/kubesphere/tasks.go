@@ -109,7 +109,7 @@ func (a *AddInstallerConfig) Execute(runtime connector.Runtime) error {
 		ksFilename = "/etc/kubernetes/addons/kubesphere.yaml"
 	}
 	configurationBase64 := base64.StdEncoding.EncodeToString([]byte(a.KubeConf.Cluster.KubeSphere.Configurations))
-	if _, err := runtime.GetRunner().SudoCmd(
+	if _, err := runtime.GetRunner().Host.SudoCmd(
 		fmt.Sprintf("echo %s | base64 -d >> %s", configurationBase64, ksFilename),
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "add config to ks-installer manifests failed")
@@ -138,7 +138,7 @@ kind: Namespace
 metadata:
   name: kubesphere-monitoring-system
 EOF`, kubectl)
-	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
+	_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "create namespace: kubesphere-system and kubesphere-monitoring-system")
 	}
@@ -175,7 +175,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 		caFile := "/etc/ssl/etcd/ssl/ca.pem"
 		certFile := fmt.Sprintf("/etc/ssl/etcd/ssl/node-%s.pem", runtime.RemoteHost().GetName())
 		keyFile := fmt.Sprintf("/etc/ssl/etcd/ssl/node-%s-key.pem", runtime.RemoteHost().GetName())
-		if output, err := runtime.GetRunner().SudoCmd(
+		if output, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("/usr/local/bin/kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs "+
 				"--from-file=etcd-client-ca.crt=%s "+
 				"--from-file=etcd-client.crt=%s "+
@@ -201,7 +201,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 				runtime.GetRunner().Host.GetMinikubeProfile(), cfile,
 				runtime.GetRunner().Host.GetMinikubeProfile(), runtime.GetRunner().Host.GetMinikubeProfile(),
 				cfile, path.Join(etcdPath, certfile))
-			if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 				return err
 			}
 		}
@@ -211,7 +211,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 		keyFile := path.Join(etcdPath, "server.key")
 
 		addrList = append(addrList, nodeIp)
-		if output, err := runtime.GetRunner().SudoCmdExt(
+		if output, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs "+
 				"--from-file=%s "+
 				"--from-file=%s "+
@@ -229,7 +229,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 		caFile := "/etc/kubernetes/pki/etcd/ca.crt"
 		certFile := "/etc/kubernetes/pki/etcd/healthcheck-client.crt"
 		keyFile := "/etc/kubernetes/pki/etcd/healthcheck-client.key"
-		if output, err := runtime.GetRunner().SudoCmd(
+		if output, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("/usr/local/bin/kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs "+
 				"--from-file=etcd-client-ca.crt=%s "+
 				"--from-file=etcd-client.crt=%s "+
@@ -249,7 +249,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 			}
 		}
 		if tlsDisable {
-			if output, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs", true, false); err != nil {
+			if output, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs", true, false); err != nil {
 				if !strings.Contains(output, "exists") {
 					return err
 				}
@@ -258,7 +258,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 			caFile := fmt.Sprintf("/etc/ssl/etcd/ssl/%s", filepath.Base(s.KubeConf.Cluster.Etcd.External.CAFile))
 			certFile := fmt.Sprintf("/etc/ssl/etcd/ssl/%s", filepath.Base(s.KubeConf.Cluster.Etcd.External.CertFile))
 			keyFile := fmt.Sprintf("/etc/ssl/etcd/ssl/%s", filepath.Base(s.KubeConf.Cluster.Etcd.External.KeyFile))
-			if output, err := runtime.GetRunner().SudoCmd(
+			if output, err := runtime.GetRunner().Host.SudoCmd(
 				fmt.Sprintf("/usr/local/bin/kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs "+
 					"--from-file=etcd-client-ca.crt=%s "+
 					"--from-file=etcd-client.crt=%s "+
@@ -273,12 +273,12 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 	var sedCommand = runtime.GetCommandSed()
 	etcdEndPoint := strings.Join(addrList, ",")
 	var cmdEndpoint = fmt.Sprintf("%s '/endpointIps/s/\\:.*/\\: %s/g' %s", sedCommand, etcdEndPoint, filePath)
-	if _, err := runtime.GetRunner().SudoCmd(cmdEndpoint, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmdEndpoint, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("update etcd endpoint failed"))
 	}
 
 	if tlsDisable {
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s '/tlsEnable/s/\\:.*/\\: false/g' %s", sedCommand, filePath),
 			false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("update etcd tls failed"))
@@ -286,7 +286,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 	}
 
 	if len(port) != 0 {
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s 's/2379/%s/g' %s", sedCommand, port, filePath),
 			false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("update etcd tls failed"))
@@ -295,38 +295,38 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 
 	if s.KubeConf.Cluster.Registry.PrivateRegistry != "" {
 		PrivateRegistry := strings.Replace(s.KubeConf.Cluster.Registry.PrivateRegistry, "/", "\\/", -1)
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s '/local_registry/s/\\:.*/\\: %s/g' %s", sedCommand, PrivateRegistry, filePath),
 			false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("add private registry: %s failed", s.KubeConf.Cluster.Registry.PrivateRegistry))
 		}
 	} else {
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s '/local_registry/d' %s", sedCommand, filePath), false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s '/local_registry/d' %s", sedCommand, filePath), false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove private registry failed"))
 		}
 	}
 
 	if s.KubeConf.Cluster.Registry.NamespaceOverride != "" {
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s '/namespace_override/s/\\:.*/\\: %s/g' %s", sedCommand, s.KubeConf.Cluster.Registry.NamespaceOverride, filePath),
 			false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("add namespace override: %s failed", s.KubeConf.Cluster.Registry.NamespaceOverride))
 		}
 	} else {
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s '/namespace_override/d' %s", sedCommand, filePath), false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s '/namespace_override/d' %s", sedCommand, filePath), false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove namespace override failed"))
 		}
 	}
 
 	_, ok = kubesphere.CNSource[s.KubeConf.Cluster.KubeSphere.Version]
 	if ok && (os.Getenv("KKZONE") == "cn" || s.KubeConf.Cluster.Registry.PrivateRegistry == "registry.cn-beijing.aliyuncs.com") {
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s '/zone/s/\\:.*/\\: %s/g' %s", sedCommand, "cn", filePath),
 			false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("add kubekey zone: %s failed", s.KubeConf.Cluster.Registry.PrivateRegistry))
 		}
 	} else {
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s '/zone/d' %s", sedCommand, filePath),
 			false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove kubekey zone failed"))
@@ -335,7 +335,7 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 
 	switch s.KubeConf.Cluster.Kubernetes.ContainerManager {
 	case "docker", "containerd", "crio":
-		if _, err := runtime.GetRunner().SudoCmd(
+		if _, err := runtime.GetRunner().Host.SudoCmd(
 			fmt.Sprintf("%s '/containerruntime/s/\\:.*/\\: %s/g' %s", sedCommand, s.KubeConf.Cluster.Kubernetes.ContainerManager, filePath), false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("set container runtime: %s failed", s.KubeConf.Cluster.Kubernetes.ContainerManager))
 		}
@@ -404,7 +404,7 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 
 	for _, label := range labels {
 		var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", kubectlpath, common.NamespaceKubesphereSystem, label)
-		rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+		rphase, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 		if rphase == "Running" {
 			return nil
 		}
@@ -493,7 +493,7 @@ func checkInstallerRunning(ctx context.Context, runtime connector.Runtime) error
 		case <-ctx.Done():
 			return nil
 		default:
-			output, err := runtime.GetRunner().SudoCmd(
+			output, err := runtime.GetRunner().Host.SudoCmd(
 				"/usr/local/bin/kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[*].status.phase}'", false, false)
 			if err != nil {
 				return err
@@ -508,7 +508,7 @@ func checkInstallerRunning(ctx context.Context, runtime connector.Runtime) error
 func tailInstallerLog(log string, runtime connector.Runtime) error {
 	// TODO: kill when done
 	fmt.Print("start to sync ks-installer's log")
-	output, err := runtime.GetRunner().SudoCmd(
+	output, err := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl logs -n kubesphere-system "+
 			"$(kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[0].metadata.name}') "+
 			"-f > "+log, false, false)
@@ -525,12 +525,12 @@ func CheckKubeSphereStatus(ctx context.Context, runtime connector.Runtime, stopC
 			stopChan <- ""
 		default:
 			time.Sleep(5 * time.Second)
-			_, err := runtime.GetRunner().SudoCmd(
+			_, err := runtime.GetRunner().Host.SudoCmd(
 				"/usr/local/bin/kubectl exec -n kubesphere-system "+
 					"$(kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[0].metadata.name}') "+
 					"-- ls /kubesphere/playbooks/kubesphere_running", false, false)
 			if err == nil {
-				output, err := runtime.GetRunner().SudoCmd(
+				output, err := runtime.GetRunner().Host.SudoCmd(
 					"/usr/local/bin/kubectl exec -n kubesphere-system "+
 						"$(kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[0].metadata.name}') "+
 						"-- cat /kubesphere/playbooks/kubesphere_running", false, false)
@@ -557,7 +557,7 @@ type ConvertV2ToV3 struct {
 }
 
 func (c *ConvertV2ToV3) Execute(runtime connector.Runtime) error {
-	configV2Str, err := runtime.GetRunner().SudoCmd(
+	configV2Str, err := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get cm -n kubesphere-system ks-installer -o jsonpath='{.data.ks-config\\.yaml}'",
 		false, false)
 	if err != nil {

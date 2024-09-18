@@ -120,7 +120,7 @@ func (f *FetchCerts) Execute(runtime connector.Runtime) error {
 	c := v.(*EtcdCluster)
 
 	if c.clusterExist {
-		certs, err := runtime.GetRunner().SudoCmd("ls /etc/ssl/etcd/ssl/ | grep .pem", false, false)
+		certs, err := runtime.GetRunner().Host.SudoCmd("ls /etc/ssl/etcd/ssl/ | grep .pem", false, false)
 		if err != nil {
 			return errors.Wrap(err, "failed to find certificate files")
 		}

@@ -18,11 +18,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-type UpdateAccountValues struct {
+type SetAccountValues struct {
 	common.KubeAction
 }
 
-func (p *UpdateAccountValues) Execute(runtime connector.Runtime) error {
+func (p *SetAccountValues) Execute(runtime connector.Runtime) error {
 	var installPath = filepath.Dir(p.KubeConf.Arg.Manifest)
 	var accountFile = path.Join(installPath, "wizard", "config", "account", accounttemplates.AccountValues.Name())
 	var data = util.Data{
@@ -58,7 +58,7 @@ func (t *InstallAccount) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)

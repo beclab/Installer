@@ -119,7 +119,7 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 
 			// fmt.Printf("%s downloading image %s\n", pullCmd, image.ImageName())
 			logger.Debugf("%s pull image: %s - %s", host.GetName(), image.ImageName(), runtime.RemoteHost().GetName())
-			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s pull %s", pullCmd, image.ImageName()), false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s pull %s", pullCmd, image.ImageName()), false, false); err != nil {
 				return errors.Wrap(err, "pull image failed")
 			}
 		default:

@@ -199,7 +199,7 @@ type ApplyKataDeployManifests struct {
 }
 
 func (a *ApplyKataDeployManifests) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl apply -f /etc/kubernetes/addons/kata-deploy.yaml", true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl apply -f /etc/kubernetes/addons/kata-deploy.yaml", true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "apply kata-deploy manifests failed")
 	}
 	return nil

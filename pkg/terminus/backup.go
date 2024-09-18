@@ -19,6 +19,7 @@ type CreateBackupConfigMap struct {
 }
 
 func (t *CreateBackupConfigMap) Execute(runtime connector.Runtime) error {
+	var kubectlpath, _ = util.GetCommand(common.CommandKubectl)
 	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)
 	var backupConfigMapFile = path.Join(installPath, "deploy", configmaptemplates.BackupConfigMap.Name())
 	var data = util.Data{
@@ -36,7 +37,6 @@ func (t *CreateBackupConfigMap) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write backup configmap %s failed", backupConfigMapFile))
 	}
 
-	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s apply -f %s", kubectlpath, backupConfigMapFile), false, true); err != nil {
 		return err
 	}
@@ -54,7 +54,6 @@ func (m *CreateBackupConfigMapModule) Init() {
 	createBackupConfigMap := &task.RemoteTask{
 		Name:     "CreateBackupConfigMap",
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Prepare:  new(common.IsMaster),
 		Action:   &CreateBackupConfigMap{},
 		Parallel: false,
 		Retry:    1,
