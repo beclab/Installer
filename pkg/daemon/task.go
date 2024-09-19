@@ -99,3 +99,26 @@ func (e *EnableTerminusdService) Execute(runtime connector.Runtime) error {
 	}
 	return nil
 }
+
+type DisableTerminusdService struct {
+	common.KubeAction
+}
+
+func (s *DisableTerminusdService) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl disable --now terminusd", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "disable terminusd failed")
+	}
+	return nil
+}
+
+type UninstallTerminusd struct {
+	common.KubeAction
+}
+
+func (r *UninstallTerminusd) Execute(runtime connector.Runtime) error {
+	svcpath := filepath.Join("/etc/systemd/system/", templates.TerminusdService.Name())
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf /usr/local/bin/terminusd", svcpath), false, false); err != nil {
+		return errors.Wrap(errors.WithStack(err), "remove terminusd failed")
+	}
+	return nil
+}

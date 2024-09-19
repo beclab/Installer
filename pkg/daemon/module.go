@@ -6,6 +6,38 @@ import (
 	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
+type UninstallTerminusdModule struct {
+	common.KubeModule
+}
+
+func (u *UninstallTerminusdModule) Init() {
+	u.Name = "UninstallTerminusdModule"
+	u.Desc = "Uninstall terminusd"
+
+	disableService := &task.RemoteTask{
+		Name:     "DisableTerminusdService",
+		Desc:     "disable terminus service",
+		Hosts:    u.Runtime.GetHostsByRole(common.K8s),
+		Action:   new(DisableTerminusdService),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	uninstall := &task.RemoteTask{
+		Name:     "UninstallTerminusd",
+		Desc:     "Uninstall terminusd",
+		Hosts:    u.Runtime.GetHostsByRole(common.K8s),
+		Action:   &UninstallTerminusd{},
+		Parallel: false,
+		Retry:    1,
+	}
+
+	u.Tasks = []task.Interface{
+		disableService,
+		uninstall,
+	}
+}
+
 type InstallTerminusdBinaryModule struct {
 	common.KubeModule
 	manifest.ManifestModule
