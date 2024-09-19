@@ -18,7 +18,7 @@ type CopyEmbedFiles struct {
 }
 
 func (t *CopyEmbedFiles) Execute(runtime connector.Runtime) error {
-	var dst = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir)
+	var dst = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir)
 	return utils.CopyEmbed(assets, ".", dst)
 }
 

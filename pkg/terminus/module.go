@@ -34,8 +34,6 @@ func (m *SetupWs) Init() {
 type InstallWizardDownloadModule struct {
 	common.KubeModule
 	Version string
-	BaseDir string
-	Md5sum  string
 }
 
 func (m *InstallWizardDownloadModule) Init() {
@@ -44,8 +42,6 @@ func (m *InstallWizardDownloadModule) Init() {
 		Name: "DownloadInstallWizard",
 		Action: &Download{
 			Version: m.Version,
-			BaseDir: m.BaseDir,
-			Md5sum:  m.Md5sum,
 		},
 		Retry: 1,
 	}
