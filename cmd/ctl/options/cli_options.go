@@ -75,22 +75,13 @@ func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 }
 
 type CliPrepareSystemOptions struct {
-	Version           string
-	KubeType          string
-	RegistryMirrors   string
-	BaseDir           string
-	Manifest          string
-	StorageType       string
-	StorageDomain     string // s3_bucket --> env.S3_BUCKET
-	StorageBucket     string //
-	StoragePrefix     string
-	StorageAccessKey  string
-	StorageSecretKey  string
-	StorageToken      string // only for juicefs
-	StorageClusterId  string
-	StorageSyncSecret string // backup.sync_secret --> env.BACKUP_SECRET, only for cloud
-	Minikube          bool
-	MinikubeProfile   string
+	Version         string
+	KubeType        string
+	RegistryMirrors string
+	BaseDir         string
+	Manifest        string
+	Minikube        bool
+	MinikubeProfile string
 }
 
 func NewCliPrepareSystemOptions() *CliPrepareSystemOptions {
@@ -103,15 +94,6 @@ func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
 	cmd.Flags().StringVar(&o.BaseDir, "base-dir", "", "Set pre-install package base dir , default value $HOME/.terminus")
 	cmd.Flags().StringVar(&o.Manifest, "manifest", "", "Set pre-install package manifest file , default value $HOME/.terminus/installation.manifest")
-	cmd.Flags().StringVar(&o.StorageType, "storage-type", "minio", "Set storage type, support MinIO, S3, OSS")
-	cmd.Flags().StringVar(&o.StorageDomain, "storage-domain", "", "This parameter needs to be set when the storage-type is S3 or OSS, e.g., https://your-name.s3.your-region.amazonaws.com")
-	cmd.Flags().StringVar(&o.StorageBucket, "storage-bucket", "", "This parameter needs to be set when the storage-type is S3 or OSS")
-	cmd.Flags().StringVar(&o.StoragePrefix, "storage-prefix", "", "This parameter needs to be set when the storage-type is S3 or OSS")
-	cmd.Flags().StringVar(&o.StorageAccessKey, "storage-access-key", "", "This parameter needs to be set when the storage-type is S3 or OSS")
-	cmd.Flags().StringVar(&o.StorageSecretKey, "storage-secret-key", "", "This parameter needs to be set when the storage-type is S3 or OSS")
-	cmd.Flags().StringVar(&o.StorageToken, "storage-token", "", "This parameter needs to be set when the storage-type is S3")
-	cmd.Flags().StringVar(&o.StorageClusterId, "cluster-id", "", "")
-	cmd.Flags().StringVar(&o.StorageSyncSecret, "sync-secret", "", "")
 	cmd.Flags().BoolVar(&o.Minikube, "minikube", false, "MacOS platform requires setting Minikube parameters, Default: false")
 	cmd.Flags().StringVar(&o.MinikubeProfile, "profile", "", "MacOS platform requires setting Minikube Profile parameters")
 }
