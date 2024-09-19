@@ -68,5 +68,6 @@ func getStorageValueFromEnv() *common.Storage {
 		StorageToken:      os.Getenv("AWS_SESSION_TOKEN_SETUP"),
 		StorageClusterId:  os.Getenv("CLUSTER_ID"),
 		StorageSyncSecret: os.Getenv("BACKUP_SECRET"),
+		StorageVendor:     os.Getenv("TERMINUS_IS_CLOUD_VERSION"),
 	}
 }
