@@ -77,6 +77,10 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 			return err
 		}
 
+		if _, err := runtime.GetRunner().SudoCmd("update-pciids", false, true); err != nil {
+			return fmt.Errorf("failed to update-pciids: %v", err)
+		}
+
 		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y openssh-server", debianFrontend, constants.PkgManager), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
