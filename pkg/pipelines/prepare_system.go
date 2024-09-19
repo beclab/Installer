@@ -61,7 +61,7 @@ func getStorageValueFromEnv() *common.Storage {
 	return &common.Storage{
 		StorageType:       storageType,
 		StorageDomain:     os.Getenv("S3_BUCKET"),
-		StorageBucket:     os.Getenv("BACKUP_CLUSTER_BUCKET"),
+		StorageBucket:     os.Getenv("S3_BUCKET"), // os.Getenv("BACKUP_CLUSTER_BUCKET"),
 		StoragePrefix:     os.Getenv("BACKUP_KEY_PREFIX"),
 		StorageAccessKey:  os.Getenv("AWS_ACCESS_KEY_ID_SETUP"),
 		StorageSecretKey:  os.Getenv("AWS_SECRET_ACCESS_KEY_SETUP"),
