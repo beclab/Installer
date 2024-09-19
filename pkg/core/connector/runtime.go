@@ -38,6 +38,7 @@ type BaseRuntime struct {
 	storage         storage.Provider
 	homeDir         string
 	baseDir         string
+	installerDir    string
 	workDir         string
 	verbose         bool
 	ignoreErr       bool
@@ -46,9 +47,10 @@ type BaseRuntime struct {
 	deprecatedHosts map[string]string
 	cmdSed          string
 	minikube        bool
+	terminusVersion string
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -59,6 +61,7 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		roleHosts:       make(map[string][]Host),
 		deprecatedHosts: make(map[string]string),
 		cmdSed:          util.FormatSed(constants.OsType == common.Darwin),
+		terminusVersion: terminusVersion,
 	}
 
 	if err := base.GenerateBaseDir(baseDir); err != nil {
@@ -134,8 +137,13 @@ func (b *BaseRuntime) GenerateBaseDir(baseDir string) error {
 }
 
 func (b *BaseRuntime) GenerateWorkDir() error {
+	installerPath := filepath.Join(b.baseDir, "versions", fmt.Sprintf("v%s", b.terminusVersion))
+	if err := util.CreateDir(installerPath); err != nil {
+		return errors.Wrap(err, "create wizard dir failed")
+	}
+	b.installerDir = installerPath
 
-	rootPath := filepath.Join(b.baseDir, common.Cli)
+	rootPath := filepath.Join(installerPath, common.Cli)
 	if err := util.CreateDir(rootPath); err != nil {
 		return errors.Wrap(err, "create work dir failed")
 	}
@@ -160,6 +168,10 @@ func (b *BaseRuntime) GetHomeDir() string {
 
 func (b *BaseRuntime) GetBaseDir() string {
 	return b.baseDir
+}
+
+func (b *BaseRuntime) GetInstallerDir() string {
+	return b.installerDir
 }
 
 func (b *BaseRuntime) GetWorkDir() string {

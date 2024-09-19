@@ -185,9 +185,6 @@ func (b *BaseHost) SetCache(c *cache.Cache) {
 	b.Cache = c
 }
 
-func (b *BaseHost) Echo() {
-}
-
 func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
 	stdout, code, err = util.Exec(cmd, printOutput, printLine)
 	if err != nil {
@@ -279,6 +276,10 @@ func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string,
 	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
 
 	return stdout, err
+}
+
+func (b *BaseHost) SudoCmd(cmd string, printOutput bool, printLine bool) (string, error) {
+	return b.Cmd(SudoPrefix(cmd), printOutput, printLine)
 }
 
 func (b *BaseHost) CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
