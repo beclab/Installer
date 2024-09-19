@@ -5,6 +5,7 @@ import (
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/phase/system"
 )
@@ -15,12 +16,17 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 		return fmt.Errorf("Kubernetes %s is already installed", ksVersion)
 	}
 
+	logger.Infof("prepare args, baseDir: %s, version: %s, mirrors: %s",
+		opts.BaseDir, opts.Version, opts.RegistryMirrors,
+	)
+
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetKubernetesVersion(opts.KubeType, "")
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(createStorage(opts))
+	arg.SetReverseProxy()
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {

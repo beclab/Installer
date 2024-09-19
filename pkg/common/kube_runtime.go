@@ -86,9 +86,12 @@ type Argument struct {
 	// User
 	User *User
 	// storage
-	Storage *Storage
-	AWS     *AwsHost
-	GPU     *GPU
+	Storage     *Storage
+	AWS         *AwsHost
+	GPU         *GPU
+	Cloudflare  *Cloudflare
+	Frp         *Frp
+	TokenMaxAge int64
 
 	Request any
 
@@ -135,6 +138,17 @@ type GPU struct {
 	Share  bool
 }
 
+type Cloudflare struct {
+	Enable string
+}
+
+type Frp struct {
+	Enable     string
+	Server     string
+	Port       string
+	AuthMethod string
+}
+
 func NewArgument() *Argument {
 	return &Argument{
 		KsEnable:         true,
@@ -150,7 +164,9 @@ func NewArgument() *Argument {
 			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
 			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
 		},
-		WSL: strings.Contains(constants.OsKernel, "-WSL"),
+		Cloudflare: &Cloudflare{},
+		Frp:        &Frp{},
+		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
 	}
 }
 
@@ -200,6 +216,31 @@ func (a *Argument) SetStorage(storage *Storage) {
 func (a *Argument) SetMinikube(minikube bool, profile string) {
 	a.Minikube = minikube
 	a.MinikubeProfile = profile
+}
+
+func (a *Argument) SetReverseProxy() {
+	var enableCloudflare = "1"
+	var enableFrp = "0"
+	var frpServer = ""
+	var frpPort = "0"
+	var frpAuthMethod = ""
+
+	cloudVersion := os.Getenv("TERMINUS_IS_CLOUD_VERSION")
+	if cloudVersion == "true" {
+		enableCloudflare = "0"
+	} else if os.Getenv("FRP_ENABLE") == "1" {
+		enableCloudflare = "0"
+		enableFrp = "1"
+		frpServer = os.Getenv("FRP_SERVER")
+		frpPort = os.Getenv("FRP_PORT")
+		frpAuthMethod = os.Getenv("FRP_AUTH_METHOD")
+	}
+
+	a.Cloudflare.Enable = enableCloudflare
+	a.Frp.Enable = enableFrp
+	a.Frp.Server = frpServer
+	a.Frp.Port = frpPort
+	a.Frp.AuthMethod = frpAuthMethod
 }
 
 func (a *Argument) IsProxmox() bool {
