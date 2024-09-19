@@ -12,4 +12,6 @@ var TerminusdEnv = template.Must(template.New("terminusd.service.env").Parse(
 INSTALLED_VERSION={{ .Version }}
 KUBE_TYPE={{ .KubeType }}
 BASE_DIR={{ .BaseDir }}
+LOCAL_GPU_ENABLE={{ .GpuEnable }}
+LOCAL_GPU_SHARE={{ .GpuShare }}
     `)))

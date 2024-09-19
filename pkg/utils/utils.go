@@ -253,3 +253,10 @@ func ContainsUppercase(s string) bool {
 	}
 	return false
 }
+
+func FormatBoolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
