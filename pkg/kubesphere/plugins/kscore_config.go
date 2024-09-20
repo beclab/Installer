@@ -238,7 +238,8 @@ func (t *CreateKsCoreConfig) Execute(runtime connector.Runtime) error {
 	appPath = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir, appKsConfigName)
 	values = make(map[string]interface{})
 	values["Release"] = map[string]string{
-		"JwtSecret": jwtSecretIf.(string),
+		"JwtSecret":   jwtSecretIf.(string),
+		"TokenMaxAge": fmt.Sprintf("%d", t.KubeConf.Arg.TokenMaxAge),
 	}
 	if err := utils.InstallCharts(context.Background(), actionConfig, settings, appKsConfigName,
 		appPath, "", common.NamespaceKubesphereSystem, values); err != nil {

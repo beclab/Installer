@@ -21,6 +21,7 @@ const (
 	DefaultK3sVersion        = "v1.22.16-k3s"
 	DefaultKubernetesVersion = ""
 	DefaultKubeSphereVersion = "v3.3.0"
+	DefaultTokenMaxAge       = 1209600 // 14days
 )
 
 const (
@@ -235,4 +236,5 @@ const (
 	EnvStorageSecretKeyName = "AWS_SECRET_ACCESS_KEY_SETUP"
 	EnvStorageTokenName     = "AWS_SESSION_TOKEN_SETUP"
 	EnvStorageClusterIdName = "CLUSTER_ID"
+	EnvTokenMaxAge          = "TOKEN_MAX_AGE"
 )
