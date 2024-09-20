@@ -30,10 +30,11 @@ import (
 
 type Template struct {
 	BaseAction
-	Name     string
-	Template *template.Template
-	Dst      string
-	Data     util.Data
+	Name         string
+	Template     *template.Template
+	Dst          string
+	Data         util.Data
+	PrintContent bool
 }
 
 func (t *Template) Execute(runtime connector.Runtime) error {

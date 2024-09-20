@@ -66,6 +66,7 @@ func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
 			"FrpPort":          g.KubeConf.Arg.Frp.Port,
 			"FrpAuthMethod":    g.KubeConf.Arg.Frp.AuthMethod,
 		},
+		PrintContent: true,
 	}
 
 	templateAction.Init(nil, nil)
@@ -81,10 +82,11 @@ type GenerateTerminusdService struct {
 
 func (g *GenerateTerminusdService) Execute(runtime connector.Runtime) error {
 	templateAction := action.Template{
-		Name:     "TerminusdService",
-		Template: templates.TerminusdService,
-		Dst:      filepath.Join("/etc/systemd/system/", templates.TerminusdService.Name()),
-		Data:     util.Data{},
+		Name:         "TerminusdService",
+		Template:     templates.TerminusdService,
+		Dst:          filepath.Join("/etc/systemd/system/", templates.TerminusdService.Name()),
+		Data:         util.Data{},
+		PrintContent: true,
 	}
 
 	templateAction.Init(nil, nil)
