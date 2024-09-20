@@ -48,7 +48,7 @@ type CrictlExist struct {
 }
 
 func (c *CrictlExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	output, err := runtime.GetRunner().SudoCmd(
+	output, err := runtime.GetRunner().Host.SudoCmd(
 		"if [ -z $(which crictl) ]; "+
 			"then echo 'not exist'; "+
 			"fi", false, false)
@@ -68,7 +68,7 @@ type ContainerdExist struct {
 }
 
 func (c *ContainerdExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	output, err := runtime.GetRunner().SudoCmd(
+	output, err := runtime.GetRunner().Host.SudoCmd(
 		"if [ -z $(which containerd) ] || [ ! -e /run/containerd/containerd.sock ]; "+
 			"then echo 'not exist'; "+
 			"fi", false, false)

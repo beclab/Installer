@@ -24,7 +24,6 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"github.com/pkg/errors"
 )
@@ -43,8 +42,6 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", t.Template.Name()))
 	}
 
-	logger.Infof("template %s result: %s", t.Name, templateStr)
-
 	if !util.IsExist(runtime.GetHostWorkDir()) {
 		util.Mkdir(runtime.GetHostWorkDir())
 	}
@@ -58,7 +55,7 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fileName))
 	}
 
-	if err := runtime.GetRunner().SudoScp(fileName, t.Dst); err != nil {
+	if err := runtime.GetRunner().Host.SudoScp(fileName, t.Dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fileName, t.Dst))
 	}
 

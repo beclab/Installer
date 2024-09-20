@@ -145,7 +145,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 
 		if err := retry(func() error {
-			if _, err := runtime.GetRunner().SudoCmdExt(loadCmd, false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(loadCmd, false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
 				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
@@ -164,7 +164,7 @@ func filterMinikubeImages(runner *connector.Runner, osType string, minikubepath 
 		return imagesManifest
 	}
 
-	stdout, err := runner.SudoCmdExt(fmt.Sprintf("%s -p %s image ls", minikubepath, minikubeProfile), false, false)
+	stdout, err := runner.Host.SudoCmd(fmt.Sprintf("%s -p %s image ls", minikubepath, minikubeProfile), false, false)
 	if err != nil {
 		return imagesManifest
 	}
@@ -217,7 +217,7 @@ func inspectImage(runner *connector.Runner, containerManager, imageRepoTag strin
 	}
 
 	var cmd = fmt.Sprintf(inspectCmd, imageRepoTag)
-	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runner.Host.SudoCmd(cmd, false, false); err != nil {
 		return fmt.Errorf("inspect %s error %v", imageRepoTag, err)
 	}
 

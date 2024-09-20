@@ -85,13 +85,13 @@ type MkStorageDir struct {
 func (t *MkStorageDir) Execute(runtime connector.Runtime) error {
 	if utils.IsExist(StorageDataDir) {
 		if utils.IsExist(cc.TerminusDir) {
-			_, _ = runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf %s", cc.TerminusDir), false, false)
+			_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", cc.TerminusDir), false, false)
 		}
 
-		if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("mkdir -p %s", StorageDataTerminusDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", StorageDataTerminusDir), false, false); err != nil {
 			return err
 		}
-		if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("ln -s %s %s", StorageDataTerminusDir, cc.TerminusDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("ln -s %s %s", StorageDataTerminusDir, cc.TerminusDir), false, false); err != nil {
 			return err
 		}
 	}

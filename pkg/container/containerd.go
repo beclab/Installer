@@ -50,7 +50,7 @@ func (t *CreateZfsMount) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 	var cmd = fmt.Sprintf("zfs create -o mountpoint=%s %s/containerd", cc.ZfsSnapshotter, constants.DefaultZfsPrefixName)
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			logger.Debugf("zfs %s/containerd already exists", constants.DefaultZfsPrefixName)
 			return nil
@@ -69,7 +69,7 @@ func (t *ZfsReset) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	res, _ := runtime.GetRunner().SudoCmdExt("zfs list -t all", false, false)
+	res, _ := runtime.GetRunner().Host.SudoCmd("zfs list -t all", false, false)
 	if res != "" {
 		scanner := bufio.NewScanner(strings.NewReader(res))
 		for scanner.Scan() {
@@ -89,13 +89,13 @@ func (t *ZfsReset) Execute(runtime connector.Runtime) error {
 				continue
 			}
 
-			if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("zfs destroy %s -frR", name), false, false); err == nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("zfs destroy %s -frR", name), false, false); err == nil {
 				fmt.Printf("delete zfs device %s\n", name)
 			}
 		}
 	}
 
-	runtime.GetRunner().SudoCmdExt(fmt.Sprintf("zfs destroy %s/containerd -frR", constants.DefaultZfsPrefixName), false, false)
+	runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("zfs destroy %s/containerd -frR", constants.DefaultZfsPrefixName), false, false)
 
 	return nil
 }
@@ -118,11 +118,11 @@ func (s *SyncContainerd) Execute(runtime connector.Runtime) error {
 	path := containerd.FilePath(s.BaseDir)
 
 	dst := filepath.Join(common.TmpDir, containerd.Filename)
-	if err := runtime.GetRunner().Scp(path, dst); err != nil {
+	if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync containerd binaries failed"))
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(
+	if _, err := runtime.GetRunner().Host.SudoCmd(
 		fmt.Sprintf("mkdir -p /usr/bin && tar -zxf %s && mv bin/* /usr/bin && rm -rf bin", dst),
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install containerd binaries failed"))
@@ -149,11 +149,11 @@ func (s *SyncCrictlBinaries) Execute(runtime connector.Runtime) error {
 
 	dst := filepath.Join(common.TmpDir, crictl.Filename)
 
-	if err := runtime.GetRunner().Scp(path, dst); err != nil {
+	if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync crictl binaries failed"))
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(
+	if _, err := runtime.GetRunner().Host.SudoCmd(
 		fmt.Sprintf("mkdir -p /usr/bin && tar -zxf %s -C /usr/bin ", dst),
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install crictl binaries failed"))
@@ -169,7 +169,7 @@ type EnableContainerd struct {
 func (e *EnableContainerd) Execute(runtime connector.Runtime) error {
 	var isK3s = strings.Contains(e.KubeConf.Arg.KubernetesVersion, "k3s")
 
-	if _, err := runtime.GetRunner().SudoCmd(
+	if _, err := runtime.GetRunner().Host.SudoCmd(
 		"systemctl daemon-reload && systemctl enable containerd && systemctl start containerd",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("enable and start containerd failed"))
@@ -194,11 +194,11 @@ func (e *EnableContainerd) Execute(runtime connector.Runtime) error {
 	path := containerd.FilePath(e.BaseDir)
 
 	dst := filepath.Join(common.TmpDir, containerd.Filename)
-	if err := runtime.GetRunner().Scp(path, dst); err != nil {
+	if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync runc binaries failed"))
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(
+	if _, err := runtime.GetRunner().Host.SudoCmd(
 		fmt.Sprintf("install -m 755 %s /usr/local/sbin/runc", dst),
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install runc binaries failed"))
@@ -211,13 +211,13 @@ type DisableContainerd struct {
 }
 
 func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
-	if stdout, err := runtime.GetRunner().SudoCmdExt("systemctl status containerd", false, false); err != nil {
+	if stdout, err := runtime.GetRunner().Host.SudoCmd("systemctl status containerd", false, false); err != nil {
 		if strings.Contains(stdout, "could not be found") {
 			return nil
 		}
 		return err
 	}
-	_, _ = runtime.GetRunner().SudoCmd("systemctl disable containerd && systemctl stop containerd", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl disable containerd && systemctl stop containerd", false, false)
 
 	if err := umountPoints(runtime); err != nil {
 		return err
@@ -246,7 +246,7 @@ func (d *DisableContainerd) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, file := range files {
-		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
+		_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
 	}
 	return nil
 }

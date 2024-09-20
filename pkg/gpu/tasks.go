@@ -3,7 +3,6 @@ package gpu
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -15,7 +14,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	k3sGpuTemplates "bytetrade.io/web3os/installer/pkg/gpu/templates"
 	"bytetrade.io/web3os/installer/pkg/manifest"
-	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
 )
 
@@ -43,20 +41,6 @@ func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
 	runtime.Arg.SetGPU(true, true)
 }
 
-type CopyEmbedGpuFiles struct {
-	common.KubeAction
-}
-
-func (t *CopyEmbedGpuFiles) Execute(runtime connector.Runtime) error {
-	// var dst = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.GpuDir)
-	var dst = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.GpuDir)
-	if err := utils.CopyEmbed(assets, ".", dst); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type InstallCudaDeps struct {
 	common.KubeAction
 	manifest.ManifestAction
@@ -78,7 +62,7 @@ func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("Failed to find %s binary in %s", cudakeyring.Filename, path)
 	}
 
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("dpkg -i %s", path), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("dpkg -i %s", path), false, true); err != nil {
 		return err
 	}
 
@@ -90,20 +74,20 @@ type InstallCudaDriver struct {
 }
 
 func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmdExt("apt-get update", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get update", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get update")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmdExt("apt-get -y install cuda-12-1", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install cuda-12-1", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install cuda-12-1")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmdExt("apt-get -y install nvidia-kernel-open-545", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-kernel-open-545", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-kernel-open-545")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmdExt("apt-get -y install nvidia-driver-545", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-driver-545", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-driver-545")
 	}
 
 	return nil
@@ -137,7 +121,7 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	}
 
 	cmd = fmt.Sprintf("apt-key add %s", keyPath)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
@@ -160,7 +144,7 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	}
 
 	cmd = fmt.Sprintf("cp %s %s", libPath, "/etc/apt/sources.list.d/")
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
@@ -173,8 +157,8 @@ type InstallNvidiaContainerToolkit struct {
 
 func (t *InstallNvidiaContainerToolkit) Execute(runtime connector.Runtime) error {
 	logger.Debugf("install nvidia-container-toolkit")
-	if _, err := runtime.GetRunner().SudoCmdExt("apt-get update && sudo apt-get install -y nvidia-container-toolkit jq", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get update && sudo apt-get install -y nvidia-container-toolkit jq", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-container-toolkit")
 	}
 	return nil
 }
@@ -186,7 +170,7 @@ type PatchK3sDriver struct { // patch k3s on wsl
 func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 	if t.KubeConf.Arg.WSL {
 		var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
-		driverPath, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
+		driverPath, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 		if err != nil {
 			return err
 		}
@@ -211,16 +195,16 @@ func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 		}
 
 		var dstName = path.Join(common.BinDir, fixName)
-		if err := runtime.GetRunner().SudoScp(fixPath, dstName); err != nil {
+		if err := runtime.GetRunner().Host.SudoScp(fixPath, dstName); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fixPath, dstName))
 		}
 
 		cmd = fmt.Sprintf("echo 'ExecStartPre=-/usr/local/bin/%s' >> /etc/systemd/system/k3s.service", fixName)
-		if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 			return err
 		}
 
-		if _, err := runtime.GetRunner().SudoCmdExt("systemctl daemon-reload", false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
 			return err
 		}
 	}
@@ -233,12 +217,12 @@ type RestartContainerd struct {
 }
 
 func (t *RestartContainerd) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmdExt("nvidia-ctk runtime configure --runtime=containerd --set-as-default", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("nvidia-ctk runtime configure --runtime=containerd --set-as-default", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to nvidia-ctk runtime configure")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmdExt("systemctl restart containerd", false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl restart containerd", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to restart containerd")
 	}
 	return nil
 }
@@ -248,16 +232,18 @@ type InstallPlugin struct {
 }
 
 func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
-	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
 
-	var pluginPath = filepath.Dir(t.KubeConf.Arg.Manifest)
-	var pluginFile = path.Join(pluginPath, "deploy", "nvidia-device-plugin.yml")
+	var pluginFile = path.Join(runtime.GetInstallerDir(), "deploy", "nvidia-device-plugin.yml")
 	if !util.IsExist(pluginFile) {
 		logger.Errorf("plugin file not exist: %s", pluginFile)
 		return nil
 	}
-	var cmd = fmt.Sprintf("%s create -f %s", kubectl, pluginFile)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	var cmd = fmt.Sprintf("%s create -f %s", kubectlpath, pluginFile)
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
@@ -269,15 +255,18 @@ type CheckGpuStatus struct {
 }
 
 func (t *CheckGpuStatus) Execute(runtime connector.Runtime) error {
-	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	cmd := fmt.Sprintf("%s get pod  -n kube-system -l 'name=nvidia-device-plugin-ds' -o jsonpath='{.items[*].status.phase}'", kubectl)
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
 
-	rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	cmd := fmt.Sprintf("%s get pod  -n kube-system -l 'name=nvidia-device-plugin-ds' -o jsonpath='{.items[*].status.phase}'", kubectlpath)
+
+	rphase, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if rphase == "Running" {
 		return nil
 	}
 	return fmt.Errorf("GPU Container State is Pending")
-
 }
 
 type InstallGPUShared struct {
@@ -285,27 +274,30 @@ type InstallGPUShared struct {
 }
 
 func (t *InstallGPUShared) Execute(runtime connector.Runtime) error {
-	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
 
-	var pluginPath = filepath.Dir(t.KubeConf.Arg.Manifest)
+	var pluginPath = runtime.GetInstallerDir()
 	var fileName = path.Join(pluginPath, "deploy", "nvshare-system.yaml")
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, fileName), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apply nvshare-system.yaml")
 	}
 
 	fileName = path.Join(pluginPath, "deploy", "nvshare-system-quotas.yaml")
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, fileName), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apply nvshare-system-quotas.yaml")
 	}
 
 	fileName = path.Join(pluginPath, "deploy", "device-plugin.yaml")
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, fileName), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apply device-plugin.yaml")
 	}
 
 	fileName = path.Join(pluginPath, "deploy", "scheduler.yaml")
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s apply -f %s", kubectl, fileName), false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, fileName), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apply scheduler.yaml")
 	}
 
 	return nil

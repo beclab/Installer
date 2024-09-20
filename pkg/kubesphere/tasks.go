@@ -395,16 +395,16 @@ type Check struct {
 }
 
 func (c *Check) Execute(runtime connector.Runtime) error {
-	var kubectlpath, _ = c.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
 	}
 
 	var labels = []string{"app=ks-apiserver", "component=kube-apiserver"}
 
 	for _, label := range labels {
 		var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", kubectlpath, common.NamespaceKubesphereSystem, label)
-		rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+		rphase, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 		if rphase == "Running" {
 			return nil
 		}

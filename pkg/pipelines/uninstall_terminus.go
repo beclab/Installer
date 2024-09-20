@@ -23,6 +23,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opt.BaseDir)
+	arg.SetTerminusVersion(opt.Version)
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
 	arg.SetDeleteCache(deleteCache)

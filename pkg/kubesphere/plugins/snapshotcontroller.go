@@ -12,6 +12,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -22,16 +23,15 @@ type DeploySnapshotController struct {
 }
 
 func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
-	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
 	}
 
-	// var buildFilesDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir)
-	var buildFilesDir = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir)
+	var buildFilesDir = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir)
 	var scrd = path.Join(buildFilesDir, "snapshot-controller", "crds", "snapshot.storage.k8s.io_volumesnapshot.yaml")
 	var cmd = fmt.Sprintf("%s apply -f %s --force", kubectlpath, scrd)
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("Install snapshot controller failed: %v", err)
 	}
 
@@ -41,8 +41,7 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 	}
 
 	var appName = common.ChartNameSnapshotController
-	// var appPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, appName)
-	var appPath = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, appName)
+	var appPath = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir, appName)
 
 	actionConfig, settings, err := utils.InitConfig(config, common.NamespaceKubeSystem)
 	if err != nil {

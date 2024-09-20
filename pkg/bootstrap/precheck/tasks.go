@@ -46,7 +46,7 @@ func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 	hostname := strings.ToLower(constants.HostName)
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
 		return err
 	}
 	constants.HostName = hostname
@@ -61,19 +61,19 @@ func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 	// if util.IsExist(common.RaspbianCmdlineFile) || util.IsExist(common.RaspbianFirmwareFile) {
 	if constants.OsPlatform == common.Raspbian {
 		if _, err := util.GetCommand(common.CommandIptables); err != nil {
-			_, err = runtime.GetRunner().SudoCmd("apt install -y iptables", false, false)
+			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
 			if err != nil {
 				logger.Errorf("%s install iptables error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
+			_, err = runtime.GetRunner().Host.Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
+			_, err = runtime.GetRunner().Host.Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
@@ -94,13 +94,13 @@ type DisableLocalDNSTask struct {
 func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	switch constants.OsPlatform {
 	case common.Ubuntu, common.Debian, common.Raspbian:
-		stdout, _ := runtime.GetRunner().SudoCmdExt("systemctl is-active systemd-resolved", false, false)
+		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
 		if stdout != "active" {
-			_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop systemd-resolved.service", false, true)
-			_, _ = runtime.GetRunner().SudoCmdExt("systemctl disable systemd-resolved.service", false, true)
+			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
+			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl disable systemd-resolved.service", false, true)
 
 			if utils.IsExist("/usr/bin/systemd-resolve") {
-				_, _ = runtime.GetRunner().SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
+				_, _ = runtime.GetRunner().Host.SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
 			}
 			ok, err := utils.IsSymLink("/etc/resolv.conf")
 			if err != nil {
@@ -108,7 +108,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 			if ok {
-				if _, err := runtime.GetRunner().SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
+				if _, err := runtime.GetRunner().Host.SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
 					logger.Errorf("unlink /etc/resolv.conf error %v", err)
 					return err
 				}
@@ -119,15 +119,15 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		} else {
-			if _, err := runtime.GetRunner().SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
 				logger.Errorf("backup /etc/resolv.conf error %v", err)
 				return err
 			}
 		}
 	}
 
-	if stdout, _ := runtime.GetRunner().SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", constants.LocalIp, constants.HostName), false, true); err != nil {
+	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", constants.LocalIp, constants.HostName), false, true); err != nil {
 			return err
 		}
 	}
@@ -155,20 +155,20 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 
 	if constants.CloudVendor == common.AliYun {
 		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
-		if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("exec %s error %v", cmd, err)
 			return err
 		}
 	}
 
 	cmd = `echo "nameserver 1.0.0.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
 
 	cmd = `echo "nameserver 1.1.1.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
@@ -200,7 +200,7 @@ type GreetingsTask struct {
 }
 
 func (h *GreetingsTask) Execute(runtime connector.Runtime) error {
-	_, err := runtime.GetRunner().CmdExt("echo 'Greetings, Terminus'", false, true)
+	_, err := runtime.GetRunner().Host.Cmd("echo 'Greetings, Terminus'", false, true)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (n *NodePreCheck) Execute(runtime connector.Runtime) error {
 			cmd = connector.SudoPrefix(cmd)
 		}
 
-		res, err := runtime.GetRunner().CmdExt(cmd, false, false)
+		res, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
 		switch software {
 		case showmount:
 			software = nfs
@@ -258,7 +258,7 @@ func (n *NodePreCheck) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	output, err := runtime.GetRunner().CmdExt("date +\"%Z %H:%M:%S\"", false, false)
+	output, err := runtime.GetRunner().Host.CmdExt("date +\"%Z %H:%M:%S\"", false, false)
 	if err != nil {
 		results["time"] = ""
 	} else {

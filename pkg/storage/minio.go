@@ -24,7 +24,7 @@ type CheckMinioState struct {
 
 func (t *CheckMinioState) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl --no-pager -n 0 status minio" //
-	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("Minio Pending")
 	}
@@ -39,17 +39,17 @@ type EnableMinio struct {
 }
 
 func (t *EnableMinio) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().SudoCmdExt("groupadd -r minio", false, false)
-	_, _ = runtime.GetRunner().SudoCmdExt("useradd -M -r -g minio minio", false, false)
-	_, _ = runtime.GetRunner().SudoCmdExt(fmt.Sprintf("chown minio:minio %s", MinioDataDir), false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("groupadd -r minio", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("useradd -M -r -g minio minio", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("chown minio:minio %s", MinioDataDir), false, false)
 
-	if _, err := runtime.GetRunner().SudoCmdExt("systemctl daemon-reload", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmd("systemctl restart minio", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl restart minio", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().SudoCmd("systemctl enable minio", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable minio", false, false); err != nil {
 		return err
 	}
 
@@ -117,7 +117,7 @@ func (t *InstallMinio) Execute(runtime connector.Runtime) error {
 
 	// var cmd = fmt.Sprintf("cd %s && chmod +x minio && install minio /usr/local/bin", minio.BaseDir)
 	var cmd = fmt.Sprintf("cp -f %s /tmp/minio && chmod +x /tmp/minio && install /tmp/minio /usr/local/bin", path)
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
 

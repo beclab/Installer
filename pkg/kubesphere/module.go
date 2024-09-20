@@ -199,7 +199,7 @@ func (c *CheckResultModule) Init() {
 		},
 		Action:   new(Check),
 		Parallel: false,
-		Retry:    500,
+		Retry:    30,
 		Delay:    10 * time.Second,
 	}
 

@@ -32,20 +32,18 @@ type CreatePrometheusComponent struct {
 }
 
 func (t *CreatePrometheusComponent) Execute(runtime connector.Runtime) error {
-	// var f = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "prometheus", t.Component)
-	var f = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, "prometheus", t.Component)
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
 
+	var f = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir, "prometheus", t.Component)
 	if !util.IsExist(f) {
 		return fmt.Errorf("file %s not found", f)
 	}
 
-	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
-	}
-
 	var cmd = fmt.Sprintf("%s apply -f %s %s %s", kubectlpath, f, t.Force, t.ServerSide)
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("create crd %s failed: %v", f, err)
 		return err
 	}
@@ -58,8 +56,12 @@ type CreateOperator struct {
 }
 
 func (t *CreateOperator) Execute(runtime connector.Runtime) error {
-	// var f = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "prometheus", "prometheus-operator")
-	var f = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, "prometheus", "prometheus-operator")
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
+
+	var f = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir, "prometheus", "prometheus-operator")
 
 	var crds []string
 	var ress []string
@@ -85,14 +87,9 @@ func (t *CreateOperator) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("walk %s failed: %v", f, err)
 	}
 
-	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
-	}
-
 	for _, crd := range crds {
 		var cmd = fmt.Sprintf("%s apply -f %s --force-conflicts --server-side", kubectlpath, crd)
-		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("create crd %s failed: %v", crd, err)
 			return err
 		}
@@ -100,7 +97,7 @@ func (t *CreateOperator) Execute(runtime connector.Runtime) error {
 
 	for _, res := range ress {
 		var cmd = fmt.Sprintf("%s apply -f %s --force-conflicts --server-side", kubectlpath, res)
-		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("create crd %s failed: %v", res, err)
 			return err
 		}

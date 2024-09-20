@@ -135,10 +135,10 @@ type CheckPepared struct {
 }
 
 func (t *CheckPepared) Execute(runtime connector.Runtime) error {
-	var finPath = filepath.Join(t.BaseDir, ".prepared")
+	var preparedPath = filepath.Join(t.BaseDir, ".prepared")
 
-	if utils.IsExist(finPath) {
-		t.PipelineCache.Set(common.CachePreparedState, "true")
+	if utils.IsExist(preparedPath) {
+		t.PipelineCache.Set(common.CachePreparedState, "true") // TODO not used
 	} else if t.Force {
 		return errors.New("terminus is not prepared well, cannot continue actions")
 	}
