@@ -122,8 +122,9 @@ type UninstallTerminusd struct {
 }
 
 func (r *UninstallTerminusd) Execute(runtime connector.Runtime) error {
-	svcpath := filepath.Join("/etc/systemd/system/", templates.TerminusdService.Name())
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf /usr/local/bin/terminusd", svcpath), false, false); err != nil {
+	svcpath := filepath.Join("/etc/systemd/system", templates.TerminusdService.Name())
+	svcenvpath := filepath.Join("/etc/systemd/system", templates.TerminusdEnv.Name())
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf %s && rm -rf /usr/local/bin/terminusd", svcpath, svcenvpath), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "remove terminusd failed")
 	}
 	return nil
