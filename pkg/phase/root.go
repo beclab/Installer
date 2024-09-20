@@ -14,7 +14,7 @@ import (
 )
 
 func GetCurrentKubeVersion() string {
-	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	stdout, _, err := util.ExecWithContext(ctx, "/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'", false, false)
 	if err != nil {
