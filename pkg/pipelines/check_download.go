@@ -23,10 +23,6 @@ func CheckDownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 		manifest = home + "/.terminus/installation.manifest"
 	}
 
-	// baseDir := opts.BaseDir
-	// if baseDir == "" {
-	// 	baseDir = home + "/.terminus"
-	// }
 	baseDir := runtime.GetBaseDir()
 
 	p := download.NewCheckDownload(manifest, baseDir, runtime)

@@ -86,7 +86,7 @@ func (m *RemoveMountModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			&CheckStorageType{
-				StorageType: "oss",
+				StorageType: common.OSS,
 			},
 		},
 		Action:   new(UnMountOSS),
@@ -99,7 +99,7 @@ func (m *RemoveMountModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			&CheckStorageType{
-				StorageType: "s3",
+				StorageType: common.S3,
 			},
 		},
 		Action:   new(UnMountS3),

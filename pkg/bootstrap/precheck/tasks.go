@@ -488,10 +488,10 @@ type GetStorageKeyTask struct {
 func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	kubectl, err := util.GetCommand(common.CommandKubectl)
 	if err != nil {
-		return nil
+		return fmt.Errorf("kubectl not found")
 	}
 	var storageAccessKey, storageSecretKey, storageToken, storageClusterId string
-	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", kubectl), false, false); err != nil {
@@ -530,10 +530,10 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageClusterId = stdout
 	}
 
-	t.KubeConf.Arg.Storage.StorageAccessKey = storageAccessKey
-	t.KubeConf.Arg.Storage.StorageSecretKey = storageSecretKey
-	t.KubeConf.Arg.Storage.StorageToken = storageToken
-	t.KubeConf.Arg.Storage.StorageClusterId = storageClusterId
+	t.PipelineCache.Set(common.CacheAccessKey, storageAccessKey)
+	t.PipelineCache.Set(common.CacheSecretKey, storageSecretKey)
+	t.PipelineCache.Set(common.CacheToken, storageToken)
+	t.PipelineCache.Set(common.CacheClusterId, storageClusterId)
 
 	logger.Infof("storage: cloud: %v, type: %s, bucket: %s, ak: %s, sk: %s, tk: %s, id: %s",
 		t.KubeConf.Arg.IsCloudInstance, t.KubeConf.Arg.Storage.StorageType, t.KubeConf.Arg.Storage.StorageBucket,

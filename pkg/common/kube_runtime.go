@@ -17,6 +17,7 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
 	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
 )
 
@@ -38,78 +40,75 @@ type KubeRuntime struct {
 }
 
 type Argument struct {
-	NodeName            string
-	FilePath            string
-	KubernetesVersion   string
-	KsEnable            bool
-	KsVersion           string
-	TerminusVersion     string
-	Debug               bool
-	IgnoreErr           bool
-	SkipPullImages      bool
-	SKipPushImages      bool
-	SecurityEnhancement bool
-	DeployLocalStorage  *bool
+	NodeName            string `json:"node_name"`
+	FilePath            string `json:"file_path"`
+	KubernetesVersion   string `json:"kubernetes_version"`
+	KsEnable            bool   `json:"ks_enable"`
+	KsVersion           string `json:"ks_version"`
+	TerminusVersion     string `json:"terminus_version"`
+	Debug               bool   `json:"debug"`
+	IgnoreErr           bool   `json:"ignore_err"`
+	SkipPullImages      bool   `json:"skip_pull_images"`
+	SKipPushImages      bool   `json:"skip_push_images"`
+	SecurityEnhancement bool   `json:"security_enhancement"`
+	DeployLocalStorage  *bool  `json:"deploy_local_storage"`
 	// DownloadCommand     func(path, url string) string
-	SkipConfirmCheck bool
-	InCluster        bool
-	ContainerManager string
-	FromCluster      bool
-	KubeConfig       string
-	Artifact         string
-	InstallPackages  bool
-	ImagesDir        string
-	Namespace        string
-	DeleteCRI        bool
-	DeleteCache      bool
-	Role             string
-	Type             string
-	Kubetype         string
+	SkipConfirmCheck bool   `json:"skip_confirm_check"`
+	InCluster        bool   `json:"in_cluster"`
+	ContainerManager string `json:"container_manager"`
+	FromCluster      bool   `json:"from_cluster"`
+	KubeConfig       string `json:"kube_config"`
+	Artifact         string `json:"artifact"`
+	InstallPackages  bool   `json:"install_packages"`
+	ImagesDir        string `json:"images_dir"`
+	Namespace        string `json:"namespace"`
+	DeleteCRI        bool   `json:"delete_cri"`
+	DeleteCache      bool   `json:"delete_cache"`
+	Role             string `json:"role"`
+	Type             string `json:"type"`
+	Kubetype         string `json:"kube_type"`
 
 	// Extra args
-	ExtraAddon      string // addon yaml config
-	RegistryMirrors string
+	ExtraAddon      string `json:"extra_addon"` // addon yaml config
+	RegistryMirrors string `json:"registry_mirrors"`
 
 	// master node ssh config
-	MasterHost              string
-	MasterNodeName          string
-	MasterSSHPort           int
-	MasterSSHUser           string
-	MasterSSHPassword       string
-	MasterSSHPrivateKeyPath string
-	LocalSSHPort            int
+	MasterHost              string `json:"master_host"`
+	MasterNodeName          string `json:"master_node_name"`
+	MasterSSHPort           int    `json:"master_ssh_port"`
+	MasterSSHUser           string `json:"master_ssh_user"`
+	MasterSSHPassword       string `json:"-"`
+	MasterSSHPrivateKeyPath string `json:"-"`
+	LocalSSHPort            int    `json:"-"`
 
-	SkipMasterPullImages bool
+	SkipMasterPullImages bool `json:"skip_master_pull_images"`
 
 	// db
-	Provider storage.Provider
+	Provider storage.Provider `json:"-"`
 	// User
-	User *User
+	User *User `json:"user"`
 	// storage
-	Storage     *Storage
-	AWS         *AwsHost
-	GPU         *GPU
-	Cloudflare  *Cloudflare
-	Frp         *Frp
-	TokenMaxAge int64
+	Storage     *Storage    `json:"storage"`
+	AWS         *AwsHost    `json:"aws"`
+	GPU         *GPU        `json:"gpu"`
+	Cloudflare  *Cloudflare `json:"cloudflare"`
+	Frp         *Frp        `json:"frp"`
+	TokenMaxAge int64       `json:"token_max_age"`
 
-	Request any
+	Request any `json:"-"`
 
-	IsCloudInstance bool
-	Minikube        bool
-	MinikubeProfile string
-	WSL             bool
+	IsCloudInstance bool   `json:"is_cloud_instance"`
+	Minikube        bool   `json:"minikube"`
+	MinikubeProfile string `json:"minikube_profile"`
+	WSL             bool   `json:"wsl"`
 
-	DownloadFullInstaller bool
-	BuildFullPackage      bool
-
-	BaseDir  string
-	Manifest string
+	BaseDir  string `json:"base_dir"`
+	Manifest string `json:"manifest"`
 }
 
 type AwsHost struct {
-	PublicIp string
-	Hostname string
+	PublicIp string `json:"public_pi"`
+	Hostname string `json:"hostname"`
 }
 
 type User struct {
@@ -134,19 +133,19 @@ type Storage struct {
 }
 
 type GPU struct {
-	Enable bool
-	Share  bool
+	Enable bool `json:"gpu_enable"`
+	Share  bool `json:"gpu_share"`
 }
 
 type Cloudflare struct {
-	Enable string
+	Enable string `json:"cloudflare_enable"`
 }
 
 type Frp struct {
-	Enable     string
-	Server     string
-	Port       string
-	AuthMethod string
+	Enable     string `json:"frp_enable"`
+	Server     string `json:"frp_server"`
+	Port       string `json:"frp_port"`
+	AuthMethod string `json:"frp_auth_method"`
 }
 
 func NewArgument() *Argument {
@@ -168,14 +167,6 @@ func NewArgument() *Argument {
 		Frp:        &Frp{},
 		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
 	}
-}
-
-func (a *Argument) SetDownloadFullInstaller(v bool) {
-	a.DownloadFullInstaller = v
-}
-
-func (a *Argument) SetBuildFullPackage(v bool) {
-	a.BuildFullPackage = v
 }
 
 func (a *Argument) SetGPU(enable bool, share bool) {
@@ -294,6 +285,9 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	args, _ := json.Marshal(arg)
+	logger.Infof("[runtime] arg: %s", string(args))
 
 	if err = loadExtraAddons(cluster, arg.ExtraAddon); err != nil {
 		return nil, err

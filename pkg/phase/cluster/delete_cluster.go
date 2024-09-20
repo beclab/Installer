@@ -73,8 +73,6 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 		p.modules = []module.Module{
 			&precheck.GreetingsModule{},
 			&precheck.GetSysInfoModel{},
-			&precheck.GetStorageKeyModule{},
-			&storage.RemoveMountModule{},
 		}
 
 		if p.runtime.Arg.WSL {

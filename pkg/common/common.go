@@ -215,6 +215,11 @@ const (
 	CacheJuiceFsFileName = "juicefs_binary_filename"
 
 	CacheMinikubeNodeIp = "minikube_node_ip"
+
+	CacheAccessKey = "storage_access_key"
+	CacheSecretKey = "storage_secret_key"
+	CacheToken     = "storage_token"
+	CacheClusterId = "storage_cluster_id"
 )
 
 const (

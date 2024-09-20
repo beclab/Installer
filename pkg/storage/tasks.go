@@ -162,16 +162,15 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 	// exp https://terminus-os-us-west-1.s3.us-west-1.amazonaws.com
 	// s3  s3://terminus-os-us-west-1
 
-	storage := t.KubeConf.Arg.Storage
-	if storage.StorageAccessKey == "" || storage.StorageSecretKey == "" {
+	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
+	storageAccessKey, _ := t.PipelineCache.GetMustString(common.CacheAccessKey)
+	storageSecretKey, _ := t.PipelineCache.GetMustString(common.CacheSecretKey)
+	storageToken, _ := t.PipelineCache.GetMustString(common.CacheToken)
+	storageClusterId, _ := t.PipelineCache.GetMustString(common.CacheClusterId)
+
+	if storageAccessKey == "" || storageSecretKey == "" {
 		return nil
 	}
-
-	storageBucket := storage.StorageBucket
-	storageAccessKey := storage.StorageAccessKey
-	storageSecretKey := storage.StorageSecretKey
-	storageToken := storage.StorageToken
-	storageClusterId := storage.StorageClusterId
 
 	_, a, f := strings.Cut(storageBucket, "://")
 	if !f {
@@ -200,16 +199,15 @@ type UnMountOSS struct {
 }
 
 func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
-	storage := t.KubeConf.Arg.Storage
-	if storage.StorageAccessKey == "" || storage.StorageSecretKey == "" {
+	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
+	storageAccessKey, _ := t.PipelineCache.GetMustString(common.CacheAccessKey)
+	storageSecretKey, _ := t.PipelineCache.GetMustString(common.CacheSecretKey)
+	storageToken, _ := t.PipelineCache.GetMustString(common.CacheToken)
+	storageClusterId, _ := t.PipelineCache.GetMustString(common.CacheClusterId)
+
+	if storageAccessKey == "" || storageSecretKey == "" {
 		return nil
 	}
-
-	storageBucket := storage.StorageBucket
-	storageAccessKey := storage.StorageAccessKey
-	storageSecretKey := storage.StorageSecretKey
-	storageToken := storage.StorageToken
-	storageClusterId := storage.StorageClusterId
 
 	// exp: https://name.area.aliyuncs.com
 	// oss  oss://name
