@@ -31,10 +31,11 @@ import (
 
 type Template struct {
 	BaseAction
-	Name     string
-	Template *template.Template
-	Dst      string
-	Data     util.Data
+	Name         string
+	Template     *template.Template
+	Dst          string
+	Data         util.Data
+	PrintContent bool
 }
 
 func (t *Template) Execute(runtime connector.Runtime) error {
@@ -43,7 +44,9 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", t.Template.Name()))
 	}
 
-	logger.Infof("template %s result: %s", t.Name, templateStr)
+	if t.PrintContent {
+		logger.Infof("template %s result: %s", t.Name, templateStr)
+	}
 
 	if !util.IsExist(runtime.GetHostWorkDir()) {
 		util.Mkdir(runtime.GetHostWorkDir())
