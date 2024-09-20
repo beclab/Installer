@@ -66,22 +66,10 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
+		&plugins.CopyEmbed{},
 		// FIXME: completely install supported
 		&terminus.CheckPreparedModule{BaseDir: runtime.GetBaseDir(), Force: true},
 		&terminus.TerminusPhaseStateModule{},
-		// &plugins.CopyEmbed{},
-		// &terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion},
-
-		// &precheck.PreCheckOsModule{}, // precheck_os()
-		// &patch.InstallDepsModule{},   // install_deps
-		// &os.ConfigSystemModule{}, // config_system
-		// &storage.InitStorageModule{Skip: runtime.Arg.WSL || !runtime.Arg.IsCloudInstance},
-		// &storage.InstallMinioModule{Skip: runtime.Arg.WSL || runtime.Arg.Storage.StorageType != common.Minio},
-		// &storage.InstallRedisModule{},
-		// &storage.InstallJuiceFsModule{},
-		// &plugins.GenerateCachedModule{},
-		// &plugins.CopyManifestModule{},
-		// &plugins.CopyEmbed{},
 	}
 
 	var kubeModules []module.Module
