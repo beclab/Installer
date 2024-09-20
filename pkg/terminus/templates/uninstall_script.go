@@ -13,14 +13,12 @@ set -x
 os_type=$(uname -s)
 base_dir={{ .BaseDir }}
 phase={{ .Phase }}
-log_path="install-wizard-v{{ .Version }}"
-log_date=$(date +"%Y-%m-%d")
-log_name="uninstall_${log_date}.log"
+installer_path="v{{ .Version }}"
 args=""
 if [ "${os_type}" == "Darwin" ]; then
 	args=" --minikube"
 fi
 
-sudo -E /bin/bash -c "terminus-cli terminus uninstall --base-dir $base_dir --phase $phase $args | tee $base_dir/$log_path/logs/$log_name"
+sudo -E /bin/bash -c "terminus-cli terminus uninstall --version {{ .Version }} --base-dir $base_dir --phase $phase $args | tee $base_dir/versions/$installer_path/logs/uninstall.log"
 
 `)))
