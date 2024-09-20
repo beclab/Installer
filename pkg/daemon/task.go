@@ -54,9 +54,17 @@ func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
 		Template: templates.TerminusdEnv,
 		Dst:      filepath.Join("/etc/systemd/system/", templates.TerminusdEnv.Name()),
 		Data: util.Data{
-			"Version":  g.KubeConf.Arg.TerminusVersion,
-			"KubeType": g.KubeConf.Arg.Kubetype,
-			"BaseDir":  baseDir, // g.KubeConf.Arg.BaseDir,
+			"Version":          g.KubeConf.Arg.TerminusVersion,
+			"KubeType":         g.KubeConf.Arg.Kubetype,
+			"RegistryMirrors":  g.KubeConf.Arg.RegistryMirrors,
+			"BaseDir":          baseDir,
+			"GpuEnable":        utils.FormatBoolToInt(g.KubeConf.Arg.GPU.Enable),
+			"GpuShare":         utils.FormatBoolToInt(g.KubeConf.Arg.GPU.Share),
+			"CloudflareEnable": g.KubeConf.Arg.Cloudflare.Enable,
+			"FrpEnable":        g.KubeConf.Arg.Frp.Enable,
+			"FrpServer":        g.KubeConf.Arg.Frp.Server,
+			"FrpPort":          g.KubeConf.Arg.Frp.Port,
+			"FrpAuthMethod":    g.KubeConf.Arg.Frp.AuthMethod,
 		},
 	}
 
@@ -94,6 +102,29 @@ func (e *EnableTerminusdService) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().SudoCmd("systemctl enable --now terminusd",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "enable terminusd failed")
+	}
+	return nil
+}
+
+type DisableTerminusdService struct {
+	common.KubeAction
+}
+
+func (s *DisableTerminusdService) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl disable --now terminusd", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "disable terminusd failed")
+	}
+	return nil
+}
+
+type UninstallTerminusd struct {
+	common.KubeAction
+}
+
+func (r *UninstallTerminusd) Execute(runtime connector.Runtime) error {
+	svcpath := filepath.Join("/etc/systemd/system/", templates.TerminusdService.Name())
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf /usr/local/bin/terminusd", svcpath), false, false); err != nil {
+		return errors.Wrap(errors.WithStack(err), "remove terminusd failed")
 	}
 	return nil
 }

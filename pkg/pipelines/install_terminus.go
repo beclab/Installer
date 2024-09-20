@@ -78,17 +78,3 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	return nil
 }
-
-func createStorage(opts *options.CliPrepareSystemOptions) *common.Storage {
-	return &common.Storage{
-		StorageType:       opts.StorageType,
-		StorageDomain:     opts.StorageDomain,
-		StorageBucket:     opts.StorageBucket,
-		StoragePrefix:     opts.StoragePrefix,
-		StorageAccessKey:  opts.StorageAccessKey,
-		StorageSecretKey:  opts.StorageSecretKey,
-		StorageToken:      opts.StorageToken,
-		StorageClusterId:  opts.StorageClusterId,
-		StorageSyncSecret: opts.StorageSyncSecret,
-	}
-}

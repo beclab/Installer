@@ -24,6 +24,7 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"github.com/pkg/errors"
 )
@@ -41,6 +42,8 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", t.Template.Name()))
 	}
+
+	logger.Infof("template %s result: %s", t.Name, templateStr)
 
 	if !util.IsExist(runtime.GetHostWorkDir()) {
 		util.Mkdir(runtime.GetHostWorkDir())

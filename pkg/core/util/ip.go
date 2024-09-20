@@ -18,12 +18,12 @@ package util
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"github.com/pkg/errors"
 )
 
@@ -180,7 +180,8 @@ func LocalIP() string {
 
 	localIp, err = GetLocalIP()
 	if err != nil {
-		logger.Fatalf("Failed to get Local IP: %v", err)
+		fmt.Println("Failed to get Local IP: ", err)
+		panic(err)
 	}
 	return localIp
 }

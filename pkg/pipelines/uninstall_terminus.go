@@ -28,8 +28,9 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	arg.SetDeleteCache(deleteCache)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))
 	arg.SetStorage(&common.Storage{
-		StorageType:   formatParms(common.EnvStorageTypeName, opt.StorageType),
-		StorageBucket: formatParms(common.EnvStorageBucketName, opt.StorageBucket),
+		StorageVendor: os.Getenv(common.EnvCloudInstanceName),
+		StorageType:   os.Getenv(common.EnvStorageTypeName),
+		StorageBucket: os.Getenv(common.EnvStorageBucketName),
 	})
 
 	if err := checkPhase(opt.Phase, opt.All); err != nil {
@@ -80,17 +81,6 @@ LOOP:
 	}
 
 	return input, nil
-}
-
-func formatParms(key, val string) string {
-	valEnv := os.Getenv(key)
-	if !strings.EqualFold(valEnv, "") {
-		return valEnv
-	}
-	if !strings.EqualFold(val, "") {
-		return val
-	}
-	return ""
 }
 
 func formatDeleteCache(opt *options.CliTerminusUninstallOptions) (bool, error) {

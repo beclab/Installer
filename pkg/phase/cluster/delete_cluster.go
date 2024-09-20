@@ -8,6 +8,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
+	"bytetrade.io/web3os/installer/pkg/daemon"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/kubesphere"
@@ -72,8 +73,6 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 		p.modules = []module.Module{
 			&precheck.GreetingsModule{},
 			&precheck.GetSysInfoModel{},
-			&precheck.GetStorageKeyModule{},
-			&storage.RemoveMountModule{},
 		}
 
 		if p.runtime.Arg.WSL {
@@ -126,12 +125,16 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 }
 
 func (p *phaseBuilder) phaseDownload() *phaseBuilder {
-	if p.convert() >= PhaseDownload && p.runtime.Arg.DeleteCache {
-		p.modules = append(p.modules, &storage.DeleteCacheModule{
-			BaseDir: p.runtime.GetBaseDir(),
-		})
-	}
+	if p.convert() >= PhaseDownload {
+		p.modules = append(p.modules,
+			&daemon.UninstallTerminusdModule{})
 
+		if p.runtime.Arg.DeleteCache {
+			p.modules = append(p.modules, &storage.DeleteCacheModule{
+				BaseDir: p.runtime.GetBaseDir(),
+			})
+		}
+	}
 	return p
 }
 
