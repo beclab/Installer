@@ -80,12 +80,30 @@ func (t *GetKubeType) Execute(runtime *common.KubeRuntime) error {
 	return nil
 }
 
+type DeleteKubeSphereCaches struct {
+	common.KubeAction
+}
+
+func (d *DeleteKubeSphereCaches) Execute(runtime connector.Runtime) error {
+	var files = []string{
+		path.Join(runtime.GetInstallerDir(), "files"),
+		path.Join(runtime.GetInstallerDir(), "cli"),
+	}
+
+	for _, f := range files {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true); err != nil {
+			return errors.Wrapf(errors.WithStack(err), "delete %s failed", f)
+		}
+	}
+
+	return nil
+}
+
 type DeleteCache struct {
 	common.KubeAction
 }
 
 func (t *DeleteCache) Execute(runtime connector.Runtime) error {
-	// var cacheDir = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.ImagesDir)
 	var cacheDir = path.Join(runtime.GetBaseDir(), cc.ImagesDir)
 	if err := util.RemoveDir(cacheDir); err != nil {
 		return err
@@ -395,16 +413,16 @@ type Check struct {
 }
 
 func (c *Check) Execute(runtime connector.Runtime) error {
-	var kubectlpath, _ = c.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
 	}
 
 	var labels = []string{"app=ks-apiserver", "component=kube-apiserver"}
 
 	for _, label := range labels {
 		var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", kubectlpath, common.NamespaceKubesphereSystem, label)
-		rphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
+		rphase, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 		if rphase == "Running" {
 			return nil
 		}

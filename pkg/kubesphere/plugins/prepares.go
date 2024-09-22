@@ -56,7 +56,7 @@ func (p *CheckStorageClass) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	var cmd = fmt.Sprintf("%s get sc | awk '{if(NR>1){print $1}}'", kubectlpath)
-	stdout, err := runtime.GetRunner().SudoCmd(cmd, false, true)
+	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get storageclass failed")
 	}
@@ -65,7 +65,7 @@ func (p *CheckStorageClass) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	cmd = fmt.Sprintf("%s get sc --no-headers", kubectlpath)
-	stdout, err = runtime.GetRunner().SudoCmd(cmd, false, true)
+	stdout, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "get storageclass failed")
 	}

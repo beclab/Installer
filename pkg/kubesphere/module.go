@@ -30,6 +30,24 @@ import (
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
 )
 
+type DeleteKubeSphereCachesModule struct {
+	common.KubeModule
+}
+
+func (m *DeleteKubeSphereCachesModule) Init() {
+	m.Name = "DeleteKsCache"
+	m.Desc = "Delete KubeSphere cache"
+
+	deleteKubeSphereCaches := &task.LocalTask{
+		Name:   "DeleteKubeSphereCaches",
+		Action: new(DeleteKubeSphereCaches),
+	}
+
+	m.Tasks = []task.Interface{
+		deleteKubeSphereCaches,
+	}
+}
+
 type DeleteCacheModule struct {
 	common.KubeModule
 }
@@ -199,7 +217,7 @@ func (c *CheckResultModule) Init() {
 		},
 		Action:   new(Check),
 		Parallel: false,
-		Retry:    500,
+		Retry:    30,
 		Delay:    10 * time.Second,
 	}
 

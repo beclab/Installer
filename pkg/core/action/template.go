@@ -61,7 +61,7 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fileName))
 	}
 
-	if err := runtime.GetRunner().SudoScp(fileName, t.Dst); err != nil {
+	if err := runtime.GetRunner().Host.SudoScp(fileName, t.Dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fileName, t.Dst))
 	}
 

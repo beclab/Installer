@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/pkg/core/cache"
+	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
@@ -185,14 +186,11 @@ func (b *BaseHost) SetCache(c *cache.Cache) {
 	b.Cache = c
 }
 
-func (b *BaseHost) Echo() {
-}
-
 func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
 	stdout, code, err = util.Exec(cmd, printOutput, printLine)
-	if err != nil {
-		logger.Errorf("[exec] %s CMD: %s, ERROR: %s", b.GetName(), cmd, err)
-	}
+	// if err != nil {
+	// 	logger.Errorf("[exec] %s CMD: %s, ERROR: %s", b.GetName(), cmd, err)
+	// }
 
 	if printOutput {
 		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
@@ -254,6 +252,40 @@ func (b *BaseHost) Scp(local, remote string) error {
 	return err
 }
 
+func (b *BaseHost) SudoScp(local, remote string) error {
+	remoteTmp := filepath.Join(common.TmpDir, remote)
+
+	// remoteTmp := remote
+	if err := b.Scp(local, remoteTmp); err != nil { // ~ copy
+		return err
+	}
+
+	baseRemotePath := remote
+	if !util.IsDir(local) {
+		baseRemotePath = filepath.Dir(remote)
+	}
+
+	// todo macos need to test
+	if err := b.MkDirAll(baseRemotePath, "755"); err != nil {
+		return err
+	}
+
+	var remoteDir = filepath.Dir(remote)
+	if !util.IsExist(remoteDir) {
+		util.Mkdir(remoteDir)
+	}
+
+	if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
+		return err
+	}
+
+	if _, err := b.SudoCmd(fmt.Sprintf("rm -rf %s", filepath.Join(common.TmpDir, "*")), false, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (b *BaseHost) FileExist(remote string) bool {
 	return util.IsExist(remote)
 }
@@ -279,6 +311,10 @@ func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string,
 	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
 
 	return stdout, err
+}
+
+func (b *BaseHost) SudoCmd(cmd string, printOutput bool, printLine bool) (string, error) {
+	return b.Cmd(SudoPrefix(cmd), printOutput, printLine)
 }
 
 func (b *BaseHost) CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {

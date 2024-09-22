@@ -19,9 +19,9 @@ type EnableSSHTask struct {
 }
 
 func (t *EnableSSHTask) Execute(runtime connector.Runtime) error {
-	stdout, _ := runtime.GetRunner().SudoCmdExt("systemctl is-active ssh", false, false)
+	stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active ssh", false, false)
 	if stdout != "active" {
-		if _, err := runtime.GetRunner().SudoCmdExt("systemctl enable --now ssh", false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable --now ssh", false, false); err != nil {
 			return err
 		}
 	}
@@ -48,12 +48,12 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	switch constants.OsPlatform {
 	case common.Ubuntu, common.Debian, common.Raspbian:
 		if !t.KubeConf.Arg.IsProxmox() && !t.KubeConf.Arg.IsRaspbian() {
-			if _, err := runtime.GetRunner().SudoCmd("add-apt-repository universe multiverse -y", false, true); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository universe multiverse -y", false, true); err != nil {
 				logger.Errorf("add os repo error %v", err)
 				return err
 			}
 
-			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, true); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s update -qq", constants.PkgManager), false, true); err != nil {
 				logger.Errorf("update os error %v", err)
 				return err
 			}
@@ -66,13 +66,13 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		// 	return err
 		// }
 
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s install -y -qq %s", constants.PkgManager, pre_reqs), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s install -y -qq %s", constants.PkgManager, pre_reqs), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", pre_reqs, err)
 			return err
 		}
 
 		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc bison flex tree unzip"
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, constants.PkgManager, cmd), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, constants.PkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}
@@ -87,7 +87,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		}
 	case common.CentOs, common.Fedora, common.RHEl:
 		cmd = "conntrack socat httpd-tools ntpdate net-tools make gcc openssh-server"
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s install -y %s", constants.PkgManager, cmd), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s install -y %s", constants.PkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}

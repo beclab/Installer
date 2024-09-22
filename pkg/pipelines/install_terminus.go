@@ -31,6 +31,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
+	arg.SetTokenMaxAge()
 
 	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
 		return err

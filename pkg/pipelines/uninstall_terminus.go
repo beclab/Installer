@@ -16,16 +16,17 @@ import (
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	var kubeVersion = phase.GetCurrentKubeVersion()
-	var deleteCache, err = formatDeleteCache(opt)
-	if err != nil {
-		return err
-	}
+	// var deleteCache, err = formatDeleteCache(opt)
+	// if err != nil {
+	// 	return err
+	// }
 
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opt.BaseDir)
+	arg.SetTerminusVersion(opt.Version)
 	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
-	arg.SetDeleteCache(deleteCache)
+	// arg.SetDeleteCache(deleteCache)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))
 	arg.SetStorage(&common.Storage{
 		StorageVendor: os.Getenv(common.EnvCloudInstanceName),

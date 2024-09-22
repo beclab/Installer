@@ -10,7 +10,7 @@ import (
 func NewCmdInfo() *cobra.Command {
 	infoCmd := &cobra.Command{
 		Use:   "info",
-		Short: "Terminus install, uninstall or restore",
+		Short: "Print system information, etc.",
 	}
 	infoCmd.AddCommand(showInfoCommand())
 
@@ -20,7 +20,7 @@ func NewCmdInfo() *cobra.Command {
 func showInfoCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show",
-		Short: "Install Terminus",
+		Short: "Print system information",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf(`OS_TYPE=%s
 OS_PLATFORM=%s

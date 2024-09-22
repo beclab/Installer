@@ -9,6 +9,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
 type InstallMonitorDashboardCrd struct {
@@ -16,15 +17,14 @@ type InstallMonitorDashboardCrd struct {
 }
 
 func (t *InstallMonitorDashboardCrd) Execute(runtime connector.Runtime) error {
-	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
 	}
 
-	// var p = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
-	var p = path.Join(runtime.GetBaseDir(), cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
+	var p = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
 	var cmd = fmt.Sprintf("%s apply -f %s", kubectlpath, p)
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 	return nil

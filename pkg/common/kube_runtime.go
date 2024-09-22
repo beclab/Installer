@@ -20,7 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
@@ -93,7 +95,7 @@ type Argument struct {
 	GPU         *GPU        `json:"gpu"`
 	Cloudflare  *Cloudflare `json:"cloudflare"`
 	Frp         *Frp        `json:"frp"`
-	TokenMaxAge int64       `json:"token_max_age"`
+	TokenMaxAge int64       `json:"token_max_age"` // nanosecond
 
 	Request any `json:"-"`
 
@@ -107,15 +109,15 @@ type Argument struct {
 }
 
 type AwsHost struct {
-	PublicIp string `json:"public_pi"`
-	Hostname string `json:"hostname"`
+	PublicIp string `json:"aws_public_ip"`
+	Hostname string `json:"aws_hostname"`
 }
 
 type User struct {
 	UserName   string `json:"user_name"`
-	Password   string `json:"password"`
-	Email      string `json:"email"`
-	DomainName string `json:"domain_name"`
+	Password   string `json:"user_password"`
+	Email      string `json:"user_email"`
+	DomainName string `json:"user_domain_name"`
 }
 
 type Storage struct {
@@ -167,6 +169,15 @@ func NewArgument() *Argument {
 		Frp:        &Frp{},
 		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
 	}
+}
+
+func (a *Argument) SetTokenMaxAge() {
+	s := os.Getenv(EnvTokenMaxAge)
+	age, err := strconv.ParseInt(s, 10, 64)
+	if err != nil || age == 0 {
+		age = DefaultTokenMaxAge
+	}
+	a.TokenMaxAge = age * int64(time.Second)
 }
 
 func (a *Argument) SetGPU(enable bool, share bool) {
@@ -293,7 +304,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 		return nil, err
 	}
 
-	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(), arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir)
+	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(), arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.Minikube)

@@ -51,7 +51,6 @@ type Download struct {
 	common.KubeAction
 	Version string
 	BaseDir string
-	Md5sum  string
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
@@ -59,9 +58,17 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		return errors.New("unknown version to download")
 	}
 
-	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.Version, t.BaseDir)
+	var fetchMd5 = fmt.Sprintf("curl -sSfL https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.md5sum.txt |awk '{print $1}'", t.Version)
+	md5sum, err := runtime.GetRunner().Host.Cmd(fetchMd5, false, false)
+	if err != nil {
+		return errors.New("get md5sum failed")
+	}
+
+	var baseDir = runtime.GetBaseDir()
+	var prePath = path.Join(baseDir, "versions")
+	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.Version, prePath)
 	wizard.CheckMd5Sum = true
-	wizard.Md5sum = t.Md5sum
+	wizard.Md5sum = md5sum
 
 	if err := wizard.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", wizard.FileName)
@@ -128,10 +135,10 @@ type CheckPepared struct {
 }
 
 func (t *CheckPepared) Execute(runtime connector.Runtime) error {
-	var finPath = filepath.Join(t.BaseDir, ".prepared")
+	var preparedPath = filepath.Join(t.BaseDir, ".prepared")
 
-	if utils.IsExist(finPath) {
-		t.PipelineCache.Set(common.CachePreparedState, "true")
+	if utils.IsExist(preparedPath) {
+		t.PipelineCache.Set(common.CachePreparedState, "true") // TODO not used
 	} else if t.Force {
 		return errors.New("terminus is not prepared well, cannot continue actions")
 	}
@@ -163,6 +170,10 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 
 	if err := runtime.GetRunner().SudoScp(filePath, uninstallPath); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", filePath, uninstallPath))
+	}
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", filePath), false, false); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove file %s failed", filePath))
 	}
 
 	return nil

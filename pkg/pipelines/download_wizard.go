@@ -17,9 +17,7 @@ func DownloadInstallationWizard(opts *options.CliDownloadWizardOptions) error {
 		return err
 	}
 
-	baseDir := runtime.GetBaseDir()
-
-	p := download.NewDownloadWizard(baseDir, opts.Md5sum, runtime)
+	p := download.NewDownloadWizard(runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download wizard failed %v", err)
 		return err

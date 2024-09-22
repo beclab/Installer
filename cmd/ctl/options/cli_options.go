@@ -25,6 +25,7 @@ func (o *CliKubeInitializeOptions) AddFlags(cmd *cobra.Command) {
 
 type CliTerminusUninstallOptions struct {
 	MiniKube bool
+	Version  string
 	BaseDir  string
 	All      bool
 	Phase    string
@@ -37,10 +38,10 @@ func NewCliTerminusUninstallOptions() *CliTerminusUninstallOptions {
 
 func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.MiniKube, "minikube", false, "Set minikube flag")
+	cmd.Flags().StringVar(&o.Version, "version", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
 	cmd.Flags().StringVar(&o.BaseDir, "base-dir", "", "Set uninstall package base dir , default value $HOME/.terminus")
 	cmd.Flags().BoolVar(&o.All, "all", false, "Uninstall terminus")
 	cmd.Flags().StringVar(&o.Phase, "phase", cluster.PhaseInstall.String(), "Uninstall from a specified phase and revert to the previous one. For example, using --phase install will remove the tasks performed in the 'install' phase, effectively returning the system to the 'prepare' state.")
-
 	cmd.Flags().BoolVar(&o.Quiet, "quiet", false, "Quiet mode, default: false")
 }
 

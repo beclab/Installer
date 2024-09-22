@@ -12,7 +12,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/gpu"
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/k3s"
-	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/terminus"
 )
@@ -27,7 +26,6 @@ type wslPhaseBuilder struct {
 func (l *wslPhaseBuilder) base() phase {
 	return []module.Module{
 		&precheck.GetSysInfoModel{},
-		&plugins.CopyEmbed{},
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
