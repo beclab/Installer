@@ -11,7 +11,7 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetTerminusVersion(opts.Version)
-	arg.SetKubernetesVersion(opts.KubeType, "")
+	// arg.SetKubernetesVersion(opts.KubeType, "")
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {

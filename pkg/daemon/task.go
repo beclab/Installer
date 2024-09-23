@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -129,5 +130,18 @@ func (r *UninstallTerminusd) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf %s && rm -rf /usr/local/bin/terminusd", svcpath, svcenvpath), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "remove terminusd failed")
 	}
+	return nil
+}
+
+type CheckTerminusdService struct {
+}
+
+func (c *CheckTerminusdService) Execute() error {
+	cmd := exec.Command("/bin/sh", "-c", "systemctl list-unit-files --no-legend --no-pager -l | grep terminusd")
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

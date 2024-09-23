@@ -1,7 +1,6 @@
 package os
 
 import (
-	"bytetrade.io/web3os/installer/cmd/ctl/helper"
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
@@ -24,7 +23,6 @@ func NewCmdInstallOs() *cobra.Command {
 		Use:   "install",
 		Short: "Install Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
-			helper.InitLog(o.InstallOptions.BaseDir)
 
 			if err := pipelines.CliInstallTerminusPipeline(o.InstallOptions); err != nil {
 				logger.Fatalf("install terminus error: %v", err)

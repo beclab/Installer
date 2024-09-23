@@ -15,16 +15,27 @@ import (
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
-	var kubeVersion = phase.GetCurrentKubeVersion()
+	var terminusVersion, err = phase.GetTerminusVersion()
+	if err != nil {
+		fmt.Printf("Terminus is not installed.\n")
+		return err
+	}
+
+	kubeVersion, err := phase.GetKubeVersion()
+	if err != nil {
+		fmt.Printf("Terminus is abnormal, please check if Kubernetes is running.\n")
+		return err
+	}
 	// var deleteCache, err = formatDeleteCache(opt)
 	// if err != nil {
 	// 	return err
 	// }
 
 	var arg = common.NewArgument()
+	arg.SetTerminusVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
-	arg.SetTerminusVersion(opt.Version)
-	arg.SetKubernetesVersion(kubeVersion, kubeVersion)
+	arg.SetKubeVersion(kubeVersion)
+	// arg.SetKubernetesVersion(kubeVersion, kubeVersion)
 	arg.SetMinikube(opt.MiniKube, "")
 	// arg.SetDeleteCache(deleteCache)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))

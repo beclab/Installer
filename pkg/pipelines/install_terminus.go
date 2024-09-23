@@ -15,22 +15,27 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-	if !opts.MiniKube {
-		if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
-			return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
-		}
-	} else {
-		if err := checkMacOSParams(opts.MiniKube, opts.MiniKubeProfile); err != nil {
-			return err
-		}
+	// if !opts.MiniKube {
+	// 	if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
+	// 		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
+	// 	}
+	// } else {
+	// 	if err := checkMacOSParams(opts.MiniKube, opts.MiniKubeProfile); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	var terminusVersion, _ = phase.GetTerminusVersion()
+	if terminusVersion != "" {
+		fmt.Printf("Terminus is already installed, please uninstall it first.")
+		return nil
 	}
 
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
-	arg.SetKubernetesVersion(opts.KubeType, "")
+	arg.SetKubeVersion(getKubeVersion(opts.KubeType))
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
-	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetTokenMaxAge()
 
 	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
@@ -78,4 +83,11 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	return nil
+}
+
+func getKubeVersion(kubeType string) string {
+	if kubeType == common.K3s {
+		return common.DefaultK3sVersion
+	}
+	return common.DefaultK8sVersion
 }

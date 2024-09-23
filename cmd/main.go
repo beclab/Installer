@@ -5,7 +5,6 @@ import (
 	"os/exec"
 
 	"bytetrade.io/web3os/installer/cmd/ctl"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 )
 
 func main() {
@@ -17,6 +16,4 @@ func main() {
 		// fmt.Println(err)
 		os.Exit(1)
 	}
-
-	defer logger.Sync()
 }

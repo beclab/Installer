@@ -253,6 +253,10 @@ func (a *Argument) IsRaspbian() bool {
 	return constants.OsPlatform == Raspbian
 }
 
+func (a *Argument) SetKubeVersion(version string) {
+	a.KubernetesVersion = version
+}
+
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 	if kubeVersion != "" {
 		a.KubernetesVersion = kubeVersion
@@ -297,9 +301,6 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 		return nil, err
 	}
 
-	args, _ := json.Marshal(arg)
-	logger.Infof("[runtime] arg: %s", string(args))
-
 	if err = loadExtraAddons(cluster, arg.ExtraAddon); err != nil {
 		return nil, err
 	}
@@ -327,6 +328,9 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 			host.SetMinikubeProfile(arg.MinikubeProfile)
 		}
 	}
+
+	args, _ := json.Marshal(arg)
+	logger.Infof("[runtime] arg: %s", string(args))
 
 	arg.KsEnable = defaultCluster.KubeSphere.Enabled
 	arg.KsVersion = defaultCluster.KubeSphere.Version

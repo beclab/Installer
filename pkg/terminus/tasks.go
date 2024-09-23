@@ -1,9 +1,12 @@
 package terminus
 
 import (
+	"context"
 	"fmt"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
@@ -17,6 +20,31 @@ import (
 
 	"github.com/pkg/errors"
 )
+
+type GetTerminusVersion struct {
+}
+
+func (t *GetTerminusVersion) Execute() (string, error) {
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
+	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get terminus -o jsonpath='{.items[*].spec.version}'", kubectlpath))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "get terminus version failed")
+	}
+
+	if version := string(output); version == "" {
+		return "", fmt.Errorf("Terminus might not be installed.")
+	} else {
+		return version, nil
+	}
+}
 
 type SetUserInfo struct {
 	common.KubeAction
@@ -155,7 +183,7 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.TerminusUninstallScriptValues.Name())
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
-		"Phase":   "install",
+		"Phase":   "prepare",
 		"Version": t.KubeConf.Arg.TerminusVersion,
 	}
 

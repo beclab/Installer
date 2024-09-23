@@ -68,7 +68,7 @@ func (p *phaseBuilder) convert() UninstallPhaseType {
 
 func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 	if p.convert() >= PhaseInstall {
-		_ = (&kubesphere.GetKubeType{}).Execute(p.runtime)
+		// _ = (&kubesphere.GetKubeType{}).Execute(p.runtime)
 
 		p.modules = []module.Module{
 			&precheck.GreetingsModule{},
@@ -125,9 +125,14 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 }
 
 func (p *phaseBuilder) phaseDownload() *phaseBuilder {
+	terminusdAction := &daemon.CheckTerminusdService{}
+	err := terminusdAction.Execute()
+
 	if p.convert() >= PhaseDownload {
+		if err == nil {
+			p.modules = append(p.modules, &daemon.UninstallTerminusdModule{})
+		}
 		p.modules = append(p.modules,
-			&daemon.UninstallTerminusdModule{},
 			&kubesphere.DeleteCacheModule{},
 		)
 

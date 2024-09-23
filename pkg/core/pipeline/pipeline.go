@@ -109,6 +109,7 @@ func (p *Pipeline) Start() error {
 		return errors.Errorf("[Job] %s execute failed: there are some error in your spec hosts", p.Name)
 	}
 	logger.Debugf("[Job] %s execute successfully!!! (%s)", p.Name, p.since())
+	logger.Sync()
 
 	return nil
 }

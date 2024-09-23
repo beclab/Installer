@@ -260,3 +260,14 @@ func FormatBoolToInt(b bool) int {
 	}
 	return 0
 }
+
+func KubeVersionAlias(version string) string {
+	var res string
+	if strings.Contains(version, "+k3s1") {
+		res = strings.ReplaceAll(version, "+k3s1", "-k3s")
+	} else if strings.Contains(version, "+k3s2") {
+		res = strings.ReplaceAll(version, "+k3s2", "-k3s")
+	}
+
+	return res
+}

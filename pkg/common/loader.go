@@ -31,7 +31,6 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/constants"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -187,7 +186,6 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 	}
 
 	fmt.Printf("current: %s\n", u.Name)
-	logger.Infof("current user: %s", u.Name)
 
 	allInOne := &kubekeyapiv1alpha2.Cluster{}
 

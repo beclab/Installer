@@ -367,12 +367,22 @@ func (s *SyneKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 			return errors.Wrap(errors.WithStack(err), "chmod 0600 $HOME/.kube/config failed")
 		}
 
-		userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+		// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
+		// }
+
+		// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
+		// }
+
+		userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user id failed")
 		}
 
-		userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+		userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		}

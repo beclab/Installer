@@ -27,6 +27,7 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/common"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
@@ -69,13 +70,13 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		os.Exit(1)
 	}
 	if err := base.GenerateWorkDir(); err != nil {
-		fmt.Printf("[ERRO]: Failed to create KubeKey work dir: %s\n", err)
+		fmt.Printf("[ERRO]: Failed to create work dir: %s\n", err)
 		os.Exit(1)
 	}
-	// if err := base.InitLogger(); err != nil {
-	// 	fmt.Printf("[ERRO]: Failed to init KubeKey log entry: %s\n", err)
-	// 	os.Exit(1)
-	// }
+	if err := base.InitLogger(); err != nil {
+		fmt.Printf("[ERRO]: Failed to init log entry: %s\n", err)
+		os.Exit(1)
+	}
 
 	return base
 }
@@ -230,16 +231,19 @@ func (b *BaseRuntime) HostIsDeprecated(host Host) bool {
 	return false
 }
 
-// func (b *BaseRuntime) InitLogger() error {
-// 	if b.GetWorkDir() == "" {
-// 		if err := b.GenerateWorkDir(); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	logDir := filepath.Join(b.GetWorkDir(), "logs")
-// 	logger.InitLog(logDir, b.verbose)
-// 	return nil
-// }
+func (b *BaseRuntime) InitLogger() error {
+	// if b.GetWorkDir() == "" {
+	// 	if err := b.GenerateWorkDir(); err != nil {
+	// 		return err
+	// 	}
+	// }
+	// logDir := filepath.Join(b.GetWorkDir(), "logs")
+	// logger.InitLog(logDir, b.verbose)
+	// return nil
+
+	logger.InitLog(path.Join(b.baseDir, "logs"))
+	return nil
+}
 
 func (b *BaseRuntime) GetCommandSed() string {
 	return b.cmdSed

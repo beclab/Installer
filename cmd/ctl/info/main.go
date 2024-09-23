@@ -11,6 +11,7 @@ func NewCmdInfo() *cobra.Command {
 	infoCmd := &cobra.Command{
 		Use:   "info",
 		Short: "Print system information, etc.",
+		Long:  "help for printing info",
 	}
 	infoCmd.AddCommand(showInfoCommand())
 
@@ -20,7 +21,8 @@ func NewCmdInfo() *cobra.Command {
 func showInfoCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show",
-		Short: "Print system information",
+		Short: "Print os information",
+		Long:  "help for printing os info",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf(`OS_TYPE=%s
 OS_PLATFORM=%s

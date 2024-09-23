@@ -40,7 +40,7 @@ func InitLog(logDir string) {
 		}
 	}
 
-	logName := path.Join(logDir, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02")))
+	logName := path.Join(logDir, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02_15-04-05")))
 	file, err := os.OpenFile(logName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
 	if err != nil {
 		panic(err)

@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -54,6 +55,32 @@ import (
 	dnsTemplates "bytetrade.io/web3os/installer/pkg/plugins/dns/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
+
+type GetKubeVersion struct{}
+
+func (g *GetKubeVersion) Execute() (string, error) {
+	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
+	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get nodes -l node-role.kubernetes.io/master -o jsonpath='{.items[*].status.nodeInfo.kubeletVersion}'", kubectlpath))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "get kube version failed")
+	}
+
+	if output == nil || len(output) == 0 {
+		return "", fmt.Errorf("get kube version failed")
+	}
+
+	var version = string(output)
+
+	return utils.KubeVersionAlias(version), nil
+}
 
 type GetClusterStatus struct {
 	common.KubeAction
@@ -372,12 +399,22 @@ func (c *CopyKubeConfigForControlPlane) Execute(runtime connector.Runtime) error
 		return errors.Wrap(errors.WithStack(err), "chmod $HOME/.kube/config failed")
 	}
 
-	userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+	// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+	// if err != nil {
+	// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
+	// }
+
+	// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+	// if err != nil {
+	// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
+	// }
+
+	userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get user id failed")
 	}
 
-	userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+	userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get user group id failed")
 	}
@@ -469,12 +506,22 @@ func (s *SyncKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 			return errors.Wrap(errors.WithStack(err), "sync kube config for normal user failed")
 		}
 
-		userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+		// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
+		// }
+
+		// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
+		// }
+
+		userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user id failed")
 		}
 
-		userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+		userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		}
