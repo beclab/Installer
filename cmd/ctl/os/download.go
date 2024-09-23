@@ -34,7 +34,7 @@ func NewCmdDownload() *cobra.Command {
 			helper.InitLog(o.BaseDir)
 
 			if err := pipelines.DownloadInstallationPackage(o); err != nil {
-				logger.Errorf("download terminus installation package error: %v", err)
+				logger.Fatalf("download terminus installation package error: %v", err)
 			}
 		},
 	}
