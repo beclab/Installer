@@ -56,17 +56,6 @@ SKIP:
 	return constants.InstalledKubeVersion
 }
 
-func UserParameters() *common.User {
-	var u = &common.User{
-		UserName:   "test",
-		Password:   "",
-		Email:      "test@myterminus.com",
-		DomainName: "myterminus.com",
-	}
-
-	return u
-}
-
 func StorageParameters() *common.Storage {
 	var storageAccessKey, storageSecretKey, storageToken, storageClusterId string
 
