@@ -136,3 +136,20 @@ func (m *TerminusPhaseStateModule) Init() {
 		installedState,
 	}
 }
+
+type DeleteWizardFilesModule struct {
+	common.KubeModule
+}
+
+func (d *DeleteWizardFilesModule) Init() {
+	d.Name = "DeleteWizardFiles"
+
+	deleteWizardFiles := &task.LocalTask{
+		Name:   "DeleteWizardFiles",
+		Action: &DeleteWizardFiles{},
+	}
+
+	d.Tasks = []task.Interface{
+		deleteWizardFiles,
+	}
+}

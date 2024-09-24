@@ -183,7 +183,7 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.TerminusUninstallScriptValues.Name())
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
-		"Phase":   "prepare",
+		"Phase":   "install",
 		"Version": t.KubeConf.Arg.TerminusVersion,
 	}
 
@@ -216,6 +216,24 @@ func (t *GenerateInstalledPhaseState) Execute(runtime connector.Runtime) error {
 	var phaseState = path.Join(runtime.GetBaseDir(), ".installed")
 	if err := util.WriteFile(phaseState, nil, cc.FileMode0644); err != nil {
 		return err
+	}
+	return nil
+}
+
+type DeleteWizardFiles struct {
+	common.KubeAction
+}
+
+func (d *DeleteWizardFiles) Execute(runtime connector.Runtime) error {
+	var dirs = []string{
+		path.Join(runtime.GetInstallerDir(), "files"),
+		path.Join(runtime.GetInstallerDir(), "cli"),
+	}
+
+	for _, dir := range dirs {
+		if util.IsExist(dir) {
+			runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", dir), false, true)
+		}
 	}
 	return nil
 }

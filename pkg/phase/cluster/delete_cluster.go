@@ -13,6 +13,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/kubesphere"
 	"bytetrade.io/web3os/installer/pkg/storage"
+	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
 type UninstallPhaseType int
@@ -113,7 +114,7 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 		p.modules = append(p.modules,
 			&container.DeleteZfsMountModule{},
 			&storage.RemoveStorageModule{},
-			&container.UninstallContainerModule{},
+			&container.UninstallContainerModule{Skip: p.runtime.Arg.IsCloudInstance},
 			&storage.DeleteTerminusDataModule{},
 			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".prepared",
@@ -134,6 +135,7 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 		}
 		p.modules = append(p.modules,
 			&kubesphere.DeleteCacheModule{},
+			&terminus.DeleteWizardFilesModule{},
 		)
 
 		if p.runtime.Arg.DeleteCache {
