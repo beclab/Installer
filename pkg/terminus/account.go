@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -14,17 +13,18 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	accounttemplates "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"github.com/pkg/errors"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-type UpdateAccountValues struct {
+type SetAccountValues struct {
 	common.KubeAction
 }
 
-func (p *UpdateAccountValues) Execute(runtime connector.Runtime) error {
-	var installPath = filepath.Dir(p.KubeConf.Arg.Manifest)
-	var accountFile = path.Join(installPath, "wizard", "config", "account", accounttemplates.AccountValues.Name())
+func (p *SetAccountValues) Execute(runtime connector.Runtime) error {
+	// todo User info
+	var accountFile = path.Join(runtime.GetInstallerDir(), "wizard", "config", "account", accounttemplates.AccountValues.Name())
 	var data = util.Data{
 		"UserName":   p.KubeConf.Arg.User.UserName,
 		"Password":   p.KubeConf.Arg.User.Password,
@@ -34,11 +34,11 @@ func (p *UpdateAccountValues) Execute(runtime connector.Runtime) error {
 
 	accountStr, err := util.Render(accounttemplates.AccountValues, data)
 	if err != nil {
-		return err
+		return errors.Wrap(errors.WithStack(err), "render account template failed")
 	}
 
 	if err := util.WriteFile(accountFile, []byte(accountStr), cc.FileMode0644); err != nil {
-		return err
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write account %s failed", accountFile))
 	}
 
 	return nil
@@ -61,8 +61,7 @@ func (t *InstallAccount) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)
-	var accountPath = path.Join(installPath, "wizard", "config", "account")
+	var accountPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "account")
 
 	if !util.IsExist(accountPath) {
 		return fmt.Errorf("account not exists")
@@ -90,12 +89,12 @@ type InstallAccountModule struct {
 func (m *InstallAccountModule) Init() {
 	m.Name = "InstallAccount"
 
-	installAccount := &task.RemoteTask{
-		Name:     "InstallAccount",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Action:   &InstallAccount{},
-		Parallel: false,
-		Retry:    1,
+	// todo  Enter account values
+
+	installAccount := &task.LocalTask{
+		Name:   "InstallAccount",
+		Action: &InstallAccount{},
+		Retry:  1,
 	}
 
 	m.Tasks = []task.Interface{

@@ -123,15 +123,15 @@ type User struct {
 type Storage struct {
 	StorageVendor    string `json:"storage_vendor"`
 	StorageType      string `json:"storage_type"`
-	StorageDomain    string `json:"storage_domain"`
 	StorageBucket    string `json:"storage_bucket"`
 	StoragePrefix    string `json:"storage_prefix"`
 	StorageAccessKey string `json:"storage_access_key"`
 	StorageSecretKey string `json:"storage_secret_key"`
 
-	StorageToken      string `json:"storage_token"`       // juicefs  --> from env
-	StorageClusterId  string `json:"storage_cluster_id"`  // use only on the Terminus cloud, juicefs  --> from env
-	StorageSyncSecret string `json:"storage_sync_secret"` // use only on the Terminus cloud  --> from env
+	StorageToken        string `json:"storage_token"`       // juicefs  --> from env
+	StorageClusterId    string `json:"storage_cluster_id"`  // use only on the Terminus cloud, juicefs  --> from env
+	StorageSyncSecret   string `json:"storage_sync_secret"` // use only on the Terminus cloud  --> from env
+	BackupClusterBucket string `json:"backup_cluster_bucket"`
 }
 
 type GPU struct {
@@ -253,29 +253,18 @@ func (a *Argument) IsRaspbian() bool {
 	return constants.OsPlatform == Raspbian
 }
 
-func (a *Argument) SetKubeVersion(version string) {
-	a.KubernetesVersion = version
+func (a *Argument) SetKubeVersion(kubeType string) {
+	var kubeVersion = DefaultK3sVersion
+	if kubeType == K8s {
+		kubeVersion = DefaultK8sVersion
+	}
+	a.KubernetesVersion = kubeVersion
+	a.Kubetype = kubeType
 }
 
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
-	if kubeVersion != "" {
-		a.KubernetesVersion = kubeVersion
-		isk3s := strings.Contains(a.KubernetesVersion, "k3s")
-		if isk3s {
-			a.Kubetype = K8s
-		} else {
-			a.Kubetype = K3s
-		}
-		return
-	}
-
+	a.KubernetesVersion = kubeVersion
 	a.Kubetype = kubeType
-	switch kubeType {
-	case K8s:
-		a.KubernetesVersion = DefaultK8sVersion
-	default:
-		a.KubernetesVersion = DefaultK3sVersion
-	}
 }
 
 func (a *Argument) SetBaseDir(dir string) {

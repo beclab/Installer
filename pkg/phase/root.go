@@ -20,7 +20,7 @@ func GetTerminusVersion() (string, error) {
 	return terminusTask.Execute()
 }
 
-func GetKubeVersion() (string, error) {
+func GetKubeVersion() (string, string, error) {
 	var kubeTask = &kubernetes.GetKubeVersion{}
 	return kubeTask.Execute()
 }
@@ -49,17 +49,6 @@ SKIP:
 	}
 
 	return constants.InstalledKubeVersion
-}
-
-func UserParameters() *common.User {
-	var u = &common.User{
-		UserName:   "test",
-		Password:   "",
-		Email:      "test@myterminus.com",
-		DomainName: "myterminus.com",
-	}
-
-	return u
 }
 
 func StorageParameters() *common.Storage {

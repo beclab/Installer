@@ -22,14 +22,14 @@ func CliInitializeTerminusPipeline(kubeType string, minikube bool, minikubeProfi
 		return err
 	}
 
-	var ksVersion, err = getNodeVersion(kubeType, minikube)
-	if err != nil {
-		return err
-	}
+	// var ksVersion, err = getNodeVersion(kubeType, minikube)
+	// if err != nil {
+	// 	return err
+	// }
 
 	var arg = common.NewArgument()
 	arg.RegistryMirrors = registryMirrors
-	arg.SetKubernetesVersion(kubeType, ksVersion)
+	// arg.SetKubernetesVersion(kubeType, ksVersion)
 	arg.SetMinikube(minikube, minikubeProfileName)
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)

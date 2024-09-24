@@ -23,6 +23,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
+	arg.SetKubeVersion(opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(getStorageValueFromEnv())
@@ -58,15 +59,15 @@ func getStorageValueFromEnv() *common.Storage {
 	}
 
 	return &common.Storage{
-		StorageType:       storageType,
-		StorageDomain:     os.Getenv("S3_BUCKET"),
-		StorageBucket:     os.Getenv("S3_BUCKET"), // os.Getenv("BACKUP_CLUSTER_BUCKET"),
-		StoragePrefix:     os.Getenv("BACKUP_KEY_PREFIX"),
-		StorageAccessKey:  os.Getenv("AWS_ACCESS_KEY_ID_SETUP"),
-		StorageSecretKey:  os.Getenv("AWS_SECRET_ACCESS_KEY_SETUP"),
-		StorageToken:      os.Getenv("AWS_SESSION_TOKEN_SETUP"),
-		StorageClusterId:  os.Getenv("CLUSTER_ID"),
-		StorageSyncSecret: os.Getenv("BACKUP_SECRET"),
-		StorageVendor:     os.Getenv("TERMINUS_IS_CLOUD_VERSION"),
+		StorageType:         storageType,
+		StorageBucket:       os.Getenv("S3_BUCKET"), // os.Getenv("BACKUP_CLUSTER_BUCKET"),
+		StoragePrefix:       os.Getenv("BACKUP_KEY_PREFIX"),
+		StorageAccessKey:    os.Getenv("AWS_ACCESS_KEY_ID_SETUP"),
+		StorageSecretKey:    os.Getenv("AWS_SECRET_ACCESS_KEY_SETUP"),
+		StorageToken:        os.Getenv("AWS_SESSION_TOKEN_SETUP"),
+		StorageClusterId:    os.Getenv("CLUSTER_ID"),
+		StorageSyncSecret:   os.Getenv("BACKUP_SECRET"),
+		StorageVendor:       os.Getenv("TERMINUS_IS_CLOUD_VERSION"),
+		BackupClusterBucket: os.Getenv("BACKUP_CLUSTER_BUCKET"),
 	}
 }

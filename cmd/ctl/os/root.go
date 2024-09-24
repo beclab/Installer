@@ -18,6 +18,10 @@ func NewCmdOs() *cobra.Command {
 	// rootOsCmd.AddCommand(NewCmdDownloadWizard())
 	// rootOsCmd.AddCommand(NewCmdDownload())
 	// rootOsCmd.AddCommand(NewCmdCheckDownload())
+
+	// TODO Add a command to install Terminus.
+	// TODO Before installing Terminus, we need to obtain user information, the WSL NAT gateway address, etc.
+
 	rootOsCmd.AddCommand(NewCmdRootDownload())
 	rootOsCmd.AddCommand(NewCmdPrepare())
 	rootOsCmd.AddCommand(NewCmdInstallOs())

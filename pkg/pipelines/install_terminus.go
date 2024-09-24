@@ -33,7 +33,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
-	arg.SetKubeVersion(getKubeVersion(opts.KubeType))
+	arg.SetKubeVersion(opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 	arg.SetTokenMaxAge()
@@ -83,11 +83,4 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	return nil
-}
-
-func getKubeVersion(kubeType string) string {
-	if kubeType == common.K3s {
-		return common.DefaultK3sVersion
-	}
-	return common.DefaultK8sVersion
 }
