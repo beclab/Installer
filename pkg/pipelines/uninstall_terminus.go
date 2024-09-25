@@ -15,8 +15,7 @@ import (
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
-	kubeVersion, _ := phase.GetKubeVersion()
-
+	_, kubeType, _ := phase.GetKubeVersion()
 	// var deleteCache, err = formatDeleteCache(opt)
 	// if err != nil {
 	// 	return err
@@ -25,7 +24,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	var arg = common.NewArgument()
 	arg.SetTerminusVersion(opt.Version)
 	arg.SetBaseDir(opt.BaseDir)
-	arg.SetKubeVersion(kubeVersion)
+	arg.SetKubeVersion(kubeType)
 	arg.SetMinikube(opt.MiniKube, "")
 	// arg.SetDeleteCache(deleteCache)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))

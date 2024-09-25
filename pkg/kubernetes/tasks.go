@@ -58,10 +58,10 @@ import (
 
 type GetKubeVersion struct{}
 
-func (g *GetKubeVersion) Execute() (string, error) {
+func (g *GetKubeVersion) Execute() (string, string, error) {
 	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
 	if err != nil {
-		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
+		return "", "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
 	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
@@ -70,16 +70,17 @@ func (g *GetKubeVersion) Execute() (string, error) {
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get nodes -l node-role.kubernetes.io/master -o jsonpath='{.items[*].status.nodeInfo.kubeletVersion}'", kubectlpath))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Wrap(errors.WithStack(err), "get kube version failed")
+		return "", "", errors.Wrap(errors.WithStack(err), "get kube version failed")
 	}
 
 	if output == nil || len(output) == 0 {
-		return "", fmt.Errorf("get kube version failed")
+		return "", "", fmt.Errorf("get kube version failed")
 	}
 
 	var version = string(output)
+	var kubeVersion, kubeType = utils.KubeVersionAlias(version)
 
-	return utils.KubeVersionAlias(version), nil
+	return kubeVersion, kubeType, nil
 }
 
 type GetClusterStatus struct {

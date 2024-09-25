@@ -253,29 +253,18 @@ func (a *Argument) IsRaspbian() bool {
 	return constants.OsPlatform == Raspbian
 }
 
-func (a *Argument) SetKubeVersion(version string) {
-	a.KubernetesVersion = version
+func (a *Argument) SetKubeVersion(kubeType string) {
+	var kubeVersion = DefaultK3sVersion
+	if kubeType == K8s {
+		kubeVersion = DefaultK8sVersion
+	}
+	a.KubernetesVersion = kubeVersion
+	a.Kubetype = kubeType
 }
 
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
-	if kubeVersion != "" {
-		a.KubernetesVersion = kubeVersion
-		isk3s := strings.Contains(a.KubernetesVersion, "k3s")
-		if isk3s {
-			a.Kubetype = K8s
-		} else {
-			a.Kubetype = K3s
-		}
-		return
-	}
-
+	a.KubernetesVersion = kubeVersion
 	a.Kubetype = kubeType
-	switch kubeType {
-	case K8s:
-		a.KubernetesVersion = DefaultK8sVersion
-	default:
-		a.KubernetesVersion = DefaultK3sVersion
-	}
 }
 
 func (a *Argument) SetBaseDir(dir string) {

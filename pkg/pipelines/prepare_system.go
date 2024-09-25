@@ -23,6 +23,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
+	arg.SetKubeVersion(opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(getStorageValueFromEnv())

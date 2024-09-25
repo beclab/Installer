@@ -20,7 +20,7 @@ func GetTerminusVersion() (string, error) {
 	return terminusTask.Execute()
 }
 
-func GetKubeVersion() (string, error) {
+func GetKubeVersion() (string, string, error) {
 	var kubeTask = &kubernetes.GetKubeVersion{}
 	return kubeTask.Execute()
 }
