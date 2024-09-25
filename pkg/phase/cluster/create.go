@@ -69,6 +69,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		&plugins.CopyEmbed{},
 		// FIXME: completely install supported
 		&terminus.CheckPreparedModule{BaseDir: runtime.GetBaseDir(), Force: true},
+		&terminus.TerminusUninstallScriptModule{},
 		&terminus.TerminusPhaseStateModule{},
 	}
 
