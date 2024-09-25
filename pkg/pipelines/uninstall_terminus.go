@@ -30,9 +30,9 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	// arg.SetDeleteCache(deleteCache)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))
 	arg.SetStorage(&common.Storage{
-		StorageVendor: os.Getenv(common.EnvCloudInstanceName),
-		StorageType:   os.Getenv(common.EnvStorageTypeName),
-		StorageBucket: os.Getenv(common.EnvStorageBucketName),
+		StorageVendor: os.Getenv(common.ENV_TERMINUS_IS_CLOUD_VERSION),
+		StorageType:   os.Getenv(common.ENV_STORAGE),
+		StorageBucket: os.Getenv(common.ENV_S3_BUCKET),
 	})
 
 	if err := checkPhase(opt.Phase, opt.All); err != nil {

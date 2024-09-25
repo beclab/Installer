@@ -149,6 +149,7 @@ type Frp struct {
 	Server     string `json:"frp_server"`
 	Port       string `json:"frp_port"`
 	AuthMethod string `json:"frp_auth_method"`
+	AuthToken  string `json:"frp_auth_token"`
 }
 
 func NewArgument() *Argument {
@@ -158,7 +159,7 @@ func NewArgument() *Argument {
 		InstallPackages:  false,
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
-		IsCloudInstance:  strings.EqualFold(os.Getenv(EnvCloudInstanceName), TRUE),
+		IsCloudInstance:  strings.EqualFold(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION), TRUE),
 		Storage: &Storage{
 			StorageType: Minio,
 		},
@@ -174,7 +175,7 @@ func NewArgument() *Argument {
 }
 
 func (a *Argument) SetTokenMaxAge() {
-	s := os.Getenv(EnvTokenMaxAge)
+	s := os.Getenv(ENV_TOKEN_MAX_AGE)
 	age, err := strconv.ParseInt(s, 10, 64)
 	if err != nil || age == 0 {
 		age = DefaultTokenMaxAge
@@ -223,14 +224,15 @@ func (a *Argument) SetMinikube(minikube bool, profile string) {
 }
 
 func (a *Argument) SetReverseProxy() {
+
 	var enableCloudflare = "1"
 	var enableFrp = "0"
 	var frpServer = ""
 	var frpPort = "0"
 	var frpAuthMethod = ""
+	var frpAuthToken = ""
 
-	cloudVersion := os.Getenv("TERMINUS_IS_CLOUD_VERSION")
-	if cloudVersion == "true" {
+	if a.IsCloudInstance {
 		enableCloudflare = "0"
 	} else if os.Getenv("FRP_ENABLE") == "1" {
 		enableCloudflare = "0"
@@ -238,6 +240,7 @@ func (a *Argument) SetReverseProxy() {
 		frpServer = os.Getenv("FRP_SERVER")
 		frpPort = os.Getenv("FRP_PORT")
 		frpAuthMethod = os.Getenv("FRP_AUTH_METHOD")
+		frpAuthToken = os.Getenv("FRP_AUTH_TOKEN")
 	}
 
 	a.Cloudflare.Enable = enableCloudflare
@@ -245,6 +248,7 @@ func (a *Argument) SetReverseProxy() {
 	a.Frp.Server = util.RemoveHTTPPrefix(frpServer)
 	a.Frp.Port = frpPort
 	a.Frp.AuthMethod = frpAuthMethod
+	a.Frp.AuthToken = frpAuthToken
 }
 
 func (a *Argument) IsProxmox() bool {

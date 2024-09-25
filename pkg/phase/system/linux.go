@@ -136,6 +136,5 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				},
 			}
 		}).inBox(l.runtime)...).
-		addModule(&terminus.PreparedModule{BaseDir: l.runtime.GetBaseDir()})
-	// addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
+		addModule(&terminus.PreparedModule{})
 }

@@ -66,17 +66,14 @@ func (m *DownloadFullInstallerModule) Init() {
 
 type PreparedModule struct {
 	common.KubeModule
-	BaseDir string
 }
 
 func (m *PreparedModule) Init() {
 	m.Name = "PrepareFinished"
 
 	prepareFinished := &task.LocalTask{
-		Name: "PrepareFinished",
-		Action: &PrepareFinished{
-			BaseDir: m.BaseDir,
-		},
+		Name:   "PrepareFinished",
+		Action: &PrepareFinished{},
 	}
 
 	m.Tasks = []task.Interface{
@@ -120,16 +117,16 @@ func (m *TerminusUninstallScriptModule) Init() {
 	}
 }
 
-type TerminusPhaseStateModule struct {
+type InstalledModule struct {
 	common.KubeModule
 }
 
-func (m *TerminusPhaseStateModule) Init() {
-	m.Name = "GeneratePhaseState"
+func (m *InstalledModule) Init() {
+	m.Name = "InstallFinished"
 
 	installedState := &task.LocalTask{
-		Name:   "GenerateInstalledPhase",
-		Action: &GenerateInstalledPhaseState{},
+		Name:   "InstallFinished",
+		Action: &InstallFinished{},
 	}
 
 	m.Tasks = []task.Interface{

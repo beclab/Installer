@@ -505,7 +505,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	defer cancel()
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", kubectl), false, false); err != nil {
-		storageAccessKey = os.Getenv(common.EnvStorageAccessKeyName)
+		storageAccessKey = os.Getenv(common.ENV_AWS_ACCESS_KEY_ID_SETUP)
 		if storageAccessKey == "" {
 			logger.Errorf("storage access key not found")
 		}
@@ -514,7 +514,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sk}'", kubectl), false, false); err != nil {
-		storageSecretKey = os.Getenv(common.EnvStorageSecretKeyName)
+		storageSecretKey = os.Getenv(common.ENV_AWS_SECRET_ACCESS_KEY_SETUP)
 		if storageSecretKey == "" {
 			logger.Errorf("storage secret key not found")
 		}
@@ -523,7 +523,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sts}'", kubectl), false, false); err != nil {
-		storageToken = os.Getenv(common.EnvStorageTokenName)
+		storageToken = os.Getenv(common.ENV_AWS_SESSION_TOKEN_SETUP)
 		if storageToken == "" {
 			logger.Errorf("storage token not found")
 		}
@@ -532,7 +532,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.labels.bytetrade\\.io/cluster-id}'", kubectl), false, false); err != nil {
-		storageClusterId = os.Getenv(common.EnvStorageClusterIdName)
+		storageClusterId = os.Getenv(common.ENV_CLUSTER_ID)
 		if storageClusterId == "" {
 			logger.Errorf("storage cluster id not found")
 		}

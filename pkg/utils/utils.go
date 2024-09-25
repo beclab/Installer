@@ -29,6 +29,7 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -185,6 +186,11 @@ func FormatBytes(bytes int64) string {
 	}
 
 	return result
+}
+
+func ParseInt(s string) int {
+	res, _ := strconv.ParseInt(s, 10, 64)
+	return int(res)
 }
 
 func GenerateNumberWithProbability(p float64) int {

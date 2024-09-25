@@ -186,11 +186,8 @@ func (b *BaseHost) SetCache(c *cache.Cache) {
 	b.Cache = c
 }
 
-func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
-	stdout, code, err = util.Exec(cmd, printOutput, printLine)
-	// if err != nil {
-	// 	logger.Errorf("[exec] %s CMD: %s, ERROR: %s", b.GetName(), cmd, err)
-	// }
+func (b *BaseHost) Exec(ctx context.Context, cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
+	stdout, code, err = util.Exec(ctx, cmd, printOutput, printLine)
 
 	if printOutput {
 		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
@@ -202,7 +199,7 @@ func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout st
 }
 
 func (b *BaseHost) ExecExt(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
-	stdout, code, err = util.Exec(cmd, printOutput, printLine)
+	stdout, code, err = util.Exec(context.Background(), cmd, printOutput, printLine)
 
 	if printOutput {
 		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
@@ -214,7 +211,7 @@ func (b *BaseHost) ExecExt(cmd string, printOutput bool, printLine bool) (stdout
 }
 
 func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool) error {
-	output, _, err := b.Exec(SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), printOutput, printLine)
+	output, _, err := b.Exec(context.Background(), SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), printOutput, printLine)
 	if err != nil {
 		return fmt.Errorf("open remote file failed %v, remote path: %s", err, remote)
 	}
@@ -248,7 +245,7 @@ func (b *BaseHost) Scp(local, remote string) error {
 		util.Mkdir(remoteDir)
 	}
 	var cmd = fmt.Sprintf("cp %s %s", local, remote)
-	_, _, err := b.Exec(cmd, false, false)
+	_, _, err := b.Exec(context.Background(), cmd, false, false)
 	return err
 }
 
@@ -296,7 +293,15 @@ func (b *BaseHost) DirExist(remote string) (bool, error) {
 }
 
 func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, error) {
-	stdout, _, err := b.Exec(cmd, printOutput, printLine)
+	stdout, _, err := b.Exec(context.Background(), cmd, printOutput, printLine)
+	if err != nil {
+		return stdout, err
+	}
+	return stdout, nil
+}
+
+func (b *BaseHost) CmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
+	stdout, _, err := b.Exec(ctx, cmd, printOutput, printLine)
 	if err != nil {
 		return stdout, err
 	}
@@ -304,7 +309,7 @@ func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, er
 }
 
 func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
-	stdout, _, err := util.Exec(cmd, printOutput, printLine)
+	stdout, _, err := util.Exec(context.Background(), cmd, printOutput, printLine)
 
 	if printOutput {
 		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
@@ -317,6 +322,10 @@ func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string,
 
 func (b *BaseHost) SudoCmd(cmd string, printOutput bool, printLine bool) (string, error) {
 	return b.Cmd(SudoPrefix(cmd), printOutput, printLine)
+}
+
+func (b *BaseHost) SudoCmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
+	return b.CmdContext(ctx, SudoPrefix(cmd), printOutput, printLine)
 }
 
 func (b *BaseHost) CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
@@ -336,7 +345,7 @@ func (b *BaseHost) MkDirAll(path string, mode string) error {
 		mode = "775"
 	}
 	mkDstDir := fmt.Sprintf("mkdir -p -m %s %s || true", mode, path)
-	if _, _, err := b.Exec(mkDstDir, false, false); err != nil {
+	if _, _, err := b.Exec(context.Background(), mkDstDir, false, false); err != nil {
 		return err
 	}
 

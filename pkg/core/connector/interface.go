@@ -109,7 +109,7 @@ type Host interface {
 	GetCache() *cache.Cache
 	SetCache(c *cache.Cache)
 
-	Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
+	Exec(ctx context.Context, cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
 	ExecExt(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error)
 	Fetch(local, remote string, printOutput bool, printLine bool) error
 	SudoScp(local, remote string) error
@@ -119,6 +119,7 @@ type Host interface {
 	Cmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExt(cmd string, printOutput bool, printLine bool) (string, error)
 	SudoCmd(cmd string, printOutput bool, printLine bool) (string, error)
+	SudoCmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	MkDirAll(path string, mode string) error
 }

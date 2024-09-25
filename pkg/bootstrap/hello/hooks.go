@@ -1,6 +1,7 @@
 package hello
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -24,7 +25,7 @@ func (h *HelloHook) Init(module module.Module, result *ending.ModuleResult) {
 
 func (h *HelloHook) Try() error {
 	fmt.Println("---hello hook / try---", h.Result.StartTime.String())
-	_, _, err := util.Exec("echo 'hello, world!!!!!'", true, false)
+	_, _, err := util.Exec(context.Background(), "echo 'hello, world!!!!!'", true, false)
 
 	if err != nil {
 		h.Result.ErrResult(err)
