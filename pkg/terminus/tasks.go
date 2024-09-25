@@ -46,6 +46,40 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 	}
 }
 
+type CheckPodsRunning struct {
+	common.KubeAction
+	labels map[string][]string
+}
+
+func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
+	if c.labels == nil {
+		return nil
+	}
+
+	kubectl, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubectl not found")
+	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	for ns, labels := range c.labels {
+		for _, label := range labels {
+			var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[*].status.phase}'", kubectl, ns, label)
+			phase, err := runtime.GetRunner().Host.SudoCmdContext(ctx, cmd, false, true)
+			if err != nil {
+				return fmt.Errorf("pod status invalid, namespace: %s, label: %s, waiting ...", ns, label)
+			}
+
+			if phase != "Running" {
+				return fmt.Errorf("pod is %s, namespace: %s, label: %s, waiting ...", phase, ns, label)
+			}
+		}
+	}
+
+	return nil
+}
+
 type SetUserInfo struct {
 	common.KubeAction
 }
@@ -145,15 +179,15 @@ func (t *DownloadFullInstaller) Execute(runtime connector.Runtime) error {
 
 type PrepareFinished struct {
 	common.KubeAction
-	BaseDir string
 }
 
 func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
-	var finPath = filepath.Join(t.BaseDir, ".prepared")
-	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", finPath), false, true); err != nil {
-		return err
-	}
-	return nil
+	var preparedFile = filepath.Join(runtime.GetBaseDir(), ".prepared")
+	return util.WriteFile(preparedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
+	// if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", preparedFile), false, true); err != nil {
+	// 	return err
+	// }
+	// return nil
 }
 
 type CheckPepared struct {
@@ -207,17 +241,13 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 	return nil
 }
 
-type GenerateInstalledPhaseState struct {
+type InstallFinished struct {
 	common.KubeAction
-	Phase string
 }
 
-func (t *GenerateInstalledPhaseState) Execute(runtime connector.Runtime) error {
-	var phaseState = path.Join(runtime.GetBaseDir(), ".installed")
-	if err := util.WriteFile(phaseState, nil, cc.FileMode0644); err != nil {
-		return err
-	}
-	return nil
+func (t *InstallFinished) Execute(runtime connector.Runtime) error {
+	var installedFile = path.Join(runtime.GetBaseDir(), ".installed")
+	return util.WriteFile(installedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
 }
 
 type DeleteWizardFiles struct {

@@ -180,6 +180,7 @@ const (
 	CommandHelm      = "helm"
 	CommandMinikube  = "minikube"
 	CommandUnzip     = "unzip"
+	CommandVelero    = "velero"
 
 	CacheCommandHelmPath     = "helm_bin_path"
 	CacheCommandKubectlPath  = "kubectl_bin_path"
@@ -229,12 +230,16 @@ const (
 )
 
 const (
-	EnvCloudInstanceName    = "TERMINUS_IS_CLOUD_VERSION"
-	EnvStorageTypeName      = "STORAGE"
-	EnvStorageBucketName    = "S3_BUCKET"
-	EnvStorageAccessKeyName = "AWS_ACCESS_KEY_ID_SETUP"
-	EnvStorageSecretKeyName = "AWS_SECRET_ACCESS_KEY_SETUP"
-	EnvStorageTokenName     = "AWS_SESSION_TOKEN_SETUP"
-	EnvStorageClusterIdName = "CLUSTER_ID"
-	EnvTokenMaxAge          = "TOKEN_MAX_AGE"
+	ENV_TERMINUS_IS_CLOUD_VERSION   = "TERMINUS_IS_CLOUD_VERSION"
+	ENV_STORAGE                     = "STORAGE"
+	ENV_S3_BUCKET                   = "S3_BUCKET"
+	ENV_AWS_ACCESS_KEY_ID_SETUP     = "AWS_ACCESS_KEY_ID_SETUP"
+	ENV_AWS_SECRET_ACCESS_KEY_SETUP = "AWS_SECRET_ACCESS_KEY_SETUP"
+	ENV_AWS_SESSION_TOKEN_SETUP     = "AWS_SESSION_TOKEN_SETUP"
+	ENV_BACKUP_KEY_PREFIX           = "BACKUP_KEY_PREFIX"
+	ENV_BACKUP_SECRET               = "BACKUP_SECRET"
+	ENV_CLUSTER_ID                  = "CLUSTER_ID"
+	ENV_BACKUP_CLUSTER_BUCKET       = "BACKUP_CLUSTER_BUCKET"
+
+	ENV_TOKEN_MAX_AGE = "TOKEN_MAX_AGE"
 )

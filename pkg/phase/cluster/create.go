@@ -70,7 +70,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		// FIXME: completely install supported
 		&terminus.CheckPreparedModule{BaseDir: runtime.GetBaseDir(), Force: true},
 		&terminus.TerminusUninstallScriptModule{},
-		&terminus.TerminusPhaseStateModule{},
+		&terminus.InstalledModule{},
 	}
 
 	var kubeModules []module.Module

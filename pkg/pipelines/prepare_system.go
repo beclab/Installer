@@ -53,21 +53,21 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 func getStorageValueFromEnv() *common.Storage {
 	storageType := os.Getenv("STORAGE")
 	switch storageType {
-	case "s3", "oss":
+	case common.S3, common.OSS:
 	default:
-		storageType = "minio"
+		storageType = common.Minio
 	}
 
 	return &common.Storage{
 		StorageType:         storageType,
-		StorageBucket:       os.Getenv("S3_BUCKET"), // os.Getenv("BACKUP_CLUSTER_BUCKET"),
-		StoragePrefix:       os.Getenv("BACKUP_KEY_PREFIX"),
-		StorageAccessKey:    os.Getenv("AWS_ACCESS_KEY_ID_SETUP"),
-		StorageSecretKey:    os.Getenv("AWS_SECRET_ACCESS_KEY_SETUP"),
-		StorageToken:        os.Getenv("AWS_SESSION_TOKEN_SETUP"),
-		StorageClusterId:    os.Getenv("CLUSTER_ID"),
-		StorageSyncSecret:   os.Getenv("BACKUP_SECRET"),
-		StorageVendor:       os.Getenv("TERMINUS_IS_CLOUD_VERSION"),
-		BackupClusterBucket: os.Getenv("BACKUP_CLUSTER_BUCKET"),
+		StorageBucket:       os.Getenv(common.ENV_S3_BUCKET),
+		StoragePrefix:       os.Getenv(common.ENV_BACKUP_KEY_PREFIX),
+		StorageAccessKey:    os.Getenv(common.ENV_AWS_ACCESS_KEY_ID_SETUP),
+		StorageSecretKey:    os.Getenv(common.ENV_AWS_SECRET_ACCESS_KEY_SETUP),
+		StorageToken:        os.Getenv(common.ENV_AWS_SESSION_TOKEN_SETUP),
+		StorageClusterId:    os.Getenv(common.ENV_CLUSTER_ID),
+		StorageSyncSecret:   os.Getenv(common.ENV_BACKUP_SECRET),
+		StorageVendor:       os.Getenv(common.ENV_TERMINUS_IS_CLOUD_VERSION),
+		BackupClusterBucket: os.Getenv(common.ENV_BACKUP_CLUSTER_BUCKET),
 	}
 }

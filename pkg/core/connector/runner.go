@@ -46,11 +46,11 @@ func (r *Runner) Exec(cmd string, printOutput bool, printLine bool) (string, int
 	var err error
 
 	if r.Host.GetMinikube() {
-		stdout, code, err = r.Host.Exec(cmd, printOutput, printLine)
+		stdout, code, err = r.Host.Exec(context.TODO(), cmd, printOutput, printLine)
 	} else {
 		// stdout, code, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
 		// stdout, code, err = r.Host.Exec(SudoPrefix(cmd), printOutput, printLine)
-		stdout, code, err = r.Host.Exec(cmd, printOutput, printLine)
+		stdout, code, err = r.Host.Exec(context.TODO(), cmd, printOutput, printLine)
 	}
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *Runner) CmdExt(cmd string, printOutput bool, printLine bool) (string, e
 	var stdout string
 	var err error
 	if r.Host.GetMinikube() {
-		stdout, _, err = r.Host.Exec(cmd, printOutput, printLine)
+		stdout, _, err = r.Host.Exec(context.TODO(), cmd, printOutput, printLine)
 	} else {
 		stdout, _, err = r.Host.ExecExt(cmd, printOutput, printLine)
 		// stdout, _, err = r.Conn.Exec(cmd, r.Host, printLine)
@@ -121,7 +121,7 @@ func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOut
 		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
 		stdout, err = r.Host.CmdExtWithContext(ctx, cmd, printOutput, printLine)
 	} else {
-		stdout, _, err = r.Host.Exec(SudoPrefix(cmd), printOutput, printLine)
+		stdout, _, err = r.Host.Exec(context.TODO(), SudoPrefix(cmd), printOutput, printLine)
 		// stdout, _, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
 	}
 

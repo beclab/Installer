@@ -10,6 +10,7 @@ import (
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -19,7 +20,7 @@ type CheckLauncherState struct {
 }
 
 func (t *CheckLauncherState) Execute(runtime connector.Runtime) error {
-	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	kubectl, _ := util.GetCommand(common.CommandKubectl)
 	cmd := fmt.Sprintf("%s get pod  -n user-space-${username} -l 'tier=bfl' -o jsonpath='{.items[*].status.phase}'", kubectl)
 
 	launcherphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
@@ -53,8 +54,7 @@ func (t *InstallLaunch) Execute(runtime connector.Runtime) error {
 	var secret, _ = utils.GeneratePassword(16)
 
 	var launchName = fmt.Sprintf("launcher-%s", t.KubeConf.Arg.User.UserName)
-	// var launchPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "launcher")
-	var launchPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, cc.WizardDir, "wizard", "config", "launcher")
+	var launchPath = path.Join(runtime.GetInstallerDir(), cc.WizardDir, "wizard", "config", "launcher")
 	var parms = make(map[string]interface{})
 	var sets = make(map[string]interface{})
 	sets["bfl.appKey"] = key
@@ -76,24 +76,22 @@ type InstallLaunchModule struct {
 func (m *InstallLaunchModule) Init() {
 	m.Name = "InstallLauncher"
 
-	installLaunch := &task.RemoteTask{
-		Name:     "InstallLauncher",
-		Desc:     "Install Launcher",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Prepare:  new(common.IsMaster),
-		Action:   new(InstallLaunch),
-		Parallel: false,
-		Retry:    1,
+	installLaunch := &task.LocalTask{
+		Name:   "InstallLauncher",
+		Desc:   "Install Launcher",
+		Action: new(InstallLaunch),
+		Retry:  1,
 	}
 
-	checkLauncherState := &task.RemoteTask{
-		Name:     "CheckLauncherState",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Prepare:  new(common.IsMaster),
-		Action:   &CheckLauncherState{},
-		Parallel: false,
-		Retry:    50,
-		Delay:    5 * time.Second,
+	checkLauncherState := &task.LocalTask{
+		Name: "CheckLauncherState",
+		Action: &CheckPodsRunning{
+			labels: map[string][]string{
+				fmt.Sprintf("user-space-%s", m.KubeConf.Arg.User.UserName): {"tier=bfl"},
+			},
+		},
+		Retry: 20,
+		Delay: 10 * time.Second,
 	}
 
 	m.Tasks = []task.Interface{

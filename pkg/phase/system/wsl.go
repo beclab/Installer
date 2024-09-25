@@ -88,6 +88,5 @@ func (l *wslPhaseBuilder) build() []module.Module {
 			}
 
 		}).withGPU(l.runtime)...).
-		addModule(&terminus.PreparedModule{BaseDir: l.runtime.GetBaseDir()})
-	// addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
+		addModule(&terminus.PreparedModule{})
 }

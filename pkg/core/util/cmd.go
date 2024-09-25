@@ -77,17 +77,16 @@ func ExecWithContext(ctx context.Context, name string, printOutput bool, printLi
 	return res, exitCode, errors.Wrapf(err, "Failed to exec command: %s \n%s", cmd, res)
 }
 
-func Exec(name string, printOutput bool, printLine bool) (stdout string, code int, err error) {
+func Exec(ctx context.Context, name string, printOutput bool, printLine bool) (stdout string, code int, err error) {
 	exitCode := 0
 
 	logger.Infof("[exec] try to exec CMD: %s", name)
-	cmd := exec.Command("/bin/sh", "-c", name)
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", name)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", exitCode, err
 	}
 
-	// logger.Infof("exec cmd: %s", cmd.String())
 	cmd.Stderr = cmd.Stdout
 
 	if err := cmd.Start(); err != nil {
