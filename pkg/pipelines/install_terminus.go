@@ -33,7 +33,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
-	arg.SetKubeVersion(getKubeVersion(opts.KubeType))
+	arg.SetKubeVersion(getKubeVersion(opts.KubeType), opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 	arg.SetTokenMaxAge()

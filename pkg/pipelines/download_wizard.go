@@ -9,6 +9,7 @@ import (
 
 func DownloadInstallationWizard(opts *options.CliDownloadWizardOptions) error {
 	arg := common.NewArgument()
+	arg.SetKubeVersion(getKubeVersion(opts.KubeType), opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetBaseDir(opts.BaseDir)
 

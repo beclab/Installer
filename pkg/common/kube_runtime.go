@@ -253,8 +253,9 @@ func (a *Argument) IsRaspbian() bool {
 	return constants.OsPlatform == Raspbian
 }
 
-func (a *Argument) SetKubeVersion(version string) {
+func (a *Argument) SetKubeVersion(version string, kubeType string) {
 	a.KubernetesVersion = version
+	a.Kubetype = kubeType
 }
 
 func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
