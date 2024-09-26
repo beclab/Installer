@@ -20,6 +20,11 @@ func GetTerminusVersion() (string, error) {
 	return terminusTask.Execute()
 }
 
+func GetKubeType() string {
+	var kubeTypeTask = &kubernetes.GetKubeType{}
+	return kubeTypeTask.Execute()
+}
+
 func GetKubeVersion() (string, string, error) {
 	var kubeTask = &kubernetes.GetKubeVersion{}
 	return kubeTask.Execute()
