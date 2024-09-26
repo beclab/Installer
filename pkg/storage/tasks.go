@@ -409,10 +409,37 @@ type DeleteTerminusData struct {
 }
 
 func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
+	var dirs []string
+	var terminusDir = "/terminus"
+	var sharePrefix = fmt.Sprintf("%s/share", terminusDir)
+	var shareExists bool
+	filepath.WalkDir(terminusDir, func(path string, d fs.DirEntry, err error) error {
+		if path != terminusDir {
+			if !d.IsDir() {
+				return nil
+			}
 
-	if util.IsExist("/terminus") {
-		if err := util.RemoveDir("/terminus"); err != nil {
-			logger.Errorf("remove %s failed %v", "/terminus", err)
+			if d.Name() == "share" || strings.HasPrefix(path, sharePrefix) {
+				shareExists = true
+			} else {
+				dirs = append(dirs, path)
+				return filepath.SkipDir
+			}
+		}
+
+		return nil
+	},
+	)
+
+	for _, dir := range dirs {
+		if err := util.RemoveDir(dir); err != nil {
+			logger.Errorf("remove %s failed %v", dir, err)
+		}
+	}
+
+	if !shareExists {
+		if err := util.RemoveDir(terminusDir); err != nil {
+			logger.Errorf("remove %s failed %v", terminusDir, err)
 		}
 	}
 
