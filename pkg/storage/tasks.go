@@ -390,7 +390,6 @@ func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
 	)
 
 	userdata = append(userdata, []string{
-		"/terminus/share",
 		"/terminus/userdata",
 	}...)
 

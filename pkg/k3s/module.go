@@ -357,8 +357,6 @@ func (i *InitClusterModule) Init() {
 			&ClusterIsExist{Not: true},
 		},
 		Action:   new(EnableK3sService),
-		Retry:    200, // ! add retries for enable k3s
-		Delay:    10 * time.Second,
 		Parallel: false,
 	}
 
