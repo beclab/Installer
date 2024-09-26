@@ -246,8 +246,12 @@ type InstallFinished struct {
 }
 
 func (t *InstallFinished) Execute(runtime connector.Runtime) error {
-	var installedFile = path.Join(runtime.GetBaseDir(), ".installed")
-	return util.WriteFile(installedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
+	var content = fmt.Sprintf("%s %s", t.KubeConf.Arg.TerminusVersion, t.KubeConf.Arg.Kubetype)
+	var phaseState = path.Join(runtime.GetBaseDir(), ".installed")
+	if err := util.WriteFile(phaseState, []byte(content), cc.FileMode0644); err != nil {
+		return err
+	}
+	return nil
 }
 
 type DeleteWizardFiles struct {

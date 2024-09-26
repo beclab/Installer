@@ -100,6 +100,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&container.KillContainerdProcessModule{},
 			&certs.UninstallCertsFilesModule{},
 			&storage.DeleteUserDataModule{},
+			&terminus.DeleteWizardFilesModule{},
 			&storage.DeletePhaseFlagModule{
 				PhaseFile: ".installed",
 				BaseDir:   p.runtime.GetBaseDir(),
@@ -135,7 +136,6 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 		}
 		p.modules = append(p.modules,
 			&kubesphere.DeleteCacheModule{},
-			&terminus.DeleteWizardFilesModule{},
 		)
 
 		if p.runtime.Arg.DeleteCache {

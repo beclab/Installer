@@ -24,7 +24,8 @@ func (o *CliKubeInitializeOptions) AddFlags(cmd *cobra.Command) {
 }
 
 type CliTerminusUninstallOptions struct {
-	Version  string
+	Version string
+	// KubeType string
 	MiniKube bool
 	BaseDir  string
 	All      bool
@@ -37,6 +38,7 @@ func NewCliTerminusUninstallOptions() *CliTerminusUninstallOptions {
 }
 
 func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
+	// cmd.Flags().StringVar(&o.KubeType, "kube", "k3s", "Set kube type, e.g., k3s or k8s")
 	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
 	cmd.Flags().BoolVar(&o.MiniKube, "minikube", false, "Set minikube flag")
 	cmd.Flags().StringVar(&o.BaseDir, "base-dir", "", "Set uninstall package base dir , default value $HOME/.terminus")

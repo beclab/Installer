@@ -56,6 +56,26 @@ import (
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
+type GetKubeType struct{}
+
+func (g *GetKubeType) Execute() (kubeType string) {
+	kubeType = common.K3s
+	var getKubeVersion = new(GetKubeVersion)
+	_, kubeType, _ = getKubeVersion.Execute()
+
+	if kubeType != "" {
+		return
+	}
+
+	if util.IsExist("/etc/systemd/system/k3s.service") || util.IsExist("/usr/local/bin/k3s-uninstall.sh") {
+		return
+	} else {
+		kubeType = common.K8s
+	}
+
+	return
+}
+
 type GetKubeVersion struct{}
 
 func (g *GetKubeVersion) Execute() (string, string, error) {
