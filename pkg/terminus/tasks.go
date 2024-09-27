@@ -61,7 +61,7 @@ func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "kubectl not found")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 	for ns, labels := range c.labels {
 		for _, label := range labels {

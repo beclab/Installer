@@ -10,31 +10,15 @@ import (
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/task"
-	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-type CheckLauncherState struct {
+type InstallBfl struct {
 	common.KubeAction
 }
 
-func (t *CheckLauncherState) Execute(runtime connector.Runtime) error {
-	kubectl, _ := util.GetCommand(common.CommandKubectl)
-	cmd := fmt.Sprintf("%s get pod  -n user-space-${username} -l 'tier=bfl' -o jsonpath='{.items[*].status.phase}'", kubectl)
-
-	launcherphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	if launcherphase == "Running" {
-		return nil
-	}
-	return fmt.Errorf("Launcher State is Pending")
-}
-
-type InstallLaunch struct {
-	common.KubeAction
-}
-
-func (t *InstallLaunch) Execute(runtime connector.Runtime) error {
+func (t *InstallBfl) Execute(runtime connector.Runtime) error {
 	var ns = fmt.Sprintf("user-space-%s", t.KubeConf.Arg.User.UserName)
 
 	config, err := ctrl.GetConfig()
@@ -76,15 +60,15 @@ type InstallLaunchModule struct {
 func (m *InstallLaunchModule) Init() {
 	m.Name = "InstallLauncher"
 
-	installLaunch := &task.LocalTask{
-		Name:   "InstallLauncher",
-		Desc:   "Install Launcher",
-		Action: new(InstallLaunch),
+	installBfl := &task.LocalTask{
+		Name:   "InstallBfl",
+		Desc:   "Install Bfl",
+		Action: new(InstallBfl),
 		Retry:  1,
 	}
 
-	checkLauncherState := &task.LocalTask{
-		Name: "CheckLauncherState",
+	checkBflRunning := &task.LocalTask{
+		Name: "CheckBflStatus",
 		Action: &CheckPodsRunning{
 			labels: map[string][]string{
 				fmt.Sprintf("user-space-%s", m.KubeConf.Arg.User.UserName): {"tier=bfl"},
@@ -95,21 +79,9 @@ func (m *InstallLaunchModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
-		installLaunch,
-		checkLauncherState,
+		installBfl,
+		checkBflRunning,
 	}
-}
-
-func getNodeName(kubectl string, userName string, runtime connector.Runtime) (node string, err error) {
-	var cmd = fmt.Sprintf("%s get pod  -n user-space-%s -l 'tier=bfl' -o jsonpath='{.items[*].spec.nodeName}'", kubectl, userName)
-	if node, err = runtime.GetRunner().Host.CmdExt(cmd, false, false); err != nil {
-		return "", err
-	}
-	if node == "" {
-		return "", fmt.Errorf("node not found")
-	}
-
-	return
 }
 
 func getDocUrl(runtime connector.Runtime) (url string, err error) {

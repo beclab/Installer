@@ -17,36 +17,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-type CheckAppServiceState struct {
-	common.KubeAction
-}
-
-func (t *CheckAppServiceState) Execute(runtime connector.Runtime) error {
-	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	cmd := fmt.Sprintf("%s get pod  -n os-system -l 'tier=app-service' -o jsonpath='{.items[*].status.phase}'", kubectl)
-
-	appservicephase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	if appservicephase == "Running" {
-		return nil
-	}
-	return fmt.Errorf("App Service State is Pending")
-}
-
-type CheckCitusState struct {
-	common.KubeAction
-}
-
-func (t *CheckCitusState) Execute(runtime connector.Runtime) error {
-	kubectl, _ := t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	cmd := fmt.Sprintf("%s get pod  -n os-system -l 'app=citus' -o jsonpath='{.items[*].status.phase}'", kubectl)
-
-	citusphase, _ := runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	if citusphase == "Running" {
-		return nil
-	}
-	return fmt.Errorf("Citus State is Pending")
-}
-
 type InstallOsSystem struct {
 	common.KubeAction
 }
@@ -152,10 +122,10 @@ func (c *CreateReverseProxyConfigMap) Execute(runtime connector.Runtime) error {
 
 	reverseProxyConfigStr, err := util.Render(configmaptemplates.ReverseProxyConfigMap, data)
 	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "render backup configmap template failed")
+		return errors.Wrap(errors.WithStack(err), "render default reverse proxy configmap template failed")
 	}
 	if err := util.WriteFile(defaultReverseProxyConfigMapFile, []byte(reverseProxyConfigStr), cc.FileMode0644); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write backup configmap %s failed", defaultReverseProxyConfigMapFile))
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write default reverse proxy configmap %s failed", defaultReverseProxyConfigMapFile))
 	}
 
 	var kubectl, _ = util.GetCommand(common.CommandKubectl)
@@ -198,27 +168,38 @@ func (m *InstallOsSystemModule) Init() {
 		Retry:  1,
 	}
 
-	// todo cm-backup-config
-	// todo patchs
-
-	checkAppServiceState := &task.LocalTask{
-		Name:   "CheckAppServiceState",
-		Action: &CheckAppServiceState{},
-		Retry:  20,
-		Delay:  10 * time.Second,
+	createBackupConfigMap := &task.LocalTask{
+		Name:   "CreateBackupConfigMap",
+		Action: &CreateBackupConfigMap{},
 	}
 
-	checkCitusState := &task.LocalTask{
-		Name:   "CheckCitusState",
-		Action: &CheckCitusState{},
-		Retry:  20,
-		Delay:  10 * time.Second,
+	createReverseProxyConfigMap := &task.LocalTask{
+		Name:   "CreateReverseProxyConfigMap",
+		Action: &CreateReverseProxyConfigMap{},
+	}
+
+	patchOs := &task.LocalTask{
+		Name:   "PatchOs",
+		Action: &Patch{},
+	}
+
+	checkPodsRunning := &task.LocalTask{
+		Name: "CheckServiceStatus",
+		Action: &CheckPodsRunning{
+			labels: map[string][]string{
+				"os-system": {"tier=app-service", "app=citus"},
+			},
+		},
+		Retry: 20,
+		Delay: 10 * time.Second,
 	}
 
 	m.Tasks = []task.Interface{
 		installOsSystem,
-		checkAppServiceState,
-		checkCitusState,
+		createBackupConfigMap,
+		createReverseProxyConfigMap,
+		patchOs,
+		checkPodsRunning,
 	}
 }
 
