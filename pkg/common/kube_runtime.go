@@ -224,14 +224,16 @@ func (a *Argument) SetMinikube(minikube bool, profile string) {
 }
 
 func (a *Argument) SetReverseProxy() {
-
-	var enableCloudflare = "1"
+	var enableCloudflare = os.Getenv("CLOUDFLARE_ENABLE")
 	var enableFrp = "0"
 	var frpServer = ""
 	var frpPort = "0"
 	var frpAuthMethod = ""
 	var frpAuthToken = ""
 
+	if enableCloudflare == "" {
+		enableCloudflare = "1"
+	}
 	if a.IsCloudInstance {
 		enableCloudflare = "0"
 	} else if os.Getenv("FRP_ENABLE") == "1" {
