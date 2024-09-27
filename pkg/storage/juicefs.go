@@ -6,7 +6,6 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
-	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -95,13 +94,6 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	// todo redis password fetch
-	var redisPassword, ok = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
-
-	if !ok || redisPassword == "" {
-		return fmt.Errorf("redis password not found")
-	}
-
 	juicefs, err := t.Manifest.Get("juicefs")
 	if err != nil {
 		return err
@@ -113,17 +105,6 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
-
-	var storageStr = getStorageTypeStr(t.PipelineCache, t.KubeConf.Arg.Storage)
-
-	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, constants.LocalIp)
-	cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
-	cmd = cmd + storageStr
-
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -132,8 +113,22 @@ type EnableJuiceFsService struct {
 }
 
 func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
-	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
+	var redisPassword, err = getRedisPwd(runtime)
+	if err != nil {
+		return err
+	}
+
+	minioPassword, err := getMinioPwd(runtime)
+	if err != nil {
+		return err
+	}
+
+	var storageStr = getStorageTypeStr(minioPassword, t.KubeConf.Arg.Storage)
+
 	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, constants.LocalIp)
+	var cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
+	cmd = cmd + storageStr
+
 	var data = util.Data{
 		"JuiceFsBinPath":    JuiceFsFile,
 		"JuiceFsCachePath":  JuiceFsCacheDir,
@@ -149,6 +144,10 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write juicefs service %s failed", JuiceFsServiceFile))
 	}
 
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "run juicefs failed")
+	}
+
 	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
 		return err
 	}
@@ -162,6 +161,28 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 	}
 
 	return nil
+}
+
+func getRedisPwd(runtime connector.Runtime) (string, error) {
+	var cmd = fmt.Sprintf("cat /terminus/data/redis/etc/redis.conf 2>&1 |grep requirepass |cut -d' ' -f2 |tr -d '\n'")
+	if res, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "get redis password error")
+	} else if res == "" {
+		return "", fmt.Errorf("redis password not found")
+	} else {
+		return res, nil
+	}
+}
+
+func getMinioPwd(runtime connector.Runtime) (string, error) {
+	var cmd = fmt.Sprintf("cat /etc/default/minio 2>&1 |grep 'MINIO_ROOT_PASSWORD=' |cut -d'=' -f2 |tr -d '\n'")
+	if res, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "get minio password error")
+	} else if res == "" {
+		return "", fmt.Errorf("minio password not found")
+	} else {
+		return res, nil
+	}
 }
 
 type CheckJuiceFsState struct {
@@ -180,14 +201,14 @@ func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func getStorageTypeStr(pc *cache.Cache, storage *common.Storage) string {
+func getStorageTypeStr(minioPassword string, storage *common.Storage) string {
 	var storageType = storage.StorageType
 	var formatStr string
 	var fsName string
 
 	switch storageType {
 	case common.Minio:
-		formatStr = getMinioStr(pc)
+		formatStr = getMinioStr(minioPassword)
 	case common.OSS, common.S3:
 		formatStr = getCloudStr(storage)
 	}
@@ -218,8 +239,7 @@ func getCloudStr(storage *common.Storage) string {
 	return str
 }
 
-func getMinioStr(pc *cache.Cache) string {
-	var minioPassword, _ = pc.GetMustString(common.CacheMinioPassword)
+func getMinioStr(minioPassword string) string {
 	return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
 		constants.LocalIp, cc.TerminusDir, MinioRootUser, minioPassword)
 }
