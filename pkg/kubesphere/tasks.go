@@ -77,7 +77,7 @@ type AddInstallerConfig struct {
 
 func (a *AddInstallerConfig) Execute(runtime connector.Runtime) error {
 	var ksFilename string
-	if runtime.GetRunner().Host.GetMinikube() {
+	if runtime.GetRunner().Host.IsMacos() {
 		ksFilename = path.Join(common.TmpDir, "/etc/kubernetes/addons/kubesphere.yaml")
 	} else {
 		ksFilename = "/etc/kubernetes/addons/kubesphere.yaml"
@@ -333,7 +333,7 @@ func (a *Apply) Execute(runtime connector.Runtime) error {
 	}
 
 	filePath := filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name())
-	if runtime.GetRunner().Host.GetMinikube() {
+	if runtime.GetRunner().Host.IsMacos() {
 		filePath = path.Join(common.TmpDir, filePath)
 	}
 

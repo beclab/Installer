@@ -19,7 +19,7 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	switch {
 	case runtime.Arg.WSL:
 		m = (&wslPhaseBuilder{runtime: runtime, manifestMap: manifestMap}).build()
-	case runtime.Arg.Minikube:
+	case runtime.Arg.MacOs:
 		m = (&macOsPhaseBuilder{runtime: runtime, manifestMap: manifestMap}).build()
 	default:
 		m = (&linuxPhaseBuilder{runtime: runtime, manifestMap: manifestMap}).build()

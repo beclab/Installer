@@ -18,7 +18,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -103,9 +102,9 @@ type Argument struct {
 	Request any `json:"-"`
 
 	IsCloudInstance bool   `json:"is_cloud_instance"`
-	Minikube        bool   `json:"minikube"`
+	MacOs           bool   `json:"is_macos"`
 	MinikubeProfile string `json:"minikube_profile"`
-	WSL             bool   `json:"wsl"`
+	WSL             bool   `json:"is_wsl"`
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
@@ -157,6 +156,8 @@ type Frp struct {
 }
 
 func NewArgument() *Argument {
+	var isDarwin = strings.EqualFold(constants.OsType, Darwin)
+
 	return &Argument{
 		KsEnable:         true,
 		KsVersion:        DefaultKubeSphereVersion,
@@ -173,6 +174,7 @@ func NewArgument() *Argument {
 		},
 		Cloudflare: &Cloudflare{},
 		Frp:        &Frp{},
+		MacOs:      isDarwin,
 		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
 	}
 }
@@ -221,8 +223,7 @@ func (a *Argument) SetStorage(storage *Storage) {
 	a.Storage = storage
 }
 
-func (a *Argument) SetMinikube(minikube bool, profile string) {
-	a.Minikube = minikube
+func (a *Argument) SetMinikube(profile string) {
 	a.MinikubeProfile = profile
 }
 
@@ -290,14 +291,6 @@ func (a *Argument) SetManifest(manifest string) {
 	a.Manifest = manifest
 }
 
-func (a *Argument) ArgValidate() error {
-	if a.Minikube && constants.OsType != Darwin {
-		return fmt.Errorf("arch invalid, only support --minikube for macOS")
-	}
-
-	return nil
-}
-
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	loader := NewLoader(flag, arg)
 	cluster, err := loader.Load()
@@ -310,10 +303,10 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
-		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.K8sConfig)
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.MacOs, arg.WSL, arg.K8sConfig)
 
 	clusterSpec := &cluster.Spec
-	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.Minikube)
+	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.MacOs)
 	hostSet := make(map[string]struct{})
 	for _, role := range roleGroups {
 		for _, host := range role {
@@ -329,7 +322,6 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 				base.AppendRoleMap(host)
 			}
 			host.SetOs(constants.OsType)
-			host.SetMinikube(arg.Minikube)
 			host.SetMinikubeProfile(arg.MinikubeProfile)
 		}
 	}

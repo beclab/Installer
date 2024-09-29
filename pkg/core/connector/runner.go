@@ -45,7 +45,7 @@ func (r *Runner) Exec(cmd string, printOutput bool, printLine bool) (string, int
 	var code int
 	var err error
 
-	if r.Host.GetMinikube() {
+	if r.Host.IsMacos() {
 		stdout, code, err = r.Host.Exec(context.TODO(), cmd, printOutput, printLine)
 	} else {
 		// stdout, code, err = r.Conn.Exec(SudoPrefix(cmd), r.Host, printLine)
@@ -83,7 +83,7 @@ func (r *Runner) CmdExt(cmd string, printOutput bool, printLine bool) (string, e
 
 	var stdout string
 	var err error
-	if r.Host.GetMinikube() {
+	if r.Host.IsMacos() {
 		stdout, _, err = r.Host.Exec(context.TODO(), cmd, printOutput, printLine)
 	} else {
 		stdout, _, err = r.Host.ExecExt(cmd, printOutput, printLine)
@@ -117,7 +117,7 @@ func (r *Runner) SudoCmdExtWithContext(ctx context.Context, cmd string, printOut
 	var stdout string
 	var err error
 
-	if r.Host.GetMinikube() {
+	if r.Host.IsMacos() {
 		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
 		stdout, err = r.Host.CmdExtWithContext(ctx, cmd, printOutput, printLine)
 	} else {
@@ -144,7 +144,7 @@ func (r *Runner) SudoCmdExt(cmd string, printOutput bool, printLine bool) (strin
 	var stdout string
 	var err error
 
-	if r.Host.GetMinikube() {
+	if r.Host.IsMacos() {
 		// stdout, _, err = util.Exec(SudoPrefix(cmd), printOutput, printLine)
 		stdout, err = r.Host.CmdExt(cmd, printOutput, printLine)
 	} else {
@@ -183,7 +183,7 @@ func (r *Runner) Scp(local, remote string) error {
 	// }
 
 	var err error
-	if r.Host.GetMinikube() {
+	if r.Host.IsMacos() {
 		err = r.Host.Scp(local, remote)
 	} else {
 		// err = r.Conn.Scp(local, remote, r.Host)
@@ -199,7 +199,7 @@ func (r *Runner) Scp(local, remote string) error {
 }
 
 func (r *Runner) SudoScp(local, remote string) error {
-	if !r.Host.GetMinikube() {
+	if !r.Host.IsMacos() {
 		// if r.Conn == nil {
 		// 	return errors.New("no ssh connection available")
 		// }
@@ -221,7 +221,7 @@ func (r *Runner) SudoScp(local, remote string) error {
 	if !util.IsDir(local) {
 		baseRemotePath = filepath.Dir(remote)
 	}
-	if !r.Host.GetMinikube() {
+	if !r.Host.IsMacos() {
 		// if err := r.Conn.MkDirAll(baseRemotePath, "", r.Host); err != nil {
 		if err := r.Host.MkDirAll(baseRemotePath, "755"); err != nil {
 			return err
@@ -233,7 +233,7 @@ func (r *Runner) SudoScp(local, remote string) error {
 		util.Mkdir(remoteDir)
 	}
 
-	if !r.Host.GetMinikube() {
+	if !r.Host.IsMacos() {
 		if _, err := r.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
 			return err
 		}

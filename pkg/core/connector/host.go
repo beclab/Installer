@@ -41,7 +41,8 @@ type BaseHost struct {
 	Arch            string `yaml:"arch,omitempty" json:"arch,omitempty"`
 	Os              string `yaml:"os,omitempty" json:"os,omitempty"`
 	Timeout         int64  `yaml:"timeout,omitempty" json:"timeout,omitempty"`
-	Minikube        bool   `yaml:"minikube,omitempty" json:"minikube,omitempty"`
+	Macos           bool   `yaml:"macos,omitempty" json:"macos,omitempty"`
+	Wsl             bool   `yaml:"wsl,omitempty" json:"wsl,omitempty"`
 	MiniKubeProfile string `json:"minikubeProfileName,omitempty" json:"minikubeProfileName,omitempty"`
 
 	Roles     []string        `json:"-"`
@@ -137,12 +138,14 @@ func (b *BaseHost) SetOs(osType string) {
 	b.Os = osType
 }
 
-func (b *BaseHost) SetMinikube(minikube bool) {
-	b.Minikube = minikube
+func (b *BaseHost) IsWsl() bool {
+	return b.Wsl
 }
-func (b *BaseHost) GetMinikube() bool {
-	return b.Minikube
+
+func (b *BaseHost) IsMacos() bool {
+	return b.Macos
 }
+
 func (b *BaseHost) SetMinikubeProfile(profile string) {
 	b.MiniKubeProfile = profile
 }

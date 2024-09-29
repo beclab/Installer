@@ -49,13 +49,16 @@ type BaseRuntime struct {
 	roleHosts       map[string][]Host
 	deprecatedHosts map[string]string
 	cmdSed          string
-	minikube        bool
+	isMacos         bool
+	isWsl           bool
 	terminusVersion string
 	k8sClient       *kubernetes.Clientset
 }
 
 func NewBaseRuntime(name string, connector Connector,
-	verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, k8sConfig *rest.Config) BaseRuntime {
+	verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string,
+	terminusVersion string, isMacos bool, isWsl bool,
+	k8sConfig *rest.Config) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -66,6 +69,8 @@ func NewBaseRuntime(name string, connector Connector,
 		roleHosts:       make(map[string][]Host),
 		deprecatedHosts: make(map[string]string),
 		cmdSed:          util.FormatSed(constants.OsType == common.Darwin),
+		isMacos:         isMacos,
+		isWsl:           isWsl,
 		terminusVersion: terminusVersion,
 	}
 
@@ -93,12 +98,12 @@ func (b *BaseRuntime) GetK8sClient() *kubernetes.Clientset {
 	return b.k8sClient
 }
 
-func (b *BaseRuntime) SetMinikube(minikube bool) {
-	b.minikube = minikube
+func (b *BaseRuntime) IsMacos() bool {
+	return b.isMacos
 }
 
-func (b *BaseRuntime) GetMinikube() bool {
-	return b.minikube
+func (b *BaseRuntime) IsWsl() bool {
+	return b.isWsl
 }
 
 func (b *BaseRuntime) GetObjName() string {

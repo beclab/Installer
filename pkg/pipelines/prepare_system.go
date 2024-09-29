@@ -11,10 +11,7 @@ import (
 )
 
 func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
-	// ksVersion, _, exists := kubernetes.CheckKubeExists()
-	// if exists {
-	// 	return fmt.Errorf("Kubernetes %s is already installed", ksVersion)
-	// }
+
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
 		fmt.Printf("Terminus is already installed, please uninstall it first.")
