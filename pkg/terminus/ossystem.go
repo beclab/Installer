@@ -14,6 +14,7 @@ import (
 	configmaptemplates "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -51,7 +52,7 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var systemPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "system")
@@ -229,4 +230,22 @@ func getFsType(wsl bool) string {
 		return "fs"
 	}
 	return "jfs"
+}
+
+func getRedisPassword(runtime connector.Runtime) (string, error) {
+	client := runtime.GetK8sClient()
+	secret, err := client.CoreV1().Secrets(common.NamespaceKubesphereSystem).Get(context.Background(), "redis-secret", metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "get redis secret failed")
+	}
+	if secret == nil || secret.Data == nil || secret.Data["auth"] == nil {
+		return "", fmt.Errorf("redis secret not found")
+	}
+
+	if res, err := utils.Base64decode(string(secret.Data["auth"])); err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "decode redis auth failed")
+	} else {
+		return res, nil
+	}
+
 }

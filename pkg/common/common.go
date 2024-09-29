@@ -222,6 +222,9 @@ const (
 	CacheSecretKey = "storage_secret_key"
 	CacheToken     = "storage_token"
 	CacheClusterId = "storage_cluster_id"
+
+	CacheAppServicePod = "app_service_pod_name"
+	CacheAppValues     = "app_built_in_values"
 )
 
 const (

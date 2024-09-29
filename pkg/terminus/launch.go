@@ -83,17 +83,3 @@ func (m *InstallLaunchModule) Init() {
 		checkBflRunning,
 	}
 }
-
-func getDocUrl(runtime connector.Runtime) (url string, err error) {
-	var nodeip string
-	var cmd = fmt.Sprintf(`curl --connect-timeout 30 --retry 5 --retry-delay 1 --retry-max-time 10 -s http://checkip.dyndns.org/ | grep -o "[[:digit:].]\+"`)
-	nodeip, _ = runtime.GetRunner().Host.CmdExt(cmd, false, false)
-	url = fmt.Sprintf("http://%s:30883/bfl/apidocs.json", nodeip)
-	return
-}
-
-func getAnnotation(kubectl, namespace, resType, resName, key string, runtime connector.Runtime) string {
-	var cmd = fmt.Sprintf("%s get %s %s -n %s -o jsonpath='{.metadata.annotations.%s}'", kubectl, resType, resName, namespace, key)
-	stdout, _ := runtime.GetRunner().Host.CmdExt(cmd, false, true)
-	return stdout
-}

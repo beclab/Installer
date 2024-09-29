@@ -30,6 +30,9 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
+
+	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type KubeRuntime struct {
@@ -106,6 +109,8 @@ type Argument struct {
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
+
+	K8sConfig *rest.Config
 }
 
 type AwsHost struct {
@@ -259,6 +264,10 @@ func (a *Argument) IsRaspbian() bool {
 	return constants.OsPlatform == Raspbian
 }
 
+func (a *Argument) SetK8sConfig() { // +
+	a.K8sConfig = ctrl.GetConfigOrDie()
+}
+
 func (a *Argument) SetKubeVersion(kubeType string) {
 	var kubeVersion = DefaultK3sVersion
 	if kubeType == K8s {
@@ -300,7 +309,8 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 		return nil, err
 	}
 
-	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(), arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion)
+	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.K8sConfig)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.Minikube)
