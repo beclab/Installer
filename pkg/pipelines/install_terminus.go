@@ -15,15 +15,6 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-	// if !opts.MiniKube {
-	// 	if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
-	// 		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
-	// 	}
-	// } else {
-	// 	if err := checkMacOSParams(opts.MiniKube, opts.MiniKubeProfile); err != nil {
-	// 		return err
-	// 	}
-	// }
 
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
@@ -35,14 +26,10 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
-	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
+	arg.SetMinikube(opts.MiniKubeProfile) // todo
 	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
 	arg.SetK8sConfig()
-
-	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
-		return err
-	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
@@ -85,4 +72,10 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	return nil
+}
+
+func checkOsSupport() error {
+
+	return nil
+
 }

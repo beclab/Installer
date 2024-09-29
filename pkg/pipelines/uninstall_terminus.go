@@ -26,7 +26,6 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	arg.SetTerminusVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
 	arg.SetKubeVersion(kubeType)
-	arg.SetMinikube(opt.MiniKube, "")
 	// arg.SetDeleteCache(deleteCache)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))
 	arg.SetStorage(&common.Storage{

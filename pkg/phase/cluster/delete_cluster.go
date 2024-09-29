@@ -169,7 +169,7 @@ func UninstallTerminus(phase string, args *common.Argument, runtime *common.Kube
 		runtime: runtime,
 	}
 
-	if args.Minikube {
+	if args.MacOs {
 		builder.phaseMacos()
 	} else {
 		builder.

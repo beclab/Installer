@@ -73,8 +73,8 @@ type Runtime interface {
 	RemoteHost() Host
 	Copy() Runtime
 	GetK8sClient() *kubernetes.Clientset
-	SetMinikube(minikube bool)
-	GetMinikube() bool
+	IsMacos() bool
+	IsWsl() bool
 	ModuleRuntime
 }
 
@@ -99,8 +99,8 @@ type Host interface {
 	SetArch(arch string)
 	GetOs() string
 	SetOs(osType string)
-	SetMinikube(minikube bool)
-	GetMinikube() bool
+	IsMacos() bool
+	IsWsl() bool
 	SetMinikubeProfile(profile string)
 	GetMinikubeProfile() string
 	GetTimeout() int64
