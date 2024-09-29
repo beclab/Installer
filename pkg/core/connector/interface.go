@@ -23,6 +23,7 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/core/cache"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Connection interface {
@@ -71,6 +72,7 @@ type Runtime interface {
 	GetStorage() storage.Provider
 	RemoteHost() Host
 	Copy() Runtime
+	GetK8sClient() *kubernetes.Clientset
 	SetMinikube(minikube bool)
 	GetMinikube() bool
 	ModuleRuntime

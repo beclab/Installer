@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/common"
@@ -49,9 +51,11 @@ type BaseRuntime struct {
 	cmdSed          string
 	minikube        bool
 	terminusVersion string
+	k8sClient       *kubernetes.Clientset
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector,
+	verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, k8sConfig *rest.Config) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -78,7 +82,15 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		os.Exit(1)
 	}
 
+	if k8sConfig != nil {
+		base.k8sClient = kubernetes.NewForConfigOrDie(k8sConfig)
+	}
+
 	return base
+}
+
+func (b *BaseRuntime) GetK8sClient() *kubernetes.Clientset {
+	return b.k8sClient
 }
 
 func (b *BaseRuntime) SetMinikube(minikube bool) {

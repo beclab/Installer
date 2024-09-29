@@ -38,6 +38,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
 	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
+	arg.SetK8sConfig()
 
 	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
 		return err
