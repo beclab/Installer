@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
@@ -95,6 +94,9 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	var systemInfo = runtime.GetSystemInfo()
+	var localIp = systemInfo.GetLocalIp()
+
 	// todo redis password fetch
 	var redisPassword, ok = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 
@@ -114,9 +116,9 @@ func (t *InstallJuiceFs) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var storageStr = getStorageTypeStr(t.PipelineCache, t.KubeConf.Arg.Storage)
+	var storageStr = getStorageTypeStr(localIp, t.PipelineCache, t.KubeConf.Arg.Storage)
 
-	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, constants.LocalIp)
+	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, localIp)
 	cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
 	cmd = cmd + storageStr
 
@@ -132,8 +134,10 @@ type EnableJuiceFsService struct {
 }
 
 func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
+	var localIp = systemInfo.GetLocalIp()
 	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
-	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, constants.LocalIp)
+	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, localIp)
 	var data = util.Data{
 		"JuiceFsBinPath":    JuiceFsFile,
 		"JuiceFsCachePath":  JuiceFsCacheDir,
@@ -180,14 +184,14 @@ func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func getStorageTypeStr(pc *cache.Cache, storage *common.Storage) string {
+func getStorageTypeStr(localIp string, pc *cache.Cache, storage *common.Storage) string {
 	var storageType = storage.StorageType
 	var formatStr string
 	var fsName string
 
 	switch storageType {
 	case common.Minio:
-		formatStr = getMinioStr(pc)
+		formatStr = getMinioStr(localIp, pc)
 	case common.OSS, common.S3:
 		formatStr = getCloudStr(storage)
 	}
@@ -218,8 +222,8 @@ func getCloudStr(storage *common.Storage) string {
 	return str
 }
 
-func getMinioStr(pc *cache.Cache) string {
+func getMinioStr(localIp string, pc *cache.Cache) string {
 	var minioPassword, _ = pc.GetMustString(common.CacheMinioPassword)
 	return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
-		constants.LocalIp, cc.TerminusDir, MinioRootUser, minioPassword)
+		localIp, cc.TerminusDir, MinioRootUser, minioPassword)
 }

@@ -8,7 +8,6 @@ import (
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/phase"
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
@@ -34,7 +33,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		StorageBucket: os.Getenv(common.ENV_S3_BUCKET),
 	})
 
-	if err := checkPhase(opt.Phase, opt.All); err != nil {
+	if err := checkPhase(opt.Phase, opt.All, arg.SystemInfo.GetOsType()); err != nil {
 		return err
 	}
 
@@ -58,8 +57,8 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 
 }
 
-func checkPhase(phase string, all bool) error {
-	if constants.OsType == common.Linux && !all {
+func checkPhase(phase string, all bool, osType string) error {
+	if osType == common.Linux && !all {
 		if cluster.UninstallPhaseString(phase).Type() == cluster.PhaseInvalid {
 			return fmt.Errorf("Please specify the phase to uninstall, such as --phase install. Supported: install, prepare, download.")
 		}

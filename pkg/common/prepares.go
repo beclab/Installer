@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -107,39 +106,4 @@ func (p *ClusterType) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	return isK3s, nil
-}
-
-type OsType struct {
-	KubePrepare
-	OsType string
-	Not    bool
-}
-
-func (p *OsType) PreCheck(runtime connector.Runtime) (bool, error) {
-	isOs := constants.OsType == p.OsType
-	if p.Not {
-		return !isOs, nil
-	}
-	return isOs, nil
-}
-
-type OsVersion struct {
-	KubePrepare
-	OsVersion map[string]bool
-}
-
-func (p *OsVersion) PreCheck(runtime connector.Runtime) (bool, error) {
-	if p.OsVersion == nil || len(p.OsVersion) == 0 {
-		return false, nil
-	}
-
-	var flag = false
-	for k, v := range p.OsVersion {
-		if k == constants.OsVersion {
-			flag = v
-			break
-		}
-	}
-
-	return flag, nil
 }

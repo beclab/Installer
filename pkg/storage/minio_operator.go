@@ -6,7 +6,6 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -27,8 +26,13 @@ type InstallMinioOperator struct {
 }
 
 func (t *InstallMinioOperator) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-	binary := files.NewKubeBinary("minio-operator", arch, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, runtime.GetWorkDir())
+	var systemInfo = runtime.GetSystemInfo()
+	var arch = systemInfo.GetOsArch()
+	var osType = systemInfo.GetOsType()
+	var osVersion = systemInfo.GetOsVersion()
+	var osPlatformFamily = systemInfo.GetOsPlatformFamily()
+	var localIp = systemInfo.GetLocalIp()
+	binary := files.NewKubeBinary("minio-operator", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, runtime.GetWorkDir())
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
@@ -62,7 +66,7 @@ func (t *InstallMinioOperator) Execute(runtime connector.Runtime) error {
 	// FIXME:
 	var minioPassword, _ = t.PipelineCache.GetMustString(common.CacheMinioPassword)
 	var cmd = fmt.Sprintf("%s init --address %s --cafile /etc/ssl/etcd/ssl/ca.pem --certfile /etc/ssl/etcd/ssl/node-%s.pem --keyfile /etc/ssl/etcd/ssl/node-%s-key.pem --volume %s --password %s",
-		MinioOperatorFile, constants.LocalIp, runtime.RemoteHost().GetName(),
+		MinioOperatorFile, localIp, runtime.RemoteHost().GetName(),
 		runtime.RemoteHost().GetName(), minioData, minioPassword)
 
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {

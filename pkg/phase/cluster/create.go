@@ -3,7 +3,6 @@ package cluster
 import (
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/pipeline"
@@ -33,7 +32,7 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	}
 
 	var kubeModules []module.Module
-	if constants.OsType == common.Darwin {
+	if runtime.GetSystemInfo().IsDarwin() {
 		kubeModules = NewDarwinClusterPhase(runtime, manifestMap)
 	} else {
 		if runtime.Cluster.Kubernetes.Type == common.K3s {

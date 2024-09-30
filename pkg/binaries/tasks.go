@@ -64,8 +64,12 @@ func (d *CriDownload) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	var systemInfo = runtime.GetSystemInfo()
+	var osType = systemInfo.GetOsType()
+	var osPlatformFamily = systemInfo.GetOsPlatformFamily()
+	var osVersion = systemInfo.GetOsVersion()
 	for arch := range archMap {
-		if err := CriDownloadHTTP(d.KubeConf, runtime.GetWorkDir(), arch, d.PipelineCache); err != nil {
+		if err := CriDownloadHTTP(d.KubeConf, runtime.GetWorkDir(), arch, osType, osVersion, osPlatformFamily, d.PipelineCache); err != nil {
 			return err
 		}
 	}

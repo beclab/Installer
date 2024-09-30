@@ -15,13 +15,11 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
 		fmt.Printf("Terminus is already installed, please uninstall it first.")
 		return nil
 	}
-
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
@@ -29,7 +27,6 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetMinikube(opts.MiniKubeProfile) // todo
 	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
-	arg.SetK8sConfig()
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
@@ -72,10 +69,4 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	return nil
-}
-
-func checkOsSupport() error {
-
-	return nil
-
 }

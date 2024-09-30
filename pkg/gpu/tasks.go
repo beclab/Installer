@@ -7,7 +7,6 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -47,8 +46,9 @@ type InstallCudaDeps struct {
 }
 
 func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
 	var fileId = fmt.Sprintf("%s-%s_cuda-keyring_%s-1",
-		strings.ToLower(constants.OsPlatform), constants.OsVersion,
+		strings.ToLower(systemInfo.GetOsPlatformFamily()), systemInfo.GetOsVersion(),
 		kubekeyapiv1alpha2.DefaultCudaKeyringVersion)
 
 	cudakeyring, err := t.Manifest.Get(fileId)
@@ -100,9 +100,10 @@ type UpdateCudaSource struct {
 
 func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	// only for ubuntu20.04  ubunt22.04
+	systemInfo := runtime.GetSystemInfo()
 
 	var version string
-	if strings.Contains(constants.OsVersion, "22.") {
+	if strings.Contains(systemInfo.GetOsVersion(), "22.") {
 		version = "22.04"
 	} else {
 		version = "20.04"
@@ -125,12 +126,12 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	if strings.Contains(constants.OsVersion, "24.") {
+	if strings.Contains(systemInfo.GetOsVersion(), "24.") {
 		return nil
 	}
 
 	var fileId = fmt.Sprintf("%s_%s_libnvidia-container.list",
-		strings.ToLower(constants.OsPlatform), version)
+		strings.ToLower(systemInfo.GetOsPlatformFamily()), version)
 
 	libnvidia, err := t.Manifest.Get(fileId)
 	if err != nil {

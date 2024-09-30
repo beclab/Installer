@@ -6,6 +6,7 @@ import (
 	"path"
 	"time"
 
+	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -232,9 +233,8 @@ func getFsType(wsl bool) string {
 	return "jfs"
 }
 
-func getRedisPassword(runtime connector.Runtime) (string, error) {
-	client := runtime.GetK8sClient()
-	secret, err := client.CoreV1().Secrets(common.NamespaceKubesphereSystem).Get(context.Background(), "redis-secret", metav1.GetOptions{})
+func getRedisPassword(client clientset.Client, runtime connector.Runtime) (string, error) {
+	secret, err := client.Kubernetes().CoreV1().Secrets(common.NamespaceKubesphereSystem).Get(context.Background(), "redis-secret", metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrap(errors.WithStack(err), "get redis secret failed")
 	}

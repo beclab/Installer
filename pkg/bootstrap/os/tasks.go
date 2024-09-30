@@ -45,7 +45,8 @@ func (t *UpdateNtpDateTask) Execute(runtime connector.Runtime) error {
 	}
 
 	var ntpPkg = " ntpdate "
-	if strings.Contains(constants.OsVersion, "24.") {
+	var systemInfo = runtime.GetSystemInfo()
+	if systemInfo.IsUbuntu() && systemInfo.IsUbuntuVersionAbove(connector.UbuntuAbove24) {
 		ntpPkg += " util-linux-extra "
 	}
 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("apt install %s -y", ntpPkg), false, true); err != nil {

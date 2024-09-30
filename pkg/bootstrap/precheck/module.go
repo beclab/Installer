@@ -162,11 +162,8 @@ func (h *GreetingsModule) Init() {
 	}
 
 	hello := &task.RemoteTask{
-		Name:  "Greetings",
-		Hosts: h.Runtime.GetAllHosts(),
-		Prepare: &prepare.PrepareCollection{
-			&KubeExist{},
-		},
+		Name:     "Greetings",
+		Hosts:    h.Runtime.GetAllHosts(),
 		Action:   new(GreetingsTask),
 		Parallel: false,
 		Timeout:  time.Duration(timeout) * time.Second,

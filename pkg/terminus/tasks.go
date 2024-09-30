@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -126,9 +125,13 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		return errors.New("get md5sum failed")
 	}
 
+	var osArch = runtime.GetSystemInfo().GetOsArch()
+	var osType = runtime.GetSystemInfo().GetOsType()
+	var osVersion = runtime.GetSystemInfo().GetOsVersion()
+	var osPlatformFamily = runtime.GetSystemInfo().GetOsPlatformFamily()
 	var baseDir = runtime.GetBaseDir()
 	var prePath = path.Join(baseDir, "versions")
-	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.Version, prePath)
+	var wizard = files.NewKubeBinary("install-wizard", osArch, osType, osVersion, osPlatformFamily, t.Version, prePath)
 	wizard.CheckMd5Sum = true
 	wizard.Md5sum = md5sum
 

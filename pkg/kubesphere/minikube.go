@@ -109,7 +109,12 @@ type Download struct {
 
 func (t *Download) Execute(runtime connector.Runtime) error {
 	var arch = runtime.GetRunner().Host.GetArch()
-	helm := files.NewKubeBinary("helm", arch, kubekeyapiv1alpha2.DefaultHelmVersion, runtime.GetWorkDir())
+
+	var systemInfo = runtime.GetSystemInfo()
+	var osType = systemInfo.GetOsType()
+	var osVersion = systemInfo.GetOsVersion()
+	var osPlatformFamily = systemInfo.GetOsPlatformFamily()
+	helm := files.NewKubeBinary("helm", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultHelmVersion, runtime.GetWorkDir())
 
 	if err := helm.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", helm.FileName)

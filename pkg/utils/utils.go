@@ -229,19 +229,9 @@ func ArchAlias(arch string) string {
 	case "ppc64le":
 		fallthrough
 	case "s390x":
-		fallthrough
-	default:
 		return "amd64"
-	}
-}
-
-func UbuntuVersionAlias(version string) string {
-	if strings.Contains(version, "24.") {
-		return "noble"
-	} else if strings.Contains(version, "22.") {
-		return "jammy"
-	} else {
-		return "focal"
+	default:
+		return ""
 	}
 }
 

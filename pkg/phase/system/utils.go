@@ -2,15 +2,15 @@ package system
 
 import (
 	"os"
-	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
+	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 )
 
-func isGpuSupportOs() bool {
-	if constants.OsPlatform == common.Ubuntu && (strings.Contains(constants.OsVersion, "20.") || strings.Contains(constants.OsVersion, "22.")) {
+func isGpuSupportOs(runtime *common.KubeRuntime) bool {
+	systemInfo := runtime.GetSystemInfo()
+	if systemInfo.IsUbuntu() && (systemInfo.IsUbuntuVersionAbove(connector.UbuntuAbove20) || systemInfo.IsUbuntuVersionAbove(connector.UbuntuAbove22)) {
 		return true
 	}
 
@@ -44,7 +44,7 @@ func (m cloudModuleBuilder) withoutCloud(runtime *common.KubeRuntime) []module.M
 type gpuModuleBuilder func() []module.Module
 
 func (m gpuModuleBuilder) withGPU(runtime *common.KubeRuntime) []module.Module {
-	if runtime.Arg.GPU.Enable && isGpuSupportOs() {
+	if runtime.Arg.GPU.Enable && isGpuSupportOs(runtime) {
 		return m()
 	}
 

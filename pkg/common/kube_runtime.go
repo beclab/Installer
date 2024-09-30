@@ -25,13 +25,9 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
-
-	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type KubeRuntime struct {
@@ -71,6 +67,7 @@ type Argument struct {
 	Role             string `json:"role"`
 	Type             string `json:"type"`
 	Kubetype         string `json:"kube_type"`
+	SystemInfo       connector.Systems
 
 	// Extra args
 	ExtraAddon      string `json:"extra_addon"` // addon yaml config
@@ -108,8 +105,6 @@ type Argument struct {
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
-
-	K8sConfig *rest.Config
 }
 
 type AwsHost struct {
@@ -156,7 +151,7 @@ type Frp struct {
 }
 
 func NewArgument() *Argument {
-	var isDarwin = strings.EqualFold(constants.OsType, Darwin)
+	// var isDarwin = strings.EqualFold(constants.OsType, Darwin)
 
 	return &Argument{
 		KsEnable:         true,
@@ -164,6 +159,7 @@ func NewArgument() *Argument {
 		InstallPackages:  false,
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
+		SystemInfo:       connector.GetSystemInfo(),
 		IsCloudInstance:  strings.EqualFold(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION), TRUE),
 		Storage: &Storage{
 			StorageType: Minio,
@@ -174,8 +170,8 @@ func NewArgument() *Argument {
 		},
 		Cloudflare: &Cloudflare{},
 		Frp:        &Frp{},
-		MacOs:      isDarwin,
-		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
+		// MacOs:      isDarwin,
+		// WSL:        strings.Contains(constants.OsKernel, "-WSL"),
 	}
 }
 
@@ -257,18 +253,6 @@ func (a *Argument) SetReverseProxy() {
 	a.Frp.AuthToken = frpAuthToken
 }
 
-func (a *Argument) IsProxmox() bool {
-	return strings.Contains(constants.OsKernel, "-pve")
-}
-
-func (a *Argument) IsRaspbian() bool {
-	return constants.OsPlatform == Raspbian
-}
-
-func (a *Argument) SetK8sConfig() { // +
-	a.K8sConfig = ctrl.GetConfigOrDie()
-}
-
 func (a *Argument) SetKubeVersion(kubeType string) {
 	var kubeVersion = DefaultK3sVersion
 	if kubeType == K8s {
@@ -303,7 +287,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
-		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.MacOs, arg.WSL, arg.K8sConfig)
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.MacOs, arg.WSL, arg.SystemInfo)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.MacOs)
@@ -321,7 +305,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 				base.AppendHost(host)
 				base.AppendRoleMap(host)
 			}
-			host.SetOs(constants.OsType)
+			host.SetOs(arg.SystemInfo.GetOsType())
 			host.SetMinikubeProfile(arg.MinikubeProfile)
 		}
 	}
