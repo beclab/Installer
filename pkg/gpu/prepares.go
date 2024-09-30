@@ -15,7 +15,7 @@ func (p *GPUEnablePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
 		return false, nil
 	}
 
-	if systemInfo.IsUbuntu() && systemInfo.IsUbuntuVersionAbove(connector.UbuntuAbove24) {
+	if systemInfo.IsUbuntu() && systemInfo.IsUbuntuVersionEqual(connector.Ubuntu24) {
 		return false, nil
 	}
 	return p.KubeConf.Arg.GPU.Enable, nil

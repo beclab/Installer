@@ -25,11 +25,11 @@ type DebianVersion string
 
 func (u UbuntuVersion) String() string {
 	switch u {
-	case UbuntuAbove20:
+	case Ubuntu20:
 		return "20."
-	case UbuntuAbove22:
+	case Ubuntu22:
 		return "22."
-	case UbuntuAbove24:
+	case Ubuntu24:
 		return "24."
 	}
 	return ""
@@ -37,21 +37,21 @@ func (u UbuntuVersion) String() string {
 
 func (d DebianVersion) String() string {
 	switch d {
-	case DebianAbove11:
+	case Debian11:
 		return "11"
-	case DebianAbove12:
+	case Debian12:
 		return "12"
 	}
 	return ""
 }
 
 const (
-	UbuntuAbove20 UbuntuVersion = "20."
-	UbuntuAbove22 UbuntuVersion = "22."
-	UbuntuAbove24 UbuntuVersion = "24."
+	Ubuntu20 UbuntuVersion = "20."
+	Ubuntu22 UbuntuVersion = "22."
+	Ubuntu24 UbuntuVersion = "24."
 
-	DebianAbove11 DebianVersion = "11"
-	DebianAbove12 DebianVersion = "12"
+	Debian11 DebianVersion = "11"
+	Debian12 DebianVersion = "12"
 )
 
 type Systems interface {
@@ -66,8 +66,9 @@ type Systems interface {
 	IsUbuntu() bool
 	IsDebian() bool
 
-	IsUbuntuVersionAbove(ver UbuntuVersion) bool
-	IsDebianVersionAbove(ver UbuntuVersion) bool
+	IsUbuntuVersionEqual(ver UbuntuVersion) bool
+	IsDebianVersionEqual(ver DebianVersion) bool
+	IsOsArchInvalid() bool
 
 	SetHostname(v string)
 	GetHostname() string
@@ -104,8 +105,24 @@ func (s *SystemInfo) IsSupport() error {
 		return fmt.Errorf("unsupported os type '%s', exit ...", s.GetOsType())
 	}
 
-	if s.GetOsArch() == "" {
+	if s.IsOsArchInvalid() {
 		return fmt.Errorf("unsupported arch '%s', exit ...", s.GetOsArch())
+	}
+
+	if !s.IsUbuntu() && !s.IsDebian() {
+		return fmt.Errorf("unsupported os type '%s', exit ...", s.GetOsPlatformFamily())
+	}
+
+	if s.IsUbuntu() {
+		if !s.IsUbuntuVersionEqual(Ubuntu20) && !s.IsUbuntuVersionEqual(Ubuntu22) && !s.IsUbuntuVersionEqual(Ubuntu24) {
+			return fmt.Errorf("unsupported ubuntu os version '%s', exit ...", s.GetOsVersion())
+		}
+	}
+
+	if s.IsDebian() {
+		if !s.IsDebianVersionEqual(Debian11) && !s.IsDebianVersionEqual(Debian12) {
+			return fmt.Errorf("unsupported debian os version '%s', exit ...", s.GetOsVersion())
+		}
 	}
 
 	return nil
@@ -129,6 +146,10 @@ func (s *SystemInfo) GetOsType() string {
 
 func (s *SystemInfo) GetOsArch() string {
 	return s.HostInfo.OsArch
+}
+
+func (s *SystemInfo) IsOsArchInvalid() bool {
+	return strings.EqualFold(s.HostInfo.OsArch, "")
 }
 
 func (s *SystemInfo) GetOsVersion() string {
@@ -172,11 +193,11 @@ func (s *SystemInfo) IsDebian() bool {
 	return s.HostInfo.OsPlatformFamily == common.Debian
 }
 
-func (s *SystemInfo) IsUbuntuVersionAbove(ver UbuntuVersion) bool {
+func (s *SystemInfo) IsUbuntuVersionEqual(ver UbuntuVersion) bool {
 	return strings.Contains(s.HostInfo.OsVersion, ver.String())
 }
 
-func (s *SystemInfo) IsDebianVersionAbove(ver UbuntuVersion) bool {
+func (s *SystemInfo) IsDebianVersionEqual(ver DebianVersion) bool {
 	return strings.Contains(s.HostInfo.OsVersion, ver.String())
 }
 

@@ -233,7 +233,7 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", filePath))
 	}
 
-	if err := runtime.GetRunner().SudoScp(filePath, uninstallPath); err != nil {
+	if err := runtime.GetRunner().Host.SudoScp(filePath, uninstallPath); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", filePath, uninstallPath))
 	}
 

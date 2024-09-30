@@ -11,10 +11,10 @@ type CheckAwsHost struct {
 
 func (p *CheckAwsHost) PreCheck(runtime connector.Runtime) (bool, error) {
 	var cmd = "curl --connect-timeout 5 -sL http://169.254.169.254/latest/meta-data/public-ipv4"
-	var publicIp, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	var publicIp, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 
 	cmd = "curl --connect-timeout 5 -sL http://169.254.169.254/latest/meta-data/public-hostname"
-	var hostname, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	var hostname, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 
 	p.KubeConf.Arg.AWS.PublicIp = publicIp
 	p.KubeConf.Arg.AWS.Hostname = hostname

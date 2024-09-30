@@ -32,13 +32,13 @@ func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
 	}
 
 	var cmd = fmt.Sprintf("%s profile list|grep '%s'|grep Running", minikube, t.KubeConf.Arg.MinikubeProfile)
-	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
+	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 	if stdout != "" {
 		return fmt.Errorf("minikube profile already exists")
 	}
 
 	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 

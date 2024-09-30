@@ -46,7 +46,7 @@ type DownloadStorageCli struct {
 
 func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	if _, err := util.GetCommand(common.CommandUnzip); err != nil {
-		runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, true)
+		runtime.GetRunner().Host.SudoCmd("apt install -y unzip", false, true)
 	}
 
 	var storageType = t.KubeConf.Arg.Storage.StorageType
@@ -132,7 +132,7 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 		storageAccessKey, storageSecretKey, storageToken, endpoint, storageClusterId,
 	)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("failed to unmount s3 bucket %s: %v", storageBucket, err)
 	}
 
@@ -174,7 +174,7 @@ func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
 
 	var cmd = fmt.Sprintf("/usr/local/sbin/ossutil64 rm %s/%s/ --endpoint=%s --access-key-id=%s --access-key-secret=%s --sts-token=%s -r -f", ossName, storageClusterId, ossEndpoint, storageAccessKey, storageSecretKey, storageToken)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount oss bucket %s: %v", storageBucket, err)
 	}
 
@@ -186,13 +186,13 @@ type StopJuiceFS struct {
 }
 
 func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop juicefs; systemctl disable juicefs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop juicefs; systemctl disable juicefs", false, false)
 
-	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /var/jfsCache /terminus/jfscache", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("rm -rf /var/jfsCache /terminus/jfscache", false, false)
 
-	_, _ = runtime.GetRunner().SudoCmdExt("umount /terminus/rootfs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("umount /terminus/rootfs", false, false)
 
-	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /terminus/rootfs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("rm -rf /terminus/rootfs", false, false)
 
 	return nil
 }
@@ -202,7 +202,7 @@ type StopMinio struct {
 }
 
 func (t *StopMinio) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop minio; systemctl disable minio", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop minio; systemctl disable minio", false, false)
 	return nil
 }
 
@@ -212,7 +212,7 @@ type StopMinioOperator struct {
 
 func (t *StopMinioOperator) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop minio-operator; systemctl disable minio-operator"
-	_, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	return nil
 }
 
@@ -222,9 +222,9 @@ type StopRedis struct {
 
 func (t *StopRedis) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop redis-server; systemctl disable redis-server"
-	_, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	_, _ = runtime.GetRunner().SudoCmdExt("killall -9 redis-server", false, false)
-	_, _ = runtime.GetRunner().SudoCmdExt("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("killall -9 redis-server", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
 
 	return nil
 }
@@ -249,7 +249,7 @@ func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, f := range files {
-		runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf %s", f), false, true)
+		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
 	}
 
 	return nil
@@ -389,7 +389,7 @@ func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
 	}
 
 	if util.IsExist("/osdata") {
-		runtime.GetRunner().SudoCmdExt("umount /osdata", false, true)
+		runtime.GetRunner().Host.SudoCmd("umount /osdata", false, true)
 		if err := util.RemoveDir("/osdata"); err != nil {
 			logger.Errorf("remove %s failed %v", "/osdata", err)
 		}

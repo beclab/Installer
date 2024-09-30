@@ -10,7 +10,7 @@ import (
 
 func isGpuSupportOs(runtime *common.KubeRuntime) bool {
 	systemInfo := runtime.GetSystemInfo()
-	if systemInfo.IsUbuntu() && (systemInfo.IsUbuntuVersionAbove(connector.UbuntuAbove20) || systemInfo.IsUbuntuVersionAbove(connector.UbuntuAbove22)) {
+	if systemInfo.IsUbuntu() && (systemInfo.IsUbuntuVersionEqual(connector.Ubuntu20) || systemInfo.IsUbuntuVersionEqual(connector.Ubuntu22)) {
 		return true
 	}
 

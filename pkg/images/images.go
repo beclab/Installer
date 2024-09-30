@@ -112,14 +112,14 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 			(host.IsRole(common.Master) || host.IsRole(common.Worker)) && image.Group == kubekeyapiv1alpha2.K8s && image.Enable,
 			host.IsRole(common.ETCD) && image.Group == kubekeyapiv1alpha2.Etcd && image.Enable:
 
-			if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("%s inspecti -q %s", pullCmd, image.ImageName()), false, false); err == nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s inspecti -q %s", pullCmd, image.ImageName()), false, false); err == nil {
 				logger.Infof("%s pull image %s exists", pullCmd, image.ImageName())
 				continue
 			}
 
 			// fmt.Printf("%s downloading image %s\n", pullCmd, image.ImageName())
 			logger.Debugf("%s pull image: %s - %s", host.GetName(), image.ImageName(), runtime.RemoteHost().GetName())
-			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s pull %s", pullCmd, image.ImageName()), false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s pull %s", pullCmd, image.ImageName()), false, false); err != nil {
 				return errors.Wrap(err, "pull image failed")
 			}
 		default:
@@ -178,7 +178,7 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 				// continue if load image error
 				if err := retry(func() error {
 					logger.Debugf("preloading image: %s", fileName)
-					if stdout, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("env PATH=$PATH gunzip -c %s | %s", image.Filename, loadCmd), false, false); err != nil {
+					if stdout, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("env PATH=$PATH gunzip -c %s | %s", image.Filename, loadCmd), false, false); err != nil {
 						return fmt.Errorf("%s", fileName)
 					} else {
 						logger.Debugf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
@@ -202,7 +202,7 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 
 				if err := retry(func() error {
 					logger.Debugf("preloading image: %s", fileName)
-					if stdout, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf("env PATH=$PATH %s %s", loadCmd, image.Filename), false, false); err != nil {
+					if stdout, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("env PATH=$PATH %s %s", loadCmd, image.Filename), false, false); err != nil {
 						return fmt.Errorf("%s", fileName)
 					} else {
 						logger.Debugf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))

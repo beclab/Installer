@@ -53,7 +53,7 @@ func (t *Template) Execute(runtime connector.Runtime) error {
 	}
 
 	var fileMode fs.FileMode = common.FileMode0644
-	if runtime.GetRunner().Host.IsMacos() {
+	if runtime.GetSystemInfo().IsDarwin() {
 		fileMode = common.FileMode0755
 	}
 	fileName := filepath.Join(runtime.GetHostWorkDir(), t.Template.Name())

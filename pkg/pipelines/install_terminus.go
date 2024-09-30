@@ -9,6 +9,7 @@ import (
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	ctrl "bytetrade.io/web3os/installer/controllers"
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/phase"
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
@@ -69,4 +70,8 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	return nil
+}
+
+func checkSupport(systemInfo connector.Systems) {
+
 }

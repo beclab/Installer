@@ -63,7 +63,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 
 		logger.Debug("apt update success")
 
-		// if _, err := runtime.GetRunner().SudoCmd("apt --fix-broken install -y", false, true); err != nil {
+		// if _, err := runtime.GetRunner().Host.SudoCmd("apt --fix-broken install -y", false, true); err != nil {
 		// 	logger.Errorf("fix-broken install error %v", err)
 		// 	return err
 		// }
@@ -79,11 +79,11 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 			return err
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd("update-pciids", false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("update-pciids", false, true); err != nil {
 			return fmt.Errorf("failed to update-pciids: %v", err)
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y openssh-server", debianFrontend, pkgManager), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s %s install -y openssh-server", debianFrontend, pkgManager), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}
@@ -110,14 +110,14 @@ func (t *SocatTask) Execute(runtime connector.Runtime) error {
 		return err
 	}
 	f := path.Join(filePath, fileName)
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, false); err != nil {
 		logger.Errorf("failed to extract %s %v", f, err)
 		return err
 	}
 
 	tp := path.Join(filePath, fmt.Sprintf("socat-%s", kubekeyapiv1alpha2.DefaultSocatVersion))
 	if err := util.ChangeDir(tp); err == nil {
-		if _, err := runtime.GetRunner().SudoCmd("./configure --prefix=/usr && make -j4 && make install && strip socat", false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("./configure --prefix=/usr && make -j4 && make install && strip socat", false, false); err != nil {
 			logger.Errorf("failed to install socat %v", err)
 			return err
 		}
@@ -149,12 +149,12 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 	fl := path.Join(flexFilePath, flexFileName)
 	f := path.Join(filePath, fileName)
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", fl, filePath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", fl, filePath), false, true); err != nil {
 		logger.Errorf("failed to extract %s %v", flexFilePath, err)
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, true); err != nil {
 		logger.Errorf("failed to extract %s %v", f, err)
 		return err
 	}
@@ -162,7 +162,7 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 	// install
 	fp := path.Join(flexFilePath, fmt.Sprintf("flex-%s", kubekeyapiv1alpha2.DefaultFlexVersion))
 	if err := util.ChangeDir(fp); err == nil {
-		if _, err := runtime.GetRunner().SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
 			logger.Errorf("failed to install flex %v", err)
 			return err
 		}
@@ -170,7 +170,7 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 
 	tp := path.Join(filePath, fmt.Sprintf("conntrack-tools-conntrack-tools-%s", kubekeyapiv1alpha2.DefaultConntrackVersion))
 	if err := util.ChangeDir(tp); err == nil {
-		if _, err := runtime.GetRunner().SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
 			logger.Errorf("failed to install conntrack %v", err)
 			return err
 		}

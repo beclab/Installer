@@ -32,7 +32,7 @@ func (t *CheckNodeState) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 	var cmd = fmt.Sprintf("%s get node --no-headers", kubectlpath)
-	stdout, err := runtime.GetRunner().SudoCmd(cmd, false, false)
+	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 
 	if err != nil || stdout == "" {
 		return fmt.Errorf("Node Pending")
@@ -73,7 +73,7 @@ func (t *InitNamespace) Execute(runtime connector.Runtime) error {
 			}
 		}
 	}
-	// _, err := runtime.GetRunner().SudoCmd(
+	// _, err := runtime.GetRunner().Host.SudoCmd(
 	// 	fmt.Sprintf(`cat <<EOF | /usr/local/bin/kubectl apply -f -
 	// apiVersion: v1
 	// kind: Namespace
@@ -104,12 +104,12 @@ func (t *InitNamespace) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, ns := range allNs {
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s label ns %s kubesphere.io/workspace=system-workspace --overwrite", kubectlpath, ns), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s label ns %s kubesphere.io/workspace=system-workspace --overwrite", kubectlpath, ns), false, true); err != nil {
 			logger.Errorf("label ns %s kubesphere.io/workspace=system-workspace failed: %v", ns, err)
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("label namespace %s kubesphere.io/workspace=system-workspace failed: %v", ns, err))
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s label ns %s kubesphere.io/namespace=%s --overwrite", kubectlpath, ns, ns), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s label ns %s kubesphere.io/namespace=%s --overwrite", kubectlpath, ns, ns), false, true); err != nil {
 			logger.Errorf("label ns %s kubesphere.io/namespace=%s failed: %v", ns, ns, err)
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("label namespace %s kubesphere.io/namespace=%s failed: %v", ns, ns, err))
 		}

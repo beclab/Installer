@@ -41,8 +41,6 @@ type BaseHost struct {
 	Arch            string `yaml:"arch,omitempty" json:"arch,omitempty"`
 	Os              string `yaml:"os,omitempty" json:"os,omitempty"`
 	Timeout         int64  `yaml:"timeout,omitempty" json:"timeout,omitempty"`
-	Macos           bool   `yaml:"macos,omitempty" json:"macos,omitempty"`
-	Wsl             bool   `yaml:"wsl,omitempty" json:"wsl,omitempty"`
 	MiniKubeProfile string `json:"minikubeProfileName,omitempty" json:"minikubeProfileName,omitempty"`
 
 	Roles     []string        `json:"-"`
@@ -136,14 +134,6 @@ func (b *BaseHost) GetOs() string {
 
 func (b *BaseHost) SetOs(osType string) {
 	b.Os = osType
-}
-
-func (b *BaseHost) IsWsl() bool {
-	return b.Wsl
-}
-
-func (b *BaseHost) IsMacos() bool {
-	return b.Macos
 }
 
 func (b *BaseHost) SetMinikubeProfile(profile string) {
@@ -275,6 +265,7 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 		util.Mkdir(remoteDir)
 	}
 
+	// todo
 	// if !b.GetMinikube() {
 	if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
 		return err
@@ -288,11 +279,19 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 	return nil
 }
 
-func (b *BaseHost) FileExist(remote string) bool {
-	return util.IsExist(remote)
+func (b *BaseHost) FileExist(f string) bool {
+	return util.IsExist(f)
 }
-func (b *BaseHost) DirExist(remote string) (bool, error) {
-	return util.IsExist(remote), nil
+func (b *BaseHost) DirExist(d string) bool {
+	return util.IsExist(d)
+}
+
+func (b *BaseHost) MkDir(path string) error {
+	if err := b.MkDirAll(path, ""); err != nil {
+		logger.Errorf("make dir %s failed: %v", path, err)
+		return err
+	}
+	return nil
 }
 
 func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, error) {
@@ -348,7 +347,7 @@ func (b *BaseHost) MkDirAll(path string, mode string) error {
 		mode = "775"
 	}
 	mkDstDir := fmt.Sprintf("mkdir -p -m %s %s || true", mode, path)
-	if _, _, err := b.Exec(context.Background(), mkDstDir, false, false); err != nil {
+	if _, _, err := b.Exec(context.Background(), SudoPrefix(mkDstDir), false, false); err != nil {
 		return err
 	}
 
