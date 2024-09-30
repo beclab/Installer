@@ -197,6 +197,12 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("minikube node ip is empty")
 	}
 
+	if !util.IsExist(common.KubeAddonsDir) {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", common.KubeAddonsDir), false, true); err != nil {
+			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("create dir %s failed", common.KubeAddonsDir))
+		}
+	}
+
 	t.PipelineCache.Set(common.CacheMinikubeNodeIp, nodeIp)
 
 	return nil
