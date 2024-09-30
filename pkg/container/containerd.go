@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/container/templates"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
@@ -46,13 +45,14 @@ type CreateZfsMount struct {
 }
 
 func (t *CreateZfsMount) Execute(runtime connector.Runtime) error {
-	if constants.FsType != "zfs" {
+	systemInfo := runtime.GetSystemInfo()
+	if systemInfo.GetFsType() != "zfs" {
 		return nil
 	}
-	var cmd = fmt.Sprintf("zfs create -o mountpoint=%s %s/containerd", cc.ZfsSnapshotter, constants.DefaultZfsPrefixName)
+	var cmd = fmt.Sprintf("zfs create -o mountpoint=%s %s/containerd", cc.ZfsSnapshotter, systemInfo.GetDefaultZfsPrefixName())
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			logger.Debugf("zfs %s/containerd already exists", constants.DefaultZfsPrefixName)
+			logger.Debugf("zfs %s/containerd already exists", systemInfo.GetDefaultZfsPrefixName())
 			return nil
 		}
 		logger.Errorf("create zfs mount error %v", err)
@@ -68,7 +68,7 @@ func (t *ZfsReset) Execute(runtime connector.Runtime) error {
 	if _, err := util.GetCommand("zfs"); err != nil {
 		return err
 	}
-
+	var systemInfo = runtime.GetSystemInfo()
 	res, _ := runtime.GetRunner().Host.SudoCmd("zfs list -t all", false, false)
 	if res != "" {
 		scanner := bufio.NewScanner(strings.NewReader(res))
@@ -81,7 +81,7 @@ func (t *ZfsReset) Execute(runtime connector.Runtime) error {
 
 			var name = fields[0]
 
-			if !strings.Contains(name, fmt.Sprintf("%s/containerd", constants.DefaultZfsPrefixName)) {
+			if !strings.Contains(name, fmt.Sprintf("%s/containerd", systemInfo.GetDefaultZfsPrefixName())) {
 				continue
 			}
 			var mp = fields[4]
@@ -95,7 +95,7 @@ func (t *ZfsReset) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("zfs destroy %s/containerd -frR", constants.DefaultZfsPrefixName), false, false)
+	runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("zfs destroy %s/containerd -frR", systemInfo.GetDefaultZfsPrefixName()), false, false)
 
 	return nil
 }

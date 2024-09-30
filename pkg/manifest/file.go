@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 )
 
@@ -72,8 +71,8 @@ func New() InstallationManifest {
 	return make(InstallationManifest)
 }
 
-func (item *ManifestItem) GetItemUrlForHost() *fileUrl {
-	switch constants.OsArch {
+func (item *ManifestItem) GetItemUrlForHost(osArch string) *fileUrl {
+	switch osArch {
 	case "arm64":
 		return &item.URL.ARM64
 	}

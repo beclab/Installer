@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -118,7 +117,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		var loadCmd string
 		var loadParm string
 
-		if constants.FsType == "zfs" {
+		if runtime.GetSystemInfo().GetFsType() == "zfs" {
 			loadParm = "--snapshotter=zfs"
 		}
 

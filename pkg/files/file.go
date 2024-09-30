@@ -30,7 +30,6 @@ import (
 	"time"
 
 	cm "bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
@@ -115,10 +114,10 @@ type KubeBinary struct {
 	CheckMd5Sum         bool
 }
 
-func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
+func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, prePath string) *KubeBinary {
 	component := new(KubeBinary)
 	component.ID = name
-	component.Os = constants.OsType
+	component.Os = osType
 	component.Arch = arch
 	component.Version = version
 	component.CheckSum = false
@@ -251,8 +250,8 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case terminus:
 		component.Type = COMPONENT
-		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, constants.OsType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
-		component.Url = fmt.Sprintf(TerminusUrl, version, version, constants.OsType, arch)
+		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, osType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
+		component.Url = fmt.Sprintf(TerminusUrl, version, version, osType, arch)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath)
 	case minio:
@@ -327,11 +326,11 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, fmt.Sprintf("v%s", version))
 	case cudakeyring: // + gpu
-		if strings.Contains(constants.OsVersion, "24.") {
+		if strings.Contains(osVersion, "24.") {
 			version = "1.1"
 		}
 		component.Type = GPU
-		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)
+		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", osPlatformFamily, osVersion, version)
 		component.FileNameHash = utils.MD5(component.FileName)
 		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash)) //getCudaKeyringUrl(arch, constants.OsVersion, version)
 		component.CheckSum = false
@@ -345,10 +344,9 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case libnvidia:
 		component.Type = GPU
-		component.FileName = fmt.Sprintf("%s_%s_libnvidia-container.list", constants.OsPlatform, constants.OsVersion)
+		component.FileName = fmt.Sprintf("%s_%s_libnvidia-container.list", osPlatformFamily, osVersion)
 		component.FileNameHash = utils.MD5(component.FileName)
 		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
-		// component.Url = getNvidiaLibUrl(constants.OsPlatform, constants.OsVersion)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	default:

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -71,21 +72,26 @@ type PrepareAppValues struct {
 }
 
 func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
+	client, err := clientset.NewKubeClient()
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	ns := fmt.Sprintf("user-space-%s", u.KubeConf.Arg.User.UserName)
-	redisPassword, err := getRedisPassword(runtime)
+	redisPassword, err := getRedisPassword(client, runtime)
 	if err != nil {
 		return err
 	}
 
 	bfDocUrl, _ := getDocUrl(ctx, runtime)
-	bflNodeName, err := getBflPod(ctx, ns, runtime)
+	bflNodeName, err := getBflPod(ctx, ns, client, runtime)
 	if err != nil {
 		return err
 	}
-	bflAnnotations, err := getBflAnnotation(ctx, ns, runtime)
+	bflAnnotations, err := getBflAnnotation(ctx, ns, client, runtime)
 	if err != nil {
 		return err
 	}
@@ -205,7 +211,12 @@ func (c *CopyFiles) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("%s is not health yet, please check it", c.KubeConf.Cluster.Kubernetes.Type)
 	}
 
-	appServiceName, err := getAppServiceName(runtime)
+	client, err := clientset.NewKubeClient()
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
+	}
+
+	appServiceName, err := getAppServiceName(client, runtime)
 	if err != nil {
 		return err
 	}
@@ -221,11 +232,11 @@ func (c *CopyFiles) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func getAppServiceName(runtime connector.Runtime) (string, error) {
+func getAppServiceName(client clientset.Client, runtime connector.Runtime) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	client := runtime.GetK8sClient()
-	pods, err := client.CoreV1().Pods(common.NamespaceOsSystem).List(ctx, metav1.ListOptions{LabelSelector: "tier=app-service"})
+
+	pods, err := client.Kubernetes().CoreV1().Pods(common.NamespaceOsSystem).List(ctx, metav1.ListOptions{LabelSelector: "tier=app-service"})
 	if err != nil {
 		return "", errors.Wrap(errors.WithStack(err), "get app-service failed")
 	}
@@ -237,9 +248,8 @@ func getAppServiceName(runtime connector.Runtime) (string, error) {
 	return pods.Items[0].Name, nil
 }
 
-func getBflPod(ctx context.Context, ns string, runtime connector.Runtime) (string, error) {
-	client := runtime.GetK8sClient()
-	pods, err := client.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: "tier=bfl"})
+func getBflPod(ctx context.Context, ns string, client clientset.Client, runtime connector.Runtime) (string, error) {
+	pods, err := client.Kubernetes().CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: "tier=bfl"})
 	if err != nil {
 		return "", errors.Wrap(errors.WithStack(err), "get bfl failed")
 	}
@@ -259,9 +269,8 @@ func getDocUrl(ctx context.Context, runtime connector.Runtime) (url string, err 
 	return
 }
 
-func getBflAnnotation(ctx context.Context, ns string, runtime connector.Runtime) (map[string]string, error) {
-	client := runtime.GetK8sClient()
-	sts, err := client.AppsV1().StatefulSets(ns).Get(ctx, "bfl", metav1.GetOptions{})
+func getBflAnnotation(ctx context.Context, ns string, client clientset.Client, runtime connector.Runtime) (map[string]string, error) {
+	sts, err := client.Kubernetes().AppsV1().StatefulSets(ns).Get(ctx, "bfl", metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(errors.WithStack(err), "get bfl sts failed")
 	}

@@ -88,7 +88,7 @@ func (i *InstallPlugin) Execute(runtime connector.Runtime) error {
 	var args string
 	var veleroVersion = "v1.11.3"
 	var veleroPluginVersion = "v1.0.2"
-	if i.KubeConf.Arg.IsRaspbian() {
+	if runtime.GetSystemInfo().IsRaspbian() {
 		args = " --retry 30 --delay 5"
 	}
 

@@ -3,7 +3,7 @@ package info
 import (
 	"fmt"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
+	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"github.com/spf13/cobra"
 )
 
@@ -24,13 +24,15 @@ func showInfoCommand() *cobra.Command {
 		Short: "Print os information",
 		Long:  "help for printing os info",
 		Run: func(cmd *cobra.Command, args []string) {
+			systemInfo := connector.GetSystemInfo()
+			host := systemInfo.HostInfo
 			fmt.Printf(`OS_TYPE=%s
 OS_PLATFORM=%s
 OS_ARCH=%s
 OS_VERSION=%s
 OS_KERNEL=%s
 OS_INFO=%s
-`, constants.OsType, constants.OsPlatform, constants.OsArch, constants.OsVersion, constants.OsKernel, constants.OsInfo)
+`, host.OsType, host.OsPlatformFamily, host.OsArch, host.OsVersion, host.OsKernel, host.OsInfo)
 		},
 	}
 	return cmd

@@ -42,14 +42,15 @@ type CorrectHostname struct {
 }
 
 func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
-	if !utils.ContainsUppercase(constants.HostName) {
+	hostName := runtime.GetSystemInfo().GetHostname()
+	if !utils.ContainsUppercase(hostName) {
 		return nil
 	}
-	hostname := strings.ToLower(constants.HostName)
+	hostname := strings.ToLower(hostName)
 	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
 		return err
 	}
-	constants.HostName = hostname
+	runtime.GetSystemInfo().SetHostname(hostname)
 	return nil
 }
 
@@ -59,7 +60,8 @@ type RaspbianCheckTask struct {
 
 func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 	// if util.IsExist(common.RaspbianCmdlineFile) || util.IsExist(common.RaspbianFirmwareFile) {
-	if constants.OsPlatform == common.Raspbian {
+	systemInfo := runtime.GetSystemInfo()
+	if systemInfo.IsRaspbian() {
 		if _, err := util.GetCommand(common.CommandIptables); err != nil {
 			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
 			if err != nil {
@@ -79,7 +81,7 @@ func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 
-			if constants.CgroupCpuEnabled == 0 || constants.CgroupMemoryEnabled == 0 {
+			if !systemInfo.CgroupCpuEnabled() || !systemInfo.CgroupMemoryEnabled() {
 				return fmt.Errorf("cpu or memory cgroups disabled, please edit /boot/cmdline.txt or /boot/firmware/cmdline.txt and reboot to enable it")
 			}
 		}
@@ -92,8 +94,8 @@ type DisableLocalDNSTask struct {
 }
 
 func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
-	switch constants.OsPlatform {
-	case common.Ubuntu, common.Debian, common.Raspbian:
+	switch runtime.GetSystemInfo().GetOsPlatformFamily() {
+	case common.Ubuntu, common.Debian:
 		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
 		if stdout != "active" {
 			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
@@ -126,8 +128,11 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	sysInfo := runtime.GetSystemInfo()
+	localIp := sysInfo.GetLocalIp()
+	hostname := sysInfo.GetHostname()
 	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", constants.LocalIp, constants.HostName), false, true); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
 			return err
 		}
 	}
@@ -180,17 +185,17 @@ type GetSysInfoTask struct {
 }
 
 func (t *GetSysInfoTask) Execute(runtime connector.Runtime) error {
-	logger.Infof("os info, all: %s", constants.OsInfo)
-	logger.Infof("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, version: %s, arch: %s",
-		constants.CurrentUser, constants.HostName, constants.HostId, constants.OsType, constants.OsPlatform, constants.OsVersion, constants.OsArch)
-	logger.Infof("kernel info, version: %s", constants.OsKernel)
-	logger.Infof("virtual info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
-	logger.Infof("cpu info, model: %s, logical count: %d, physical count: %d",
-		constants.CpuModel, constants.CpuLogicalCount, constants.CpuPhysicalCount)
-	logger.Infof("disk info, total: %s, free: %s", utils.FormatBytes(int64(constants.DiskTotal)), utils.FormatBytes(int64(constants.DiskFree)))
-	logger.Infof("fs info, fs: %s, zfsmount: %s", constants.FsType, constants.DefaultZfsPrefixName)
-	logger.Infof("mem info, total: %s, free: %s", utils.FormatBytes(int64(constants.MemTotal)), utils.FormatBytes(int64(constants.MemFree)))
-	logger.Infof("cgroup info, cpu: %d, mem: %d", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
+	// logger.Infof("os info, all: %s", constants.OsInfo)
+	// logger.Infof("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, version: %s, arch: %s",
+	// 	constants.CurrentUser, constants.HostName, constants.HostId, constants.OsType, constants.OsPlatform, constants.OsVersion, constants.OsArch)
+	// logger.Infof("kernel info, version: %s", constants.OsKernel)
+	// logger.Infof("virtual info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
+	// logger.Infof("cpu info, model: %s, logical count: %d, physical count: %d",
+	// 	constants.CpuModel, constants.CpuLogicalCount, constants.CpuPhysicalCount)
+	// logger.Infof("disk info, total: %s, free: %s", utils.FormatBytes(int64(constants.DiskTotal)), utils.FormatBytes(int64(constants.DiskFree)))
+	// logger.Infof("fs info, fs: %s, zfsmount: %s", constants.FsType, constants.DefaultZfsPrefixName)
+	// logger.Infof("mem info, total: %s, free: %s", utils.FormatBytes(int64(constants.MemTotal)), utils.FormatBytes(int64(constants.MemFree)))
+	// logger.Infof("cgroup info, cpu: %d, mem: %d", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
 
 	return nil
 }

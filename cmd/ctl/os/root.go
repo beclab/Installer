@@ -15,10 +15,6 @@ func NewCmdOs() *cobra.Command {
 	_ = exec.Command("/bin/bash", "-c", "ulimit -u 65535").Run()
 	_ = exec.Command("/bin/bash", "-c", "ulimit -n 65535").Run()
 
-	// rootOsCmd.AddCommand(NewCmdDownloadWizard())
-	// rootOsCmd.AddCommand(NewCmdDownload())
-	// rootOsCmd.AddCommand(NewCmdCheckDownload())
-
 	// TODO Add a command to install Terminus.
 	// TODO Before installing Terminus, we need to obtain user information, the WSL NAT gateway address, etc.
 
@@ -27,5 +23,6 @@ func NewCmdOs() *cobra.Command {
 	rootOsCmd.AddCommand(NewCmdInstallOs())
 	rootOsCmd.AddCommand(NewCmdUninstallOs())
 	rootOsCmd.AddCommand(NewCmdPrintInfo())
+
 	return rootOsCmd
 }

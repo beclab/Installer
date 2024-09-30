@@ -137,6 +137,8 @@ const (
 	Fedora   = "fedora"
 	RHEl     = "rhel"
 	Raspbian = "raspbian"
+	PVE      = "pve"
+	WSL      = "wsl"
 )
 
 const (

@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 )
 
@@ -97,7 +96,7 @@ type ZfsResetPrepare struct {
 }
 
 func (p *ZfsResetPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
-	if constants.FsType == "zfs" {
+	if runtime.GetSystemInfo().GetFsType() == "zfs" {
 		return true, nil
 	}
 	return false, nil

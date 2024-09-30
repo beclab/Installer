@@ -10,73 +10,14 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
 	"bytetrade.io/web3os/installer/pkg/utils"
-	"bytetrade.io/web3os/installer/version"
 	"github.com/pkg/errors"
 )
-
-type DownloadStorageBinaries struct {
-	common.KubeAction
-}
-
-func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-
-	// var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	var prePath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir)
-	terminus := files.NewKubeBinary("terminus-cli", arch, version.VERSION, path.Join(prePath, cc.WizardDir))
-	minio := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
-	miniooperator := files.NewKubeBinary("minio-operator", arch, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, prePath)
-	redis := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
-	juicefs := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
-	velero := files.NewKubeBinary("velero", arch, kubekeyapiv1alpha2.DefaultVeleroVersion, prePath)
-
-	// gpu
-	keyring := files.NewKubeBinary("cuda-keyring", arch, "1.0", prePath)
-	gpgkey := files.NewKubeBinary("gpgkey", arch, "", prePath)
-	libnvidia := files.NewKubeBinary("libnvidia-container", arch, "", prePath)
-
-	binaries := []*files.KubeBinary{terminus, minio, miniooperator, redis, juicefs, velero, keyring, gpgkey}
-	if constants.OsPlatform == common.Ubuntu && !strings.Contains(constants.OsVersion, "24.") {
-		binaries = append(binaries, libnvidia)
-	}
-	// libnvidia
-	for _, binary := range binaries {
-		if err := binary.CreateBaseDir(); err != nil {
-			return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
-		}
-
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
-
-		var exists = util.IsExist(binary.Path())
-		if exists {
-			p := binary.Path()
-			if err := binary.SHA256Check(); err != nil {
-				_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-			} else {
-				logger.Debugf("%s exists", binary.FileName)
-			}
-			continue
-		}
-
-		if !exists || binary.OverWrite {
-			logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
-			if err := binary.Download(); err != nil {
-				return fmt.Errorf("Failed to download %s binary: %s error: %w ", binary.ID, binary.Url, err)
-			}
-		}
-
-		t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+binary.ID, binary)
-	}
-
-	return nil
-}
 
 type MkStorageDir struct {
 	common.KubeAction
@@ -109,16 +50,20 @@ func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	}
 
 	var storageType = t.KubeConf.Arg.Storage.StorageType
-	var arch = fmt.Sprintf("%s-%s", constants.OsType, constants.OsArch)
+	var osType = runtime.GetSystemInfo().GetOsType()
+	var osArch = runtime.GetSystemInfo().GetOsArch()
+	var osVersion = runtime.GetSystemInfo().GetOsVersion()
+	var osPlatformFamily = runtime.GetSystemInfo().GetOsPlatformFamily()
+	var arch = fmt.Sprintf("%s-%s", osType, osArch)
 
 	// var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	var prePath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir)
 	var binary *files.KubeBinary
 	switch storageType {
 	case "s3":
-		binary = files.NewKubeBinary("awscli", arch, "", prePath)
+		binary = files.NewKubeBinary("awscli", arch, osType, osVersion, osPlatformFamily, "", prePath)
 	case "oss":
-		binary = files.NewKubeBinary("ossutil", arch, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
+		binary = files.NewKubeBinary("ossutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
 	default:
 		return nil
 	}

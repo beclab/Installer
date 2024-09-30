@@ -77,6 +77,7 @@ type AddInstallerConfig struct {
 
 func (a *AddInstallerConfig) Execute(runtime connector.Runtime) error {
 	var ksFilename string
+
 	if runtime.GetRunner().Host.IsMacos() {
 		ksFilename = path.Join(common.TmpDir, "/etc/kubernetes/addons/kubesphere.yaml")
 	} else {

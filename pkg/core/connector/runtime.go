@@ -25,9 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
@@ -52,13 +50,11 @@ type BaseRuntime struct {
 	isMacos         bool
 	isWsl           bool
 	terminusVersion string
+	systemInfo      Systems
 	k8sClient       *kubernetes.Clientset
 }
 
-func NewBaseRuntime(name string, connector Connector,
-	verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string,
-	terminusVersion string, isMacos bool, isWsl bool,
-	k8sConfig *rest.Config) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, isMacos bool, isWsl bool, systemInfo Systems) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -68,9 +64,10 @@ func NewBaseRuntime(name string, connector Connector,
 		allHosts:        make([]Host, 0, 0),
 		roleHosts:       make(map[string][]Host),
 		deprecatedHosts: make(map[string]string),
-		cmdSed:          util.FormatSed(constants.OsType == common.Darwin),
+		cmdSed:          util.FormatSed(systemInfo.IsDarwin()),
 		isMacos:         isMacos,
 		isWsl:           isWsl,
+		systemInfo:      systemInfo,
 		terminusVersion: terminusVersion,
 	}
 
@@ -87,15 +84,7 @@ func NewBaseRuntime(name string, connector Connector,
 		os.Exit(1)
 	}
 
-	if k8sConfig != nil {
-		base.k8sClient = kubernetes.NewForConfigOrDie(k8sConfig)
-	}
-
 	return base
-}
-
-func (b *BaseRuntime) GetK8sClient() *kubernetes.Clientset {
-	return b.k8sClient
 }
 
 func (b *BaseRuntime) IsMacos() bool {
@@ -104,6 +93,10 @@ func (b *BaseRuntime) IsMacos() bool {
 
 func (b *BaseRuntime) IsWsl() bool {
 	return b.isWsl
+}
+
+func (b *BaseRuntime) GetSystemInfo() Systems {
+	return b.systemInfo
 }
 
 func (b *BaseRuntime) GetObjName() string {
