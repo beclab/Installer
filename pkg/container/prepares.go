@@ -29,7 +29,7 @@ type DockerExist struct {
 }
 
 func (d *DockerExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	output, err := runtime.GetRunner().SudoCmd("if [ -z $(which docker) ] || [ ! -e /var/run/docker.sock ]; "+
+	output, err := runtime.GetRunner().Host.SudoCmd("if [ -z $(which docker) ] || [ ! -e /var/run/docker.sock ]; "+
 		"then echo 'not exist'; "+
 		"fi", false, false)
 	if err != nil {

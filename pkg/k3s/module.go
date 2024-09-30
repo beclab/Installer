@@ -622,7 +622,7 @@ func checkContainerExists(runtime connector.Runtime) bool {
 		"then echo 'not exist'; " +
 		"fi"
 	var runner = runtime.GetRunner()
-	if output, err := runner.SudoCmd(cmd, false, false); err != nil || strings.Contains(output, "not exist") {
+	if output, err := runner.Host.SudoCmd(cmd, false, false); err != nil || strings.Contains(output, "not exist") {
 		return false
 	}
 	return true

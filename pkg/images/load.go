@@ -305,14 +305,14 @@ func pullImage(runner *connector.Runner, containerManager, imageRepoTag, imageHa
 	}
 
 	var cmd = fmt.Sprintf(pullCmd, imageRepoTag)
-	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runner.Host.SudoCmd(cmd, false, false); err != nil {
 		return fmt.Errorf("pull %s error %v", imageRepoTag, err)
 	}
 
 	var repoTag = imageRepoTag
 	if containerManager == "containerd" {
 		cmd = fmt.Sprintf(inspectCmd, imageRepoTag)
-		stdout, err := runner.SudoCmdExt(cmd, false, false)
+		stdout, err := runner.Host.SudoCmd(cmd, false, false)
 		if err != nil {
 			return fmt.Errorf("inspect %s error %v", imageRepoTag, err)
 		}
@@ -325,10 +325,10 @@ func pullImage(runner *connector.Runner, containerManager, imageRepoTag, imageHa
 
 	var dstFile = path.Join(dst, fmt.Sprintf("%s.tar", imageHashTag))
 	cmd = fmt.Sprintf(exportCmd, dstFile, repoTag)
-	if _, err := runner.SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runner.Host.SudoCmd(cmd, false, false); err != nil {
 		return fmt.Errorf("export %s error: %v", imageRepoTag, err)
 	}
-	if _, err := runner.SudoCmdExt(fmt.Sprintf("gzip %s", dstFile), false, false); err != nil {
+	if _, err := runner.Host.SudoCmd(fmt.Sprintf("gzip %s", dstFile), false, false); err != nil {
 		return fmt.Errorf("gzip %s error: %v", dstFile, err)
 	}
 

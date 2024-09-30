@@ -18,7 +18,7 @@ func (p *Ubuntu24AppArmorCheck) PreCheck(runtime connector.Runtime) (bool, error
 		return false, nil
 	}
 
-	if !sysInfo.IsUbuntuVersionAbove(connector.UbuntuAbove24) {
+	if !sysInfo.IsUbuntuVersionEqual(connector.Ubuntu24) {
 		return false, nil
 	}
 

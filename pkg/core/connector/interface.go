@@ -26,7 +26,7 @@ import (
 )
 
 type Connection interface {
-	Exec(cmd string, host Host, printLine bool) (stdout string, code int, err error)
+	Exec(cmd string, host Host) (stdout string, code int, err error)
 	PExec(cmd string, stdin io.Reader, stdout io.Writer, stderr io.Writer, host Host) (code int, err error)
 	Fetch(local, remote string, host Host) error
 	Scp(local, remote string, host Host) error
@@ -72,8 +72,6 @@ type Runtime interface {
 	RemoteHost() Host
 	Copy() Runtime
 	GetSystemInfo() Systems
-	IsMacos() bool
-	IsWsl() bool
 	ModuleRuntime
 }
 
@@ -98,8 +96,6 @@ type Host interface {
 	SetArch(arch string)
 	GetOs() string
 	SetOs(osType string)
-	IsMacos() bool
-	IsWsl() bool
 	SetMinikubeProfile(profile string)
 	GetMinikubeProfile() string
 	GetTimeout() int64
@@ -115,8 +111,9 @@ type Host interface {
 	Fetch(local, remote string, printOutput bool, printLine bool) error
 	SudoScp(local, remote string) error
 	Scp(local, remote string) error
-	FileExist(remote string) bool
-	DirExist(remote string) (bool, error)
+	FileExist(f string) bool
+	DirExist(d string) bool
+	MkDir(path string) error
 	Cmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExt(cmd string, printOutput bool, printLine bool) (string, error)
 	SudoCmd(cmd string, printOutput bool, printLine bool) (string, error)

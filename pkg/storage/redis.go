@@ -152,7 +152,7 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
-	// if _, err := runtime.GetRunner().SudoCmdExt("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
+	// if _, err := runtime.GetRunner().Host.SudoCmd("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
 	// 	return err
 	// }
 	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisServerFile, RedisServerInstalledFile, RedisServerFile), false, true); err != nil {

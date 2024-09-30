@@ -45,7 +45,7 @@ func (s *SyncCertsFile) Execute(runtime connector.Runtime) error {
 	fileList := files.([]string)
 
 	for _, fileName := range fileList {
-		if err := runtime.GetRunner().SudoScp(filepath.Join(dir, fileName), filepath.Join(common.RegistryCertDir, fileName)); err != nil {
+		if err := runtime.GetRunner().Host.SudoScp(filepath.Join(dir, fileName), filepath.Join(common.RegistryCertDir, fileName)); err != nil {
 			return errors.Wrap(errors.WithStack(err), "scp registry certs file failed")
 		}
 	}
@@ -84,11 +84,11 @@ func (s *SyncCertsToAllNodes) Execute(runtime connector.Runtime) error {
 			}
 		}
 
-		if err := runtime.GetRunner().SudoScp(filepath.Join(dir, fileName), filepath.Join(filepath.Join("/etc/docker/certs.d", RegistryCertificateBaseName), dstFileName)); err != nil {
+		if err := runtime.GetRunner().Host.SudoScp(filepath.Join(dir, fileName), filepath.Join(filepath.Join("/etc/docker/certs.d", RegistryCertificateBaseName), dstFileName)); err != nil {
 			return errors.Wrap(errors.WithStack(err), "scp registry certs file to /etc/docker/certs.d/ failed")
 		}
 
-		if err := runtime.GetRunner().SudoScp(filepath.Join(dir, fileName), filepath.Join(common.RegistryCertDir, dstFileName)); err != nil {
+		if err := runtime.GetRunner().Host.SudoScp(filepath.Join(dir, fileName), filepath.Join(common.RegistryCertDir, dstFileName)); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp registry certs file to %s failed", common.RegistryCertDir))
 		}
 	}
@@ -117,12 +117,12 @@ func (g *InstallRegistryBinary) Execute(runtime connector.Runtime) error {
 	}
 
 	dst := filepath.Join(common.TmpDir, registry.FileName)
-	if err := runtime.GetRunner().Scp(registry.Path(), dst); err != nil {
+	if err := runtime.GetRunner().Host.Scp(registry.Path(), dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync etcd tar.gz failed")
 	}
 
 	installCmd := fmt.Sprintf("tar -zxf %s && mv -f registry /usr/local/bin/ && chmod +x /usr/local/bin/registry", dst)
-	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install etcd binaries failed")
 	}
 	return nil
@@ -134,7 +134,7 @@ type StartRegistryService struct {
 
 func (g *StartRegistryService) Execute(runtime connector.Runtime) error {
 	installCmd := "systemctl daemon-reload && systemctl enable registry && systemctl restart registry"
-	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "start registry service failed")
 	}
 
@@ -166,12 +166,12 @@ func (g *InstallDockerCompose) Execute(runtime connector.Runtime) error {
 	}
 
 	dst := filepath.Join(common.TmpDir, compose.FileName)
-	if err := runtime.GetRunner().Scp(compose.Path(), dst); err != nil {
+	if err := runtime.GetRunner().Host.Scp(compose.Path(), dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync docker-compose failed")
 	}
 
 	installCmd := fmt.Sprintf("mv -f %s /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose", dst)
-	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install dokcer-compose failed")
 	}
 
@@ -199,12 +199,12 @@ func (g *SyncHarborPackage) Execute(runtime connector.Runtime) error {
 	}
 
 	dst := filepath.Join(common.TmpDir, harbor.FileName)
-	if err := runtime.GetRunner().Scp(harbor.Path(), dst); err != nil {
+	if err := runtime.GetRunner().Host.Scp(harbor.Path(), dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync harbor package failed")
 	}
 
 	installCmd := fmt.Sprintf("tar -zxvf %s -C /opt", dst)
-	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "unzip harbor package failed")
 	}
 
@@ -217,7 +217,7 @@ type StartHarbor struct {
 
 func (g *StartHarbor) Execute(runtime connector.Runtime) error {
 	startCmd := "cd /opt/harbor && chmod +x install.sh && export PATH=$PATH:/usr/local/bin; ./install.sh --with-notary --with-trivy --with-chartmuseum && systemctl daemon-reload && systemctl enable harbor && systemctl restart harbor"
-	if _, err := runtime.GetRunner().SudoCmd(startCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(startCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "start harbor failed")
 	}
 

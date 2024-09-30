@@ -47,8 +47,6 @@ type BaseRuntime struct {
 	roleHosts       map[string][]Host
 	deprecatedHosts map[string]string
 	cmdSed          string
-	isMacos         bool
-	isWsl           bool
 	terminusVersion string
 	systemInfo      Systems
 	k8sClient       *kubernetes.Clientset
@@ -65,8 +63,6 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		roleHosts:       make(map[string][]Host),
 		deprecatedHosts: make(map[string]string),
 		cmdSed:          util.FormatSed(systemInfo.IsDarwin()),
-		isMacos:         isMacos,
-		isWsl:           isWsl,
 		systemInfo:      systemInfo,
 		terminusVersion: terminusVersion,
 	}
@@ -85,14 +81,6 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 	}
 
 	return base
-}
-
-func (b *BaseRuntime) IsMacos() bool {
-	return b.isMacos
-}
-
-func (b *BaseRuntime) IsWsl() bool {
-	return b.isWsl
 }
 
 func (b *BaseRuntime) GetSystemInfo() Systems {

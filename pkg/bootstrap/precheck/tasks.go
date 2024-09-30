@@ -286,50 +286,44 @@ type GetKubeConfig struct {
 }
 
 func (g *GetKubeConfig) Execute(runtime connector.Runtime) error {
-	if exist, err := runtime.GetRunner().FileExist("$HOME/.kube/config"); err != nil {
-		return err
-	} else {
-		if exist {
-			return nil
-		} else {
-			if exist, err := runtime.GetRunner().FileExist("/etc/kubernetes/admin.conf"); err != nil {
-				return err
-			} else {
-				if exist {
-					if _, err := runtime.GetRunner().Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
-						return err
-					}
-					if _, err := runtime.GetRunner().SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
-						return err
-					}
-					// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
-					// if err != nil {
-					// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
-					// }
+	var kubeConfigPath = "$HOME/.kube/config"
+	if util.IsExist(kubeConfigPath) {
+		return nil
+	}
 
-					// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
-					// if err != nil {
-					// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
-					// }
+	if util.IsExist("/etc/kubernetes/admin.conf") {
+		if _, err := runtime.GetRunner().Host.Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
+			return err
+		}
+		if _, err := runtime.GetRunner().Host.SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
+			return err
+		}
+		// userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
+		// }
 
-					userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
-					if err != nil {
-						return errors.Wrap(errors.WithStack(err), "get user id failed")
-					}
+		// userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
+		// }
 
-					userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
-					if err != nil {
-						return errors.Wrap(errors.WithStack(err), "get user group id failed")
-					}
+		userId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_UID", false, false)
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), "get user id failed")
+		}
 
-					chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
-					if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
-						return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
-					}
-				}
-			}
+		userGroupId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_GID", false, false)
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), "get user group id failed")
+		}
+
+		chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
+		if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
+			return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
 		}
 	}
+
 	return errors.New("kube config not found")
 }
 
@@ -339,7 +333,7 @@ type GetAllNodesK8sVersion struct {
 
 func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 	var nodeK8sVersion string
-	kubeletVersionInfo, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubelet --version", false, false)
+	kubeletVersionInfo, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubelet --version", false, false)
 	if err != nil {
 		return errors.Wrap(err, "get current kubelet version failed")
 	}
@@ -347,7 +341,7 @@ func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 
 	host := runtime.RemoteHost()
 	if host.IsRole(common.Master) {
-		apiserverVersion, err := runtime.GetRunner().SudoCmd(
+		apiserverVersion, err := runtime.GetRunner().Host.SudoCmd(
 			"cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'image:' | rev | cut -d ':' -f1 | rev",
 			false, false)
 		if err != nil {
@@ -405,7 +399,7 @@ type KsVersionCheck struct {
 }
 
 func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
-	ksVersionStr, err := runtime.GetRunner().SudoCmd(
+	ksVersionStr, err := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get deploy -n  kubesphere-system ks-console -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if err != nil {
@@ -416,7 +410,7 @@ func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	ccKsVersionStr, ccErr := runtime.GetRunner().SudoCmd(
+	ccKsVersionStr, ccErr := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get ClusterConfiguration ks-installer -n  kubesphere-system  -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if ccErr == nil && ksVersionStr == "v3.1.0" {
@@ -482,13 +476,13 @@ type GetKubernetesNodesStatus struct {
 }
 
 func (g *GetKubernetesNodesStatus) Execute(runtime connector.Runtime) error {
-	nodeStatus, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
+	nodeStatus, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
 	if err != nil {
 		return err
 	}
 	g.PipelineCache.Set(common.ClusterNodeStatus, nodeStatus)
 
-	cri, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
+	cri, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
 	if err != nil {
 		return err
 	}
@@ -562,7 +556,7 @@ type RemoveChattr struct {
 }
 
 func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
-	runtime.GetRunner().SudoCmd("chattr -i /etc/hosts", false, true)
-	runtime.GetRunner().SudoCmd("chattr -i /etc/resolv.conf", false, true)
+	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/hosts", false, true)
+	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/resolv.conf", false, true)
 	return nil
 }
