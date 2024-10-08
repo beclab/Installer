@@ -22,7 +22,6 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	(&gpu.CheckWslGPU{}).Execute(runtime)
 
 	m := []module.Module{
-		&precheck.GreetingsModule{},
 		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
 		// FIXME: completely install supported

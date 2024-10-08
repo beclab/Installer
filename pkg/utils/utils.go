@@ -272,3 +272,9 @@ func KubeVersionAlias(version string) (string, string) {
 
 	return kubeVersion, kubeType
 }
+
+func IsValidDomain(domain string) bool {
+	var domainRegex = `^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(domainRegex)
+	return re.MatchString(domain)
+}
