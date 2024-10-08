@@ -90,12 +90,13 @@ type Argument struct {
 	// User
 	User *User `json:"user"`
 	// storage
-	Storage     *Storage    `json:"storage"`
-	AWS         *AwsHost    `json:"aws"`
-	GPU         *GPU        `json:"gpu"`
-	Cloudflare  *Cloudflare `json:"cloudflare"`
-	Frp         *Frp        `json:"frp"`
-	TokenMaxAge int64       `json:"token_max_age"` // nanosecond
+	Storage        *Storage    `json:"storage"`
+	AWS            *AwsHost    `json:"aws"`
+	GPU            *GPU        `json:"gpu"`
+	Cloudflare     *Cloudflare `json:"cloudflare"`
+	Frp            *Frp        `json:"frp"`
+	TokenMaxAge    int64       `json:"token_max_age"` // nanosecond
+	MarketProvider string      `json:"market_provider"`
 
 	Request any `json:"-"`
 
@@ -168,6 +169,7 @@ func NewArgument() *Argument {
 		Cloudflare: &Cloudflare{},
 		Frp:        &Frp{},
 		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
+		MasterHost: os.Getenv(EnvMarketProvider),
 	}
 }
 

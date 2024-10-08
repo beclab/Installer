@@ -237,4 +237,5 @@ const (
 	EnvStorageTokenName     = "AWS_SESSION_TOKEN_SETUP"
 	EnvStorageClusterIdName = "CLUSTER_ID"
 	EnvTokenMaxAge          = "TOKEN_MAX_AGE"
+	EnvMarketProvider       = "MARKET_PROVIDER"
 )

@@ -27,6 +27,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(getStorageValueFromEnv())
+	arg.SetTokenMaxAge()
 	arg.SetReverseProxy()
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
