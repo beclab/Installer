@@ -166,10 +166,10 @@ func NewArgument() *Argument {
 			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
 			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
 		},
-		Cloudflare: &Cloudflare{},
-		Frp:        &Frp{},
-		WSL:        strings.Contains(constants.OsKernel, "-WSL"),
-		MasterHost: os.Getenv(EnvMarketProvider),
+		Cloudflare:     &Cloudflare{},
+		Frp:            &Frp{},
+		WSL:            strings.Contains(constants.OsKernel, "-WSL"),
+		MarketProvider: os.Getenv(EnvMarketProvider),
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/constants"
+	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -113,21 +114,32 @@ type EnableJuiceFsService struct {
 }
 
 func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
-	var redisPassword, err = getRedisPwd(runtime)
-	if err != nil {
-		return err
+	// todo redis password fetch
+	// var redisPassword, err = getRedisPwd(runtime)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// minioPassword, err := getMinioPwd(runtime)
+	// if err != nil {
+	// 	return err
+	// }
+
+	var redisPassword, ok = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
+
+	if !ok || redisPassword == "" {
+		return fmt.Errorf("redis password not found")
 	}
 
-	minioPassword, err := getMinioPwd(runtime)
-	if err != nil {
-		return err
-	}
-
-	var storageStr = getStorageTypeStr(minioPassword, t.KubeConf.Arg.Storage)
+	var storageStr = getStorageTypeStr(t.PipelineCache, t.KubeConf.Arg.Storage)
 
 	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, constants.LocalIp)
 	var cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
 	cmd = cmd + storageStr
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		return err
+	}
 
 	var data = util.Data{
 		"JuiceFsBinPath":    JuiceFsFile,
@@ -201,14 +213,14 @@ func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func getStorageTypeStr(minioPassword string, storage *common.Storage) string {
+func getStorageTypeStr(pc *cache.Cache, storage *common.Storage) string {
 	var storageType = storage.StorageType
 	var formatStr string
 	var fsName string
 
 	switch storageType {
 	case common.Minio:
-		formatStr = getMinioStr(minioPassword)
+		formatStr = getMinioStr(pc)
 	case common.OSS, common.S3:
 		formatStr = getCloudStr(storage)
 	}
@@ -239,7 +251,11 @@ func getCloudStr(storage *common.Storage) string {
 	return str
 }
 
-func getMinioStr(minioPassword string) string {
+func getMinioStr(pc *cache.Cache) string {
+	var minioPassword, _ = pc.GetMustString(common.CacheMinioPassword)
 	return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
 		constants.LocalIp, cc.TerminusDir, MinioRootUser, minioPassword)
+
+	// return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
+	// 	constants.LocalIp, cc.TerminusDir, MinioRootUser, minioPassword)
 }
