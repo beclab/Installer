@@ -230,15 +230,6 @@ func (b *BaseRuntime) HostIsDeprecated(host Host) bool {
 }
 
 func (b *BaseRuntime) InitLogger() error {
-	// if b.GetWorkDir() == "" {
-	// 	if err := b.GenerateWorkDir(); err != nil {
-	// 		return err
-	// 	}
-	// }
-	// logDir := filepath.Join(b.GetWorkDir(), "logs")
-	// logger.InitLog(logDir, b.verbose)
-	// return nil
-
 	logger.InitLog(path.Join(b.baseDir, "logs"))
 	return nil
 }

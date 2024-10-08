@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"strconv"
 	"strings"
 	"time"
@@ -56,6 +57,7 @@ const (
 
 type Systems interface {
 	IsSupport() error
+	IsLocalIpValid() error
 
 	IsDarwin() bool
 	IsWsl() bool
@@ -76,6 +78,8 @@ type Systems interface {
 	GetOsArch() string
 	GetOsVersion() string
 	GetPkgManager() string
+	SetNatGateway(ip string)
+	GetNatGateway() string
 
 	GetOsPlatformFamily() string
 
@@ -86,6 +90,7 @@ type Systems interface {
 	GetFsType() string
 	GetDefaultZfsPrefixName() string
 
+	Print()
 	String() string
 }
 
@@ -97,6 +102,7 @@ type SystemInfo struct {
 	FsInfo     *FileSystemInfo `json:"filesystem"`
 	CgroupInfo *CgroupInfo     `json:"cgroup,omitempty"`
 	LocalIp    string          `json:"local_ip"`
+	NatGateway string          `json:"nat_gateway"`
 	PkgManager string          `json:"pkg_manager"`
 }
 
@@ -128,8 +134,24 @@ func (s *SystemInfo) IsSupport() error {
 	return nil
 }
 
+func (s *SystemInfo) IsLocalIpValid() error {
+	switch s.LocalIp {
+	case "", "172.17.0.1", "127.0.0.1", "127.0.1.1":
+		return fmt.Errorf("incorrect ip %s for hostname %s, please check", s.LocalIp, s.HostInfo.HostName)
+	default:
+		return nil
+	}
+}
+
 func (s *SystemInfo) GetLocalIp() string {
 	return s.LocalIp
+}
+
+func (s *SystemInfo) SetNatGateway(ip string) {
+	s.NatGateway = ip
+}
+func (s *SystemInfo) GetNatGateway() string {
+	return s.NatGateway
 }
 
 func (s *SystemInfo) GetHostname() string {
@@ -221,6 +243,23 @@ func (s *SystemInfo) GetPkgManager() string {
 	return s.PkgManager
 }
 
+func (s *SystemInfo) Print() {
+	fmt.Printf("os info, all: %s\n", s.HostInfo.OsInfo)
+	fmt.Printf("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, platformfamily: %s, version: %s, arch: %s, localip: %s\n",
+		s.HostInfo.CurrentUser, s.HostInfo.HostName, s.HostInfo.HostId,
+		s.HostInfo.OsType, s.HostInfo.OsPlatform, s.HostInfo.OsPlatformFamily, s.HostInfo.OsVersion, s.HostInfo.OsArch, s.LocalIp)
+	fmt.Printf("kernel info, version: %s\n", s.HostInfo.OsKernel)
+	fmt.Printf("virtual info, role: %s, system: %s\n", s.HostInfo.VirtualizationRole, s.HostInfo.VirtualizationSystem)
+
+	fmt.Printf("cpu info, model: %s, logical count: %d, physical count: %d\n",
+		s.CpuInfo.CpuModel, s.CpuInfo.CpuLogicalCount, s.CpuInfo.CpuPhysicalCount)
+
+	fmt.Printf("disk info, total: %s, free: %s\n", util.FormatBytes(int64(s.DiskInfo.Total)), util.FormatBytes(int64(s.DiskInfo.Free)))
+	fmt.Printf("fs info, fs: %s, zfsmount: %s\n", s.FsInfo.Type, s.FsInfo.DefaultZfsPrefixName)
+	fmt.Printf("mem info, total: %s, free: %s\n", util.FormatBytes(int64(s.MemoryInfo.Total)), util.FormatBytes(int64(s.MemoryInfo.Free)))
+	fmt.Printf("cgroup info, cpu: %d, mem: %d\n", s.CgroupInfo.CpuEnabled, s.CgroupInfo.MemoryEnabled)
+}
+
 func GetSystemInfo() *SystemInfo {
 	var si = new(SystemInfo)
 	si.HostInfo = getHost()
@@ -260,6 +299,7 @@ type HostInfo struct {
 	VirtualizationSystem string `json:"virtualization_system"`
 	OsKernel             string `json:"os_kernel"`
 	OsInfo               string `json:"os_info"`
+	CurrentUser          string `json:"current_user"`
 }
 
 func getHost() *HostInfo {
@@ -279,6 +319,8 @@ func getHost() *HostInfo {
 	var _osPlatformFamily = hostInfo.PlatformFamily
 	var _osKernel = hostInfo.KernelVersion
 
+	u, _ := user.Current()
+
 	return &HostInfo{
 		HostName:             hostInfo.Hostname,
 		HostId:               hostInfo.HostID,
@@ -291,6 +333,7 @@ func getHost() *HostInfo {
 		VirtualizationSystem: hostInfo.VirtualizationSystem,
 		OsKernel:             hostInfo.KernelVersion,
 		OsInfo:               string(output),
+		CurrentUser:          u.Username,
 	}
 }
 

@@ -171,8 +171,7 @@ func NewArgument() *Argument {
 		},
 		Cloudflare: &Cloudflare{},
 		Frp:        &Frp{},
-		// MacOs:      isDarwin,
-		// WSL:        strings.Contains(constants.OsKernel, "-WSL"),
+		User:       &User{},
 	}
 }
 

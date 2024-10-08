@@ -86,11 +86,6 @@ func (m *GetSysInfoModel) Init() {
 	m.Tasks = []task.Interface{
 		getSysInfoTask,
 	}
-
-	m.PostHook = []module.PostHookInterface{
-		&PrintMachineInfoHook{},
-	}
-
 }
 
 type PreCheckOsModule struct {
