@@ -265,8 +265,6 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 		util.Mkdir(remoteDir)
 	}
 
-	// todo
-	// if !b.GetMinikube() {
 	if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
 		return err
 	}
@@ -274,7 +272,6 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 	if _, err := b.SudoCmd(fmt.Sprintf("rm -rf %s", filepath.Join(common.TmpDir, "*")), false, false); err != nil {
 		return err
 	}
-	// }
 
 	return nil
 }
