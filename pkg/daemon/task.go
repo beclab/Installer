@@ -66,6 +66,8 @@ func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
 			"FrpServer":        g.KubeConf.Arg.Frp.Server,
 			"FrpPort":          g.KubeConf.Arg.Frp.Port,
 			"FrpAuthMethod":    g.KubeConf.Arg.Frp.AuthMethod,
+			"TokenMaxAge":      g.KubeConf.Arg.TokenMaxAge,
+			"MarketProvider":   g.KubeConf.Arg.MarketProvider,
 		},
 		PrintContent: true,
 	}
