@@ -313,11 +313,12 @@ type SetUser struct {
 }
 
 func (s *SetUser) Execute(runtime connector.Runtime) error {
+	// todo
 	// userName := os.Getenv("TERMINUS_OS_USERNAME")
 	// userPwd := os.Getenv("TERMINUS_OS_PASSWORD")
 	// email := os.Getenv("TERMINUS_OS_EMAIL")
 	// domainName := os.Getenv("TERMINUS_OS_DOMAINNAME")
-	domainName, err := getDomainName()
+	// domainName, err := getDomainName()
 
 	return nil
 }
@@ -352,18 +353,19 @@ func getDomainName() (string, error) {
 }
 
 func getUserName(domainName string) string {
+	// todo
 	userName := os.Getenv("TERMINUS_OS_USERNAME")
 
-	reader := bufio.NewReader(os.Stdin)
-	if userName == "" {
-	LOOP:
-		fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
-		userName, err := reader.ReadString('\n')
-		if err != nil {
-			goto LOOP
-		}
+	// reader := bufio.NewReader(os.Stdin)
+	// if userName == "" {
+	// LOOP:
+	// 	fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
+	// 	userName, err := reader.ReadString('\n')
+	// 	if err != nil {
+	// 		goto LOOP
+	// 	}
 
-	}
+	// }
 
 	return userName
 }
