@@ -169,9 +169,10 @@ func NewArgument() *Argument {
 			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
 			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
 		},
-		Cloudflare: &Cloudflare{},
-		Frp:        &Frp{},
-		User:       &User{},
+		Cloudflare:     &Cloudflare{},
+		Frp:            &Frp{},
+		User:           &User{},
+		MarketProvider: os.Getenv(ENV_MARKET_PROVIDER),
 	}
 }
 
