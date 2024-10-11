@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytetrade.io/web3os/installer/pkg/storage/templates"
 	"path"
 
 	"bytetrade.io/web3os/installer/pkg/core/common"
@@ -28,7 +29,7 @@ var (
 	JuiceFsDataDir       = path.Join(Root, cc.TerminusDir, "data", "juicefs")
 	JuiceFsCacheDir      = path.Join(Root, cc.TerminusDir, "jfscache")
 	JuiceFsMountPointDir = path.Join(Root, cc.TerminusDir, "rootfs")
-	JuiceFsServiceFile   = path.Join(Root, "etc", "systemd", "system", "juicefs.service")
+	JuiceFsServiceFile   = path.Join(Root, "etc", "systemd", "system", templates.JuicefsService.Name())
 
 	MinioRootUser    = "minioadmin"
 	MinioDataDir     = path.Join(Root, cc.TerminusDir, "data", "minio", "vol1")
