@@ -30,6 +30,7 @@ Description=Lightweight Kubernetes
 Documentation=https://k3s.io
 Wants=network-online.target
 After=network-online.target
+After={{ .JuiceFSServiceUnit }}
 
 [Install]
 WantedBy=multi-user.target
@@ -54,6 +55,7 @@ Restart=always
 RestartSec=5s
 ExecStartPre=-/sbin/modprobe br_netfilter
 ExecStartPre=-/sbin/modprobe overlay
+ExecStartPre={{ .JuiceFSBinPath }} summary {{ .JuiceFSMountPoint }}
 ExecStart=/usr/local/bin/k3s $K3S_ROLE $K3S_ARGS $K3S_EXTRA_ARGS $K3S_SERVER_ARGS
     `)))
 

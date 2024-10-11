@@ -17,6 +17,9 @@
 package kubernetes
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -97,6 +100,11 @@ func (i *InstallKubeBinariesModule) Init() {
 			Name:     "GenerateKubeletService",
 			Template: templates.KubeletService,
 			Dst:      filepath.Join("/etc/systemd/system/", templates.KubeletService.Name()),
+			Data: util.Data{
+				"JuiceFSServiceUnit": storagetpl.JuicefsService.Name(),
+				"JuiceFSBinPath":     storage.JuiceFsFile,
+				"JuiceFSMountPoint":  storage.JuiceFsMountPointDir,
+			},
 		},
 		Parallel: true,
 		Retry:    2,

@@ -17,6 +17,8 @@
 package k3s
 
 import (
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -214,21 +216,24 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 	kubeProxyArgs, _ := util.GetArgs(defaultKubeProxyArgs, g.KubeConf.Cluster.Kubernetes.KubeProxyArgs)
 
 	var data = util.Data{
-		"Server":            server,
-		"IsMaster":          host.IsRole(common.Master),
-		"NodeIP":            host.GetInternalAddress(),
-		"HostName":          host.GetName(),
-		"PodSubnet":         g.KubeConf.Cluster.Network.KubePodsCIDR,
-		"ServiceSubnet":     g.KubeConf.Cluster.Network.KubeServiceCIDR,
-		"ClusterDns":        g.KubeConf.Cluster.CorednsClusterIP(),
-		"CertSANs":          g.KubeConf.Cluster.GenerateCertSANs(),
-		"PauseImage":        images.GetImage(runtime, g.KubeConf, "pause").ImageName(),
-		"Container":         fmt.Sprintf("unix://%s", container.DefaultContainerdCRISocket),
-		"ApiserverArgs":     kubeApiserverArgs,
-		"ControllerManager": kubeControllerManager,
-		"SchedulerArgs":     kubeSchedulerArgs,
-		"KubeletArgs":       kubeletArgs,
-		"KubeProxyArgs":     kubeProxyArgs,
+		"Server":             server,
+		"IsMaster":           host.IsRole(common.Master),
+		"NodeIP":             host.GetInternalAddress(),
+		"HostName":           host.GetName(),
+		"PodSubnet":          g.KubeConf.Cluster.Network.KubePodsCIDR,
+		"ServiceSubnet":      g.KubeConf.Cluster.Network.KubeServiceCIDR,
+		"ClusterDns":         g.KubeConf.Cluster.CorednsClusterIP(),
+		"CertSANs":           g.KubeConf.Cluster.GenerateCertSANs(),
+		"PauseImage":         images.GetImage(runtime, g.KubeConf, "pause").ImageName(),
+		"Container":          fmt.Sprintf("unix://%s", container.DefaultContainerdCRISocket),
+		"ApiserverArgs":      kubeApiserverArgs,
+		"ControllerManager":  kubeControllerManager,
+		"SchedulerArgs":      kubeSchedulerArgs,
+		"KubeletArgs":        kubeletArgs,
+		"KubeProxyArgs":      kubeProxyArgs,
+		"JuiceFSServiceUnit": storagetpl.JuicefsService.Name(),
+		"JuiceFSBinPath":     storage.JuiceFsFile,
+		"JuiceFSMountPoint":  storage.JuiceFsMountPointDir,
 	}
 
 	templateAction := action.Template{
