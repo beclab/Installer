@@ -27,10 +27,12 @@ var KubeletService = template.Must(template.New("kubelet.service").Parse(
 	dedent.Dedent(`[Unit]
 Description=kubelet: The Kubernetes Node Agent
 Documentation=http://kubernetes.io/docs/
+After={{ .JuiceFSServiceUnit }}
 
 [Service]
 CPUAccounting=true
 MemoryAccounting=true
+ExecStartPre={{ .JuiceFSBinPath }} summary {{ .JuiceFSMountPoint }}
 ExecStart=/usr/local/bin/kubelet
 Restart=always
 StartLimitInterval=0
