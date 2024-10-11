@@ -170,3 +170,9 @@ func FormatBytes(bytes int64) string {
 
 	return result
 }
+
+func RemoveHTTPPrefix(url string) string {
+	url = strings.TrimPrefix(url, "http://")
+	url = strings.TrimPrefix(url, "https://")
+	return url
+}
