@@ -145,3 +145,9 @@ func FormatSed(darwin bool) string {
 
 	return res
 }
+
+func RemoveHTTPPrefix(url string) string {
+	url = strings.TrimPrefix(url, "http://")
+	url = strings.TrimPrefix(url, "https://")
+	return url
+}

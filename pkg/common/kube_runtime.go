@@ -22,7 +22,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
@@ -30,6 +29,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
 type KubeRuntime struct {
@@ -179,7 +179,7 @@ func (a *Argument) SetTokenMaxAge() {
 	if err != nil || age == 0 {
 		age = DefaultTokenMaxAge
 	}
-	a.TokenMaxAge = age * int64(time.Second)
+	a.TokenMaxAge = age
 }
 
 func (a *Argument) SetGPU(enable bool, share bool) {
@@ -242,7 +242,7 @@ func (a *Argument) SetReverseProxy() {
 
 	a.Cloudflare.Enable = enableCloudflare
 	a.Frp.Enable = enableFrp
-	a.Frp.Server = frpServer
+	a.Frp.Server = util.RemoveHTTPPrefix(frpServer)
 	a.Frp.Port = frpPort
 	a.Frp.AuthMethod = frpAuthMethod
 }
