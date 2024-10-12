@@ -115,12 +115,7 @@ type EnableJuiceFsService struct {
 func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 	var systemInfo = runtime.GetSystemInfo()
 	var localIp = systemInfo.GetLocalIp()
-
-	var redisPassword, ok = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
-	if !ok || redisPassword == "" {
-		return fmt.Errorf("redis password not found")
-	}
-
+	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, localIp)
 	// todo redis password fetch
 	// var redisPassword, err = getRedisPwd(runtime)

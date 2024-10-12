@@ -146,12 +146,6 @@ func FormatSed(darwin bool) string {
 	return res
 }
 
-func RemoveHTTPPrefix(url string) string {
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "https://")
-	return url
-}
-
 func FormatBytes(bytes int64) string {
 	const (
 		KB = 1 << 10 // 1024
