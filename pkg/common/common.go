@@ -229,13 +229,15 @@ const (
 )
 
 const (
-	EnvCloudInstanceName    = "TERMINUS_IS_CLOUD_VERSION"
-	EnvStorageTypeName      = "STORAGE"
-	EnvStorageBucketName    = "S3_BUCKET"
-	EnvStorageAccessKeyName = "AWS_ACCESS_KEY_ID_SETUP"
-	EnvStorageSecretKeyName = "AWS_SECRET_ACCESS_KEY_SETUP"
-	EnvStorageTokenName     = "AWS_SESSION_TOKEN_SETUP"
-	EnvStorageClusterIdName = "CLUSTER_ID"
-	EnvTokenMaxAge          = "TOKEN_MAX_AGE"
-	EnvMarketProvider       = "MARKET_PROVIDER"
+	EnvCloudInstanceName      = "TERMINUS_IS_CLOUD_VERSION"
+	EnvStorageTypeName        = "STORAGE"
+	EnvStorageBucketName      = "S3_BUCKET"
+	EnvStorageAccessKeyName   = "AWS_ACCESS_KEY_ID_SETUP"
+	EnvStorageSecretKeyName   = "AWS_SECRET_ACCESS_KEY_SETUP"
+	EnvStorageTokenName       = "AWS_SESSION_TOKEN_SETUP"
+	EnvStorageClusterIdName   = "CLUSTER_ID"
+	EnvTokenMaxAge            = "TOKEN_MAX_AGE"
+	EnvMarketProvider         = "MARKET_PROVIDER"
+	EnvTerminusCertServiceAPI = "TERMINUS_CERT_SERVICE_API"
+	EnvTerminusDNSServiceAPI  = "TERMINUS_DNS_SERVICE_API"
 )
