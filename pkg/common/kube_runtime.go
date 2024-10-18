@@ -89,13 +89,15 @@ type Argument struct {
 	// User
 	User *User `json:"user"`
 	// storage
-	Storage        *Storage    `json:"storage"`
-	AWS            *AwsHost    `json:"aws"`
-	GPU            *GPU        `json:"gpu"`
-	Cloudflare     *Cloudflare `json:"cloudflare"`
-	Frp            *Frp        `json:"frp"`
-	TokenMaxAge    int64       `json:"token_max_age"` // nanosecond
-	MarketProvider string      `json:"market_provider"`
+	Storage                *Storage    `json:"storage"`
+	AWS                    *AwsHost    `json:"aws"`
+	GPU                    *GPU        `json:"gpu"`
+	Cloudflare             *Cloudflare `json:"cloudflare"`
+	Frp                    *Frp        `json:"frp"`
+	TokenMaxAge            int64       `json:"token_max_age"` // nanosecond
+	MarketProvider         string      `json:"market_provider"`
+	TerminusCertServiceAPI string      `json:"terminus_cert_service_api"`
+	TerminusDNSServiceAPI  string      `json:"terminus_dns_service_api"`
 
 	Request any `json:"-"`
 
@@ -169,10 +171,11 @@ func NewArgument() *Argument {
 			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
 			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
 		},
-		Cloudflare:     &Cloudflare{},
-		Frp:            &Frp{},
-		User:           &User{},
-		MarketProvider: os.Getenv(ENV_MARKET_PROVIDER),
+		Frp:                    &Frp{},
+		User:                   &User{},
+		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
+		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
+		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
 	}
 }
 
