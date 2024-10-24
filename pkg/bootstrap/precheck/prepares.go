@@ -17,38 +17,10 @@
 package precheck
 
 import (
-	"fmt"
-	"net"
-
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"github.com/pkg/errors"
 )
-
-type LocalIpCheck struct {
-	prepare.BasePrepare
-}
-
-func (p *LocalIpCheck) PreCheck(runtime connector.Runtime) (bool, error) {
-	var systemInfo = runtime.GetSystemInfo()
-	var localIp = systemInfo.GetLocalIp()
-	ip := net.ParseIP(localIp)
-	if ip == nil {
-		return false, fmt.Errorf("invalid local ip %s", localIp)
-	}
-
-	if ip4 := ip.To4(); ip4 == nil {
-		return false, fmt.Errorf("invalid local ip %s", localIp)
-	}
-
-	switch localIp {
-	case "172.17.0.1", "127.0.0.1", "127.0.1.1":
-		return false, fmt.Errorf("invalid local ip %s", localIp)
-	default:
-	}
-	return true, nil
-}
 
 type KubeSphereExist struct {
 	common.KubePrepare

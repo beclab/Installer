@@ -16,10 +16,11 @@ func PrepareSystemPhase(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	}
 
 	var m []module.Module
+	si := runtime.GetSystemInfo()
 	switch {
-	case runtime.Arg.WSL:
+	case si.IsWsl():
 		m = (&wslPhaseBuilder{runtime: runtime, manifestMap: manifestMap}).build()
-	case runtime.Arg.MacOs:
+	case si.IsDarwin():
 		m = (&macOsPhaseBuilder{runtime: runtime, manifestMap: manifestMap}).build()
 	default:
 		m = (&linuxPhaseBuilder{runtime: runtime, manifestMap: manifestMap}).build()

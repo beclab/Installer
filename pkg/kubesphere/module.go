@@ -17,17 +17,17 @@
 package kubesphere
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/action"
+	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
-	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
 )
 
 type DeleteKubeSphereCachesModule struct {
@@ -92,7 +92,7 @@ func (d *DeployModule) Init() {
 			Template: templates.KsInstaller,
 			Dst:      filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name()),
 		},
-		Parallel: true,
+		Parallel: false,
 	}
 
 	addConfig := &task.RemoteTask{
@@ -209,7 +209,7 @@ func (c *CheckResultModule) Init() {
 	c.Desc = "Check deploy KubeSphere result"
 
 	check := &task.RemoteTask{
-		Name:  "CheckAPIServer",
+		Name:  "CheckKubeSphereRunning",
 		Hosts: c.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),

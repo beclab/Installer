@@ -1,105 +1,27 @@
 project_name: terminus-cli
 builds:
-  - id: linux_amd64 # + linux_amd64
-    env:
+  - env:
       - CGO_ENABLED=0
-      - GOOS=linux
-      - GOARCH=amd64
     binary: terminus-cli
     main: ./cmd/main.go
     goos:
       - linux
+      - darwin
     goarch:
       - amd64
-    tags:
-      - exclude_graphdriver_devicemapper
-      - exclude_graphdriver_btrfs
-      - containers_image_openpgp
-      - linux
-    ldflags:
-      - -w
-      - -s
-  - id: linux_arm # + linux_armv7
-    env:
-      # - CGO_ENABLED=1
-      - GOOS=linux
-      - GOARCH=arm
-      - GOARM=7
-    # - CC=arm-linux-gnueabihf-gcc
-    # - CXX=arm-linux-gnueabihf-g++
-    binary: terminus-cli
-    main: ./cmd/main.go
-    goarch:
       - arm
-    goos:
-      - linux
+      - arm64
     goarm:
       - 7
-    tags:
-      - exclude_graphdriver_devicemapper
-      - exclude_graphdriver_btrfs
-      - containers_image_openpgp
+    ignore:
+      - goos: linux
+        goarch: arm64
+      - goos: darwin
+        goarch: arm
     ldflags:
-      - -w
-      - -s
-  - id: darwin_amd64 # + darwin amd64
-    env:
-      - CGO_ENABLED=0
-      - GOOS=darwin
-      - GOARCH=amd64
-    binary: terminus-cli
-    main: ./cmd/main.go
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    tags:
-      - exclude_graphdriver_devicemapper
-      - exclude_graphdriver_btrfs
-      - containers_image_openpgp
-      - darwin
-      - amd64
-    ldflags:
-      - -w
-      - -s
-  - id: darwin_arm64 # + darwin arm64
-    env:
-      - CGO_ENABLED=0
-      - GOOS=darwin
-      - GOARCH=arm64
-    binary: terminus-cli
-    main: ./cmd/main.go
-    goos:
-      - darwin
-    goarch:
-      - arm64
-    tags:
-      - exclude_graphdriver_devicemapper
-      - exclude_graphdriver_btrfs
-      - containers_image_openpgp
-      - darwin
-      - arm64
-    ldflags:
-      - -w
-      - -s
-# - id: windows_amd64 # + windowss amd64
-#   env:
-#   - CGO_ENABLED=0
-#   - GOOS=windows
-#   - GOARCH=amd64
-#   binary: terminus-cli
-#   main: ./cmd/main.go
-#   goos:
-#   - windows
-#   goarch:
-#   - amd64
-#   tags:
-#   - exclude_graphdriver_devicemapper
-#   - exclude_graphdriver_btrfs
-#   - containers_image_openpgp
-#   ldflags:
-#   - -w
-#   - -s
+      - s
+      - w
+      - -X bytetrade.io/web3os/installer/version.VERSION={{ .Version }}
 dist: ./output
 archives:
   - id: terminus-cli
@@ -108,17 +30,7 @@ archives:
       linux: linux
       amd64: amd64
       arm: arm64
-    files:
-      - none*
 checksum:
   name_template: "checksums.txt"
 changelog:
   skip: true
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-release:
-  prerelease: true
-  draft: false

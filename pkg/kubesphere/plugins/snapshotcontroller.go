@@ -79,6 +79,7 @@ func (d *DeploySnapshotControllerModule) Init() {
 			new(NotEqualDesiredVersion),
 		},
 		Action:   new(DeploySnapshotController),
+		Retry:    2,
 		Parallel: false,
 	}
 

@@ -3,16 +3,13 @@ package terminus
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
@@ -42,26 +39,26 @@ func (i *InstallAppsModule) Init() {
 		Name:   "InstallApps",
 		Desc:   "Install apps",
 		Action: new(InstallApps),
+		Retry:  5,
 	}
 
-	cleearAppsValues := &task.LocalTask{
-		Name:   "CleearAppsValues",
-		Desc:   "Cleear apps values",
-		Action: new(CleearAppsValues),
+	clearAppsValues := &task.LocalTask{
+		Name:   "ClearAppValues",
+		Desc:   "Clear apps values",
+		Action: new(ClearAppValues),
 	}
 
 	copyFiles := &task.LocalTask{
-		Name:   "CopyFiles",
+		Name:   "CopyAppServiceHelmFiles",
 		Desc:   "Copy files",
-		Action: new(CopyFiles),
+		Action: new(CopyAppServiceHelmFiles),
 		Retry:  5,
-		Delay:  5 * time.Second,
 	}
 
 	i.Tasks = []task.Interface{
 		prepareAppValues,
 		installApps,
-		cleearAppsValues,
+		clearAppsValues,
 		copyFiles,
 	}
 
@@ -77,7 +74,7 @@ func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	ns := fmt.Sprintf("user-space-%s", u.KubeConf.Arg.User.UserName)
@@ -95,7 +92,7 @@ func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
 	if err != nil {
 		return err
 	}
-	fsType := getFsType(u.KubeConf.Arg.WSL)
+	fsType := getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin())
 	gpuType := getGpuType(u.KubeConf.Arg.GPU.Enable, u.KubeConf.Arg.GPU.Share)
 	appValues := getAppSecrets(getAppPatches())
 
@@ -109,10 +106,10 @@ func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
 			"url":                    bfDocUrl,
 			"nodeName":               bflNodeName,
 		},
-		"pvc": map[string]string{
+		"pvc": map[string]interface{}{
 			"userspace": bflAnnotations["userspace_pv"],
 		},
-		"userspace": map[string]string{
+		"userspace": map[string]interface{}{
 			"userData": fmt.Sprintf("%s/Home", bflAnnotations["userspace_hostpath"]),
 			"appData":  fmt.Sprintf("%s/Data", bflAnnotations["userspace_hostpath"]),
 			"appCache": bflAnnotations["appcache_hostpath"],
@@ -126,11 +123,11 @@ func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
 				"username": u.KubeConf.Arg.User.UserName,
 			},
 		},
-		"debugVersion": os.Getenv("DEBUG_VERSION"),
+		"debugVersion": os.Getenv("DEBUG_VERSION") != "",
 		"gpu":          gpuType,
 		"fs_type":      fsType,
 		"os":           appValues,
-		"kubesphere": map[string]string{
+		"kubesphere": map[string]interface{}{
 			"redis_password": redisPassword,
 		},
 	}
@@ -146,16 +143,16 @@ type InstallApps struct {
 
 func (i *InstallApps) Execute(runtime connector.Runtime) error {
 	var appPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "apps")
-	var appDirs []string
-	filepath.WalkDir(appPath, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() || d.Name() == appPath {
-			return nil
+	appsDirEntries, err := os.ReadDir(appPath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to list %s", appPath)
+	}
+	var apps []string
+	for _, entry := range appsDirEntries {
+		if entry.IsDir() {
+			apps = append(apps, entry.Name())
 		}
-
-		appDirs = append(appDirs, path)
-
-		return nil
-	})
+	}
 
 	var ns = fmt.Sprintf("user-space-%s", i.KubeConf.Arg.User.UserName)
 	config, err := ctrl.GetConfig()
@@ -167,50 +164,42 @@ func (i *InstallApps) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var parms = make(map[string]interface{})
-	var values, ok = i.ModuleCache.Get(common.CacheAppValues)
+	valsCache, ok := i.ModuleCache.Get(common.CacheAppValues)
 	if !ok {
 		return fmt.Errorf("app values not found")
+	}
+	vals, ok := valsCache.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("app values in cache is not map[string]interface{}")
 	}
 	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	parms["set"] = values
-	parms["force"] = true
-	for _, appDir := range appDirs {
-		appName := filepath.Base(appDir)
-		if err := utils.UpgradeCharts(ctx, actionConfig, settings, appName, appDir, "", ns, parms, false); err != nil {
-			logger.Errorf("upgrade %s failed %v", appName, err)
+	for _, app := range apps {
+		if err := utils.UpgradeCharts(ctx, actionConfig, settings, app, path.Join(appPath, app), "", ns, vals, false); err != nil {
+			return fmt.Errorf("install app %s failed: %v", app, err)
 		}
 	}
 
 	return nil
 }
 
-type CleearAppsValues struct {
+type ClearAppValues struct {
 	common.KubeAction
 }
 
-func (c *CleearAppsValues) Execute(runtime connector.Runtime) error {
+func (c *ClearAppValues) Execute(runtime connector.Runtime) error {
 	// clear apps values.yaml
 	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("cat /dev/null > %s/wizard/config/apps/values.yaml", runtime.GetInstallerDir()), false, false)
-
-	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("cat /dev/null > %s/wizard/config/launcher/values.yaml", runtime.GetInstallerDir()), false, false)
 
 	return nil
 }
 
-type CopyFiles struct {
+type CopyAppServiceHelmFiles struct {
 	common.KubeAction
 }
 
-func (c *CopyFiles) Execute(runtime connector.Runtime) error {
-	kubectl, _ := util.GetCommand(common.CommandKubectl)
-
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s get --raw='/readyz?verbose'", kubectl), false, false); err != nil {
-		return fmt.Errorf("%s is not health yet, please check it", c.KubeConf.Cluster.Kubernetes.Type)
-	}
-
+func (c *CopyAppServiceHelmFiles) Execute(runtime connector.Runtime) error {
 	client, err := clientset.NewKubeClient()
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
@@ -306,6 +295,6 @@ func getAppPatches() map[string]map[string]string {
 	var patches = make(map[string]map[string]string)
 	var value = make(map[string]string)
 	value["marketProvider"] = os.Getenv("MARKET_PROVIDER")
-	patches["market"] = value
+	patches["appstore"] = value
 	return patches
 }

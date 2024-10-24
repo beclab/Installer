@@ -28,7 +28,6 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os/repository"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -125,11 +124,11 @@ type ConfigProxyTask struct {
 }
 
 func (t *ConfigProxyTask) Execute(runtime connector.Runtime) error {
-	if constants.Proxy == "" {
+	if common.ResolvProxy == "" {
 		return nil
 	}
 
-	var cmd = fmt.Sprintf("echo nameserver %s > /etc/resolv.conf", constants.Proxy)
+	var cmd = fmt.Sprintf("echo nameserver %s > /etc/resolv.conf", common.ResolvProxy)
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("failed to execute %s: %v", cmd, err)
 		return err

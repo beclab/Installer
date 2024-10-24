@@ -1,14 +1,11 @@
 package terminus
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -81,35 +78,6 @@ func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
 
 	return nil
 }
-
-// type SetUserInfo struct {
-// 	common.KubeAction
-// }
-
-// func (t *SetUserInfo) Execute(runtime connector.Runtime) error {
-// 	var userName = t.KubeConf.Arg.User.UserName
-// 	var email = t.KubeConf.Arg.User.Email
-// 	var password = t.KubeConf.Arg.User.Password
-// 	var domainName = t.KubeConf.Arg.User.DomainName
-
-// 	if userName == "" {
-// 		return fmt.Errorf("user info invalid")
-// 	}
-
-// 	if domainName == "" {
-// 		domainName = cc.DefaultDomainName
-// 	}
-
-// 	if email == "" {
-// 		email = fmt.Sprintf("%s@%s", userName, domainName)
-// 	}
-
-// 	if password == "" {
-// 		password, _ = utils.GeneratePassword(8)
-// 	}
-
-// 	return fmt.Errorf("Not Implemented")
-// }
 
 type Download struct {
 	common.KubeAction
@@ -276,96 +244,4 @@ func (d *DeleteWizardFiles) Execute(runtime connector.Runtime) error {
 		}
 	}
 	return nil
-}
-
-type SetWslNatGateway struct {
-	common.KubeAction
-}
-
-func (s *SetWslNatGateway) Execute(runtime connector.Runtime) error {
-	if !runtime.GetSystemInfo().IsWsl() {
-		return nil
-	}
-
-	reader := bufio.NewReader(os.Stdin)
-LOOP:
-	fmt.Printf("\nEnter the windows host IP: ")
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return err
-	}
-	input = strings.TrimSpace(input)
-	if input == "" || !utils.IsValidIP(input) {
-		goto LOOP
-	}
-
-	if strings.EqualFold(input, "127.0.0.1") {
-		goto LOOP
-	}
-
-	runtime.GetSystemInfo().SetNatGateway(input)
-
-	return nil
-}
-
-type SetUser struct {
-	common.KubeAction
-}
-
-func (s *SetUser) Execute(runtime connector.Runtime) error {
-	// todo
-	// userName := os.Getenv("TERMINUS_OS_USERNAME")
-	// userPwd := os.Getenv("TERMINUS_OS_PASSWORD")
-	// email := os.Getenv("TERMINUS_OS_EMAIL")
-	// domainName := os.Getenv("TERMINUS_OS_DOMAINNAME")
-	// domainName, err := getDomainName()
-
-	return nil
-}
-
-func getDomainName() (string, error) {
-	domainName := os.Getenv("TERMINUS_OS_DOMAINNAME")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	if domainName == "" {
-	LOOP:
-		fmt.Printf("\nEnter the domain name ( myterminus.com by default ): ")
-		domainName, err := reader.ReadString('\n')
-		if err != nil {
-			return domainName, errors.Wrap(errors.WithStack(err), "read domain name failed")
-		}
-		domainName = strings.TrimSpace(domainName)
-		if domainName == "" {
-			domainName = "myterminus.com"
-		}
-
-		if !utils.IsValidDomain(domainName) {
-			goto LOOP
-		}
-	}
-
-	if !utils.IsValidDomain(domainName) {
-		return domainName, fmt.Errorf("illegal domain name '%s'", domainName)
-	}
-
-	return domainName, nil
-}
-
-func getUserName(domainName string) string {
-	// todo
-	userName := os.Getenv("TERMINUS_OS_USERNAME")
-
-	// reader := bufio.NewReader(os.Stdin)
-	// if userName == "" {
-	// LOOP:
-	// 	fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
-	// 	userName, err := reader.ReadString('\n')
-	// 	if err != nil {
-	// 		goto LOOP
-	// 	}
-
-	// }
-
-	return userName
 }

@@ -355,13 +355,7 @@ func (t *GetKubeCommand) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	helmpath, err := util.GetCommand(common.CommandHelm)
-	if err != nil || helmpath == "" {
-		return fmt.Errorf("helm not found")
-	}
-
 	t.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
-	t.PipelineCache.Set(common.CacheCommandHelmPath, kubectlpath)
 	return nil
 }
 
@@ -375,7 +369,7 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	var labels = []string{"app=ks-apiserver", "component=kube-apiserver"}
+	var labels = []string{"app=ks-apiserver", "app=ks-controller-manager"}
 
 	for _, label := range labels {
 		var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", kubectlpath, common.NamespaceKubesphereSystem, label)

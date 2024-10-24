@@ -144,44 +144,60 @@ func intToIP(n int32) net.IP {
 	return net.IP(b)
 }
 
-func IsPrivateIPv4Addr(ip net.IP) bool {
+func IsValidIPv4Addr(ip net.IP) bool {
+	if ip == nil {
+		return false
+	}
 	ip4 := ip.To4()
-	return ip4 != nil && ip4.IsGlobalUnicast() && (ip4[0] == 10 ||
-		(ip4[0] == 172 && ip4[1]&0xf0 == 16) ||
-		(ip4[0] == 192 && ip4[1] == 168))
+	return ip4 != nil && ip4.IsGlobalUnicast()
 }
 
-func GetLocalIP() (string, error) {
-	addrs, err := net.InterfaceAddrs()
+// GetLocalIP gets the local ip
+// either by getting the "OS_LOCALIP" environment variable
+// or by resolving the local hostname to IP address if the env is not set
+// in both cases, the IP address is matched against the valid addresses of the local interfaces
+// to check if it is an actually bindable address
+// by valid it means the address is a non-loopback IPv4 address
+// the explicitly specified env var takes precedence than the hostname
+func GetLocalIP() string {
+	ifAddrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return "", err
+		panic(errors.Wrap(err, "failed to get local interface IP addresses"))
 	}
-	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && ipnet != nil {
-			if ipnet.IP != nil && IsPrivateIPv4Addr(ipnet.IP) {
-				return ipnet.IP.String(), nil
+	var validIfIPs []net.IP
+	for _, ifAddr := range ifAddrs {
+		if ipNet, ok := ifAddr.(*net.IPNet); ok && IsValidIPv4Addr(ipNet.IP) {
+			validIfIPs = append(validIfIPs, ipNet.IP)
+		}
+	}
+	if len(validIfIPs) == 0 {
+		panic("no valid IP can be found from local network interfaces")
+	}
+
+	if envIPStr := os.Getenv("OS_LOCALIP"); envIPStr != "" {
+		envIP := net.ParseIP(envIPStr)
+		for _, validIP := range validIfIPs {
+			if validIP.Equal(envIP) {
+				return validIP.String()
+			}
+		}
+		panic(fmt.Sprintf("invalid local IP address set in env: %s", envIPStr))
+	}
+
+	localHostname, err := os.Hostname()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to get local hostname"))
+	}
+	hostIPs, err := net.LookupIP(localHostname)
+	if err != nil || len(hostIPs) == 0 {
+		panic(errors.Wrap(err, "failed to resolve local hostname"))
+	}
+	for _, hostIP := range hostIPs {
+		for _, validIP := range validIfIPs {
+			if validIP.Equal(hostIP) {
+				return validIP.String()
 			}
 		}
 	}
-	return "", errors.New("valid local IP not found!")
-}
-
-func LocalIP() string {
-	var localIp string
-	var err error
-
-	localIp = os.Getenv("OS_LOCALIP")
-	if localIp != "" {
-		ip := net.ParseIP(localIp)
-		if ip != nil && IsPrivateIPv4Addr(ip) {
-			return localIp
-		}
-	}
-
-	localIp, err = GetLocalIP()
-	if err != nil {
-		fmt.Println("Failed to get Local IP: ", err)
-		panic(err)
-	}
-	return localIp
+	panic(fmt.Sprintf("resolved address(es) of local hostname: %v can not match with valid local interface address(es): %v", hostIPs, validIfIPs))
 }

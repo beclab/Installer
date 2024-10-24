@@ -11,11 +11,11 @@ var SettingsValue = template.Must(template.New("values.yaml").Parse(
   name: 'user-space-{{ .UserName }}'
   role: admin
 
-{{ if .Storage }}
-{{ range $key, $value := .Storage }}
-{{ $key }}: {{ $value }}
-{{ end }}
-{{ end }}
+cluster_id: {{ .ClusterID }}
+s3_sts: {{ .S3SessionToken }}
+s3_ak: {{ .S3AccessKey }}
+s3_sk: {{ .S3SecretKey }}
+terminusd: '{{ .TerminusdInstalled }}'
 
 user:
   name: '{{ .UserName }}'

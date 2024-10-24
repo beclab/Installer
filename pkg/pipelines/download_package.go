@@ -5,6 +5,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/phase/download"
+	"path"
 )
 
 func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
@@ -19,14 +20,11 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
 	}
 
-	baseDir := runtime.GetBaseDir()
-
-	p := download.NewDownloadPackage(manifest, baseDir, runtime)
+	p := download.NewDownloadPackage(manifest, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("download package failed %v", err)
 		return err

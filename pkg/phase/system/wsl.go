@@ -25,7 +25,6 @@ type wslPhaseBuilder struct {
 
 func (l *wslPhaseBuilder) base() phase {
 	return []module.Module{
-		&precheck.GetSysInfoModel{},
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
@@ -24,7 +25,8 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
-	arg.SetMinikube(opts.MiniKubeProfile) // todo
+	arg.SetMinikubeProfile(opts.MiniKubeProfile)
+	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
 
@@ -34,14 +36,13 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
 	}
 
 	runtime.Arg.SetManifest(manifest)
 
-	var p = cluster.CreateTerminus(*arg, runtime)
+	var p = cluster.CreateTerminus(runtime)
 	if err := p.Start(); err != nil {
 		return fmt.Errorf("create terminus error %v", err)
 	}

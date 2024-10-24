@@ -27,7 +27,6 @@ import (
 func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.InstallationManifest) []module.Module {
 	m := []module.Module{
 		&kubesphere.CheckMacOsCommandModule{},
-		&ksplugins.CopyEmbed{},
 		&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: manifestMap,
@@ -35,7 +34,7 @@ func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 			},
 		},
 		&kubesphere.DeployMiniKubeModule{},
-		&kubesphere.DeployModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // todo relative ks-installer
+		&kubesphere.DeployModule{Skip: !runtime.Cluster.KubeSphere.Enabled},
 		&ksplugins.DeployKsPluginsModule{},
 		&ksplugins.DeploySnapshotControllerModule{},
 		&ksplugins.DeployRedisModule{},
@@ -45,7 +44,7 @@ func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 		&ksplugins.CreateNotificationModule{},
 		&ksplugins.DeployPrometheusModule{},
 		&ksplugins.DeployKsCoreModule{},
-		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // check ks-apiserver phase
+		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled},
 	}
 
 	return m
@@ -99,7 +98,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&ksplugins.CreateNotificationModule{},
 		&ksplugins.DeployPrometheusModule{},
 		&ksplugins.DeployKsCoreModule{},
-		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled}, // check ks-apiserver phase
+		&kubesphere.CheckResultModule{Skip: !runtime.Cluster.KubeSphere.Enabled},
 	}
 
 	return m

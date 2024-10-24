@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/module"
@@ -12,7 +11,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
-func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline.Pipeline {
+func CreateTerminus(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	// TODO: the installation process needs to distinguish between macOS and Linux.
 	manifestMap, err := manifest.ReadAll(runtime.Arg.Manifest)
 	if err != nil {
@@ -22,12 +21,9 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 	(&gpu.CheckWslGPU{}).Execute(runtime)
 
 	m := []module.Module{
-		&precheck.GetSysInfoModel{},
 		&plugins.CopyEmbed{},
-		// FIXME: completely install supported
 		&terminus.CheckPreparedModule{BaseDir: runtime.GetBaseDir(), Force: true},
 		&terminus.TerminusUninstallScriptModule{},
-		&terminus.InstalledModule{},
 	}
 
 	var kubeModules []module.Module
@@ -44,6 +40,8 @@ func CreateTerminus(args common.Argument, runtime *common.KubeRuntime) *pipeline
 		)
 	}
 	m = append(m, kubeModules...)
+	m = append(m, terminus.GenerateTerminusComponentsModules(runtime, manifestMap)...)
+	m = append(m, &terminus.InstalledModule{})
 
 	return &pipeline.Pipeline{
 		Name:    "Install Terminus",

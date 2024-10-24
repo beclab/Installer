@@ -3,6 +3,7 @@ package pipelines
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -21,6 +22,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
+	arg.SetMinikubeProfile(opts.MinikubeProfile)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(getStorageValueFromEnv())
@@ -33,9 +35,8 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
 	}
 
 	runtime.Arg.SetManifest(manifest)

@@ -27,7 +27,6 @@ type linuxPhaseBuilder struct {
 
 func (l *linuxPhaseBuilder) base() phase {
 	m := []module.Module{
-		&precheck.GetSysInfoModel{},
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,

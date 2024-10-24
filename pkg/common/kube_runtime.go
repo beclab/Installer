@@ -89,26 +89,26 @@ type Argument struct {
 	// User
 	User *User `json:"user"`
 	// storage
-	Storage        *Storage    `json:"storage"`
-	AWS            *AwsHost    `json:"aws"`
-	GPU            *GPU        `json:"gpu"`
-	Cloudflare     *Cloudflare `json:"cloudflare"`
-	Frp            *Frp        `json:"frp"`
-	TokenMaxAge    int64       `json:"token_max_age"` // nanosecond
-	MarketProvider string      `json:"market_provider"`
+	Storage                *Storage           `json:"storage"`
+	PublicNetworkInfo      *PublicNetworkInfo `json:"public_network_info"`
+	GPU                    *GPU               `json:"gpu"`
+	Cloudflare             *Cloudflare        `json:"cloudflare"`
+	Frp                    *Frp               `json:"frp"`
+	TokenMaxAge            int64              `json:"token_max_age"` // nanosecond
+	MarketProvider         string             `json:"market_provider"`
+	TerminusCertServiceAPI string             `json:"terminus_cert_service_api"`
+	TerminusDNSServiceAPI  string             `json:"terminus_dns_service_api"`
 
 	Request any `json:"-"`
 
 	IsCloudInstance bool   `json:"is_cloud_instance"`
-	MacOs           bool   `json:"is_macos"`
 	MinikubeProfile string `json:"minikube_profile"`
-	WSL             bool   `json:"is_wsl"`
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
 }
 
-type AwsHost struct {
+type PublicNetworkInfo struct {
 	PublicIp string `json:"aws_public_ip"`
 	Hostname string `json:"aws_hostname"`
 }
@@ -152,8 +152,6 @@ type Frp struct {
 }
 
 func NewArgument() *Argument {
-	// var isDarwin = strings.EqualFold(constants.OsType, Darwin)
-
 	return &Argument{
 		KsEnable:         true,
 		KsVersion:        DefaultKubeSphereVersion,
@@ -169,10 +167,13 @@ func NewArgument() *Argument {
 			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
 			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
 		},
-		Cloudflare:     &Cloudflare{},
-		Frp:            &Frp{},
-		User:           &User{},
-		MarketProvider: os.Getenv(ENV_MARKET_PROVIDER),
+		Cloudflare:             &Cloudflare{},
+		Frp:                    &Frp{},
+		User:                   &User{},
+		PublicNetworkInfo:      &PublicNetworkInfo{},
+		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
+		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
+		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
 	}
 }
 
@@ -220,7 +221,7 @@ func (a *Argument) SetStorage(storage *Storage) {
 	a.Storage = storage
 }
 
-func (a *Argument) SetMinikube(profile string) {
+func (a *Argument) SetMinikubeProfile(profile string) {
 	a.MinikubeProfile = profile
 }
 
@@ -288,10 +289,10 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
-		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.MacOs, arg.WSL, arg.SystemInfo)
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.SystemInfo)
 
 	clusterSpec := &cluster.Spec
-	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.MacOs)
+	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.SystemInfo.IsDarwin())
 	hostSet := make(map[string]struct{})
 	for _, role := range roleGroups {
 		for _, host := range role {

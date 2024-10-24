@@ -2,42 +2,11 @@ package terminus
 
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 )
-
-// todo check support, check wsl natgateway, check user
-type PreparedInstallValidateModule struct {
-	common.KubeModule
-}
-
-func (p *PreparedInstallValidateModule) Init() {
-
-}
-
-// type SetupWs struct {
-// 	common.KubeModule
-// }
-
-// func (m *SetupWs) Init() {
-// 	m.Name = "SetupWs"
-
-// 	setUserInfo := &task.RemoteTask{
-// 		Name:  "CreateStorageDir",
-// 		Hosts: m.Runtime.GetAllHosts(),
-// 		Prepare: &prepare.PrepareCollection{
-// 			new(common.OnlyFirstMaster),
-// 			new(NotEqualDesiredVersion),
-// 			new(CheckAwsHost),
-// 		},
-// 		Action:   new(SetUserInfo),
-// 		Parallel: false,
-// 		Retry:    0,
-// 	}
-
-// 	m.Tasks = []task.Interface{
-// 		setUserInfo,
-// 	}
-// }
 
 type InstallWizardDownloadModule struct {
 	common.KubeModule
@@ -57,19 +26,6 @@ func (m *InstallWizardDownloadModule) Init() {
 	m.Tasks = []task.Interface{
 		download,
 	}
-}
-
-type DownloadFullInstallerModule struct {
-	common.KubeModule
-	Skip bool
-}
-
-func (r *DownloadFullInstallerModule) IsSkip() bool {
-	return r.Skip
-}
-
-func (m *DownloadFullInstallerModule) Init() {
-	m.Name = "DownloadFullInstaller"
 }
 
 type PreparedModule struct {
@@ -123,6 +79,58 @@ func (m *TerminusUninstallScriptModule) Init() {
 	m.Tasks = []task.Interface{
 		uninstallScript,
 	}
+}
+
+type InstallComponentsInClusterModule struct {
+	common.KubeModule
+}
+
+type GetNATGatewayIPModule struct {
+	common.KubeModule
+}
+
+func (m *GetNATGatewayIPModule) Init() {
+	m.Name = "GetNATGatewayIP"
+
+	getNATGatewayIP := &task.LocalTask{
+		Name:   "GetNATGatewayIP",
+		Action: new(GetNATGatewayIP),
+	}
+
+	m.Tasks = []task.Interface{
+		getNATGatewayIP,
+	}
+}
+
+func GenerateTerminusComponentsModules(runtime connector.Runtime, manifestMap manifest.InstallationManifest) []module.Module {
+	var modules []module.Module
+	baseModules := []module.Module{
+		&GetNATGatewayIPModule{},
+		&InstallAccountModule{},
+		&InstallSettingsModule{},
+		&InstallOsSystemModule{},
+		&InstallLauncherModule{},
+		&InstallAppsModule{},
+	}
+	modules = append(modules, baseModules...)
+
+	si := runtime.GetSystemInfo()
+	switch {
+	case si.IsDarwin():
+	default:
+		modules = append(
+			modules,
+			&InstallVeleroModule{
+				ManifestModule: manifest.ManifestModule{
+					Manifest: manifestMap,
+					BaseDir:  runtime.GetBaseDir(),
+				},
+			})
+	}
+
+	modules = append(modules, &WelcomeModule{})
+
+	return modules
 }
 
 type InstalledModule struct {
