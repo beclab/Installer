@@ -19,5 +19,6 @@ const (
 	ChartNameKsConfig            = "ks-config"
 	ChartNameMonitorNotification = "monitor-notification"
 	ChartNameAccount             = "account"
+	ChartNameSystem              = "system"
 	ChartNameSettings            = "settings"
 )

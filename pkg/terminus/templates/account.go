@@ -11,6 +11,6 @@ var AccountValues = template.Must(template.New("values.yaml").Parse(
   name: '{{ .UserName }}'
   password: '{{ .Password }}'
   email: '{{ .Email }}'
-  terminus_name: '{{ .UserName }}{{ .DomainName }}'
+  terminus_name: '{{ .UserName }}@{{ .DomainName }}'
 `),
 ))

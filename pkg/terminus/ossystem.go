@@ -30,8 +30,10 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 	}
 
 	var sharedLib = "/terminus/share"
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", sharedLib, sharedLib), false, false); err != nil {
-		return errors.Wrap(errors.WithStack(err), "create /terminus/share failed")
+	if !runtime.GetSystemInfo().IsDarwin() {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", sharedLib, sharedLib), false, false); err != nil {
+			return errors.Wrap(errors.WithStack(err), "create /terminus/share failed")
+		}
 	}
 
 	var cmd = fmt.Sprintf("%s get secret -n kubesphere-system redis-secret -o jsonpath='{.data.auth}' |base64 -d", kubectl)
@@ -57,21 +59,24 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 	defer cancel()
 
 	var systemPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "system")
-	var parms = make(map[string]interface{})
-	var sets = make(map[string]interface{})
-	sets["kubesphere.redis_password"] = redisPwd
-	sets["backup.bucket"] = t.KubeConf.Arg.Storage.BackupClusterBucket
-	sets["backup.key_prefix"] = t.KubeConf.Arg.Storage.StoragePrefix
-	sets["backup.is_cloud_version"] = cloudValue(t.KubeConf.Arg.IsCloudInstance)
-	sets["backup.sync_secret"] = t.KubeConf.Arg.Storage.StorageSyncSecret
-	sets["gpu"] = getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share)
-	sets["s3_bucket"] = t.KubeConf.Arg.Storage.StorageBucket
-	sets["fs_type"] = getFsType(t.KubeConf.Arg.WSL)
-	sets["sharedlib"] = sharedLib
-	parms["force"] = true
-	parms["set"] = sets
+	vals := map[string]interface{}{
+		"kubesphere": map[string]interface{}{"redis_password": redisPwd},
+		"backup": map[string]interface{}{
+			"bucket":           t.KubeConf.Arg.Storage.BackupClusterBucket,
+			"key_prefix":       t.KubeConf.Arg.Storage.StoragePrefix,
+			"is_cloud_version": cloudValue(t.KubeConf.Arg.IsCloudInstance),
+			"sync_secret":      t.KubeConf.Arg.Storage.StorageSyncSecret,
+		},
+		"gpu":       getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share),
+		"s3_bucket": t.KubeConf.Arg.Storage.StorageBucket,
+		"fs_type":   getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin()),
+	}
 
-	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameAccount, systemPath, "", common.NamespaceOsSystem, parms, false); err != nil {
+	if !runtime.GetSystemInfo().IsDarwin() {
+		vals["sharedlib"] = sharedLib
+	}
+
+	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameSystem, systemPath, "", common.NamespaceOsSystem, vals, false); err != nil {
 		return err
 	}
 
@@ -143,15 +148,53 @@ type Patch struct {
 }
 
 func (p *Patch) Execute(runtime connector.Runtime) error {
+	var err error
 	var kubectl, _ = util.GetCommand(common.CommandKubectl)
 	var globalRoleWorkspaceManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-globalrole-workspace-manager.yaml")
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, globalRoleWorkspaceManager), false, true); err != nil {
+	if _, err = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, globalRoleWorkspaceManager), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch globalrole workspace manager failed")
 	}
 
 	var notificationManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-notification-manager.yaml")
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
+	if _, err = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch notification manager failed")
+	}
+
+	patchAdminContent := "{\\\"metadata\\\":{\\\"finalizers\\\":[\\\"finalizers.kubesphere.io/users\\\"]}}"
+	patchAdminCMD := fmt.Sprintf(
+		"%s patch user admin -p '%s' --type='merge' ",
+		kubectl,
+		patchAdminContent)
+	_, err = runtime.GetRunner().Host.SudoCmd(patchAdminCMD, false, true)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "patch user admin failed")
+	}
+
+	deleteAdminCMD := fmt.Sprintf("%s delete user admin --ignore-not-found", kubectl)
+	_, err = runtime.GetRunner().Host.SudoCmd(deleteAdminCMD, false, true)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to delete ks admin user")
+	}
+	deleteKubectlAdminCMD := fmt.Sprintf("%s -n kubesphere-controls-system delete deploy kubectl-admin --ignore-not-found", kubectl)
+	_, err = runtime.GetRunner().Host.SudoCmd(deleteKubectlAdminCMD, false, true)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to delete ks kubectl admin deployment")
+	}
+	deleteHTTPBackendCMD := fmt.Sprintf("%s -n kubesphere-controls-system delete deploy default-http-backend --ignore-not-found", kubectl)
+	_, err = runtime.GetRunner().Host.SudoCmd(deleteHTTPBackendCMD, false, true)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to delete ks default http backend")
+	}
+
+	patchFelixConfigContent := "{\\\"spec\\\":{\\\"featureDetectOverride\\\": \\\"SNATFullyRandom=false,MASQFullyRandom=false\\\"}}"
+	patchFelixConfigCMD := fmt.Sprintf(
+		"%s patch felixconfiguration default -p '%s'  --type='merge'",
+		kubectl,
+		patchFelixConfigContent,
+	)
+	_, err = runtime.GetRunner().Host.SudoCmd(patchFelixConfigCMD, false, true)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to patch felix configuration")
 	}
 
 	return nil
@@ -180,28 +223,28 @@ func (m *InstallOsSystemModule) Init() {
 		Action: &CreateReverseProxyConfigMap{},
 	}
 
-	patchOs := &task.LocalTask{
-		Name:   "PatchOs",
-		Action: &Patch{},
-	}
-
-	checkPodsRunning := &task.LocalTask{
-		Name: "CheckServiceStatus",
+	checkSystemService := &task.LocalTask{
+		Name: "CheckSystemServiceStatus",
 		Action: &CheckPodsRunning{
 			labels: map[string][]string{
-				"os-system": {"tier=app-service", "app=citus"},
+				"os-system": {"tier=app-service"},
 			},
 		},
 		Retry: 20,
 		Delay: 10 * time.Second,
 	}
 
+	patchOs := &task.LocalTask{
+		Name:   "PatchOs",
+		Action: &Patch{},
+	}
+
 	m.Tasks = []task.Interface{
 		installOsSystem,
 		createBackupConfigMap,
 		createReverseProxyConfigMap,
+		checkSystemService,
 		patchOs,
-		checkPodsRunning,
 	}
 }
 
@@ -226,8 +269,8 @@ func cloudValue(cloudInstance bool) string {
 	return ""
 }
 
-func getFsType(wsl bool) string {
-	if wsl {
+func getFsType(juiceFSDisabled bool) string {
+	if juiceFSDisabled {
 		return "fs"
 	}
 	return "jfs"
@@ -242,10 +285,6 @@ func getRedisPassword(client clientset.Client, runtime connector.Runtime) (strin
 		return "", fmt.Errorf("redis secret not found")
 	}
 
-	if res, err := utils.Base64decode(string(secret.Data["auth"])); err != nil {
-		return "", errors.Wrap(errors.WithStack(err), "decode redis auth failed")
-	} else {
-		return res, nil
-	}
+	return string(secret.Data["auth"]), nil
 
 }

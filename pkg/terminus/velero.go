@@ -1,40 +1,72 @@
 package terminus
 
 import (
-	"fmt"
-	"strings"
-
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"fmt"
 	"github.com/pkg/errors"
+	"io/fs"
+	"path/filepath"
+	"strings"
 )
 
-type InstallVelero struct {
+type InstallVeleroBinary struct {
+	common.KubeAction
+	manifest.ManifestAction
+}
+
+func (t *InstallVeleroBinary) Execute(runtime connector.Runtime) error {
+	veleroPkg, err := t.Manifest.Get(common.CommandVelero)
+	if err != nil {
+		return err
+	}
+
+	path := veleroPkg.FilePath(t.BaseDir)
+
+	var cmd = fmt.Sprintf("rm -rf /tmp/velero* && mkdir /tmp/velero && cp %s /tmp/%s && tar xf /tmp/%s -C /tmp/velero ", path, veleroPkg.Filename, veleroPkg.Filename)
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		return err
+	}
+	var binPath string
+	filepath.WalkDir("/tmp/velero", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if d.Name() == common.CommandVelero {
+			binPath = path
+		}
+		return nil
+	})
+	cmd = fmt.Sprintf("install %s /usr/local/bin", binPath)
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+type InstallVeleroCRDs struct {
 	common.KubeAction
 }
 
-func (i *InstallVelero) Execute(runtime connector.Runtime) error {
+func (i *InstallVeleroCRDs) Execute(runtime connector.Runtime) error {
 	velero, err := util.GetCommand(common.CommandVelero)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "velero not found")
 	}
 
 	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s install --crds-only --retry 10 --delay 5", velero), false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "install velero failed")
+		return errors.Wrap(errors.WithStack(err), "install velero crds failed")
 	}
 
 	return nil
-}
-
-type InstallVeleroModule struct {
-	common.KubeModule
-}
-
-func (i *InstallVeleroModule) Init() {
-
 }
 
 type CreateBackupLocation struct {
@@ -68,11 +100,11 @@ func (c *CreateBackupLocation) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type InstallPlugin struct {
+type InstallVeleroPlugin struct {
 	common.KubeAction
 }
 
-func (i *InstallPlugin) Execute(runtime connector.Runtime) error {
+func (i *InstallVeleroPlugin) Execute(runtime connector.Runtime) error {
 	velero, err := util.GetCommand(common.CommandVelero)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "velero not found")
@@ -106,11 +138,11 @@ func (i *InstallPlugin) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type VeleroPatch struct {
+type PatchVelero struct {
 	common.KubeAction
 }
 
-func (v *VeleroPatch) Execute(runtime connector.Runtime) error {
+func (v *PatchVelero) Execute(runtime connector.Runtime) error {
 	velero, err := util.GetCommand(common.CommandVelero)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "velero not found")
@@ -126,10 +158,54 @@ func (v *VeleroPatch) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type InstallVeleroPluginModule struct {
+type InstallVeleroModule struct {
 	common.KubeModule
+	manifest.ManifestModule
 }
 
-func (i *InstallVeleroPluginModule) Init() {
+func (m *InstallVeleroModule) Init() {
+	m.Name = "InstallVelero"
 
+	installVeleroBinary := &task.LocalTask{
+		Name: "InstallVeleroBinary",
+		Action: &InstallVeleroBinary{
+			ManifestAction: manifest.ManifestAction{
+				Manifest: m.Manifest,
+				BaseDir:  m.BaseDir,
+			},
+		},
+		Retry: 1,
+	}
+
+	installVeleroCRDs := &task.LocalTask{
+		Name:   "InstallVeleroCRDs",
+		Action: new(InstallVeleroCRDs),
+		Retry:  1,
+	}
+
+	createBackupLocation := &task.LocalTask{
+		Name:   "CreateBackupLocation",
+		Action: new(CreateBackupLocation),
+		Retry:  1,
+	}
+
+	installVeleroPlugin := &task.LocalTask{
+		Name:   "InstallVeleroPlugin",
+		Action: new(InstallVeleroPlugin),
+		Retry:  1,
+	}
+
+	patchVelero := &task.LocalTask{
+		Name:   "PatchVelero",
+		Action: new(PatchVelero),
+		Retry:  1,
+	}
+
+	m.Tasks = []task.Interface{
+		installVeleroBinary,
+		installVeleroCRDs,
+		createBackupLocation,
+		installVeleroPlugin,
+		patchVelero,
+	}
 }

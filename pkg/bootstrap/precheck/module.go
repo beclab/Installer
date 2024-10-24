@@ -71,23 +71,6 @@ type GetKubeVersionModule struct {
 	module.BaseTaskModule
 }
 
-type GetSysInfoModel struct {
-	module.BaseTaskModule
-}
-
-func (m *GetSysInfoModel) Init() {
-	m.Name = "GetInfo"
-
-	getSysInfoTask := &task.LocalTask{
-		Name:   "GetSysInfo",
-		Action: new(GetSysInfoTask),
-	}
-
-	m.Tasks = []task.Interface{
-		getSysInfoTask,
-	}
-}
-
 type PreCheckOsModule struct {
 	common.KubeModule
 	manifest.ManifestModule
@@ -95,6 +78,11 @@ type PreCheckOsModule struct {
 
 func (m *PreCheckOsModule) Init() {
 	m.Name = "PreCheckOs"
+
+	preCheckSupport := &task.LocalTask{
+		Name:   "PreCheckSupport",
+		Action: new(PreCheckSupport),
+	}
 
 	patchAppArmor := &task.RemoteTask{
 		Name:  "PatchAppArmor",
@@ -136,6 +124,7 @@ func (m *PreCheckOsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		preCheckSupport,
 		patchAppArmor,
 		raspbianCheck,
 		correctHostname,

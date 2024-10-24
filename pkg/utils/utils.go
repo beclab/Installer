@@ -278,3 +278,23 @@ func IsValidDomain(domain string) bool {
 	re := regexp.MustCompile(domainRegex)
 	return re.MatchString(domain)
 }
+
+func ValidateUserName(username string) error {
+	if len(username) > 250 || len(username) < 2 {
+		return errors.New("username length must be between 2 and 250 characters")
+	}
+	var usernameRegex = `^[a-z0-9]([a-z0-9]*[a-z0-9])?([a-z0-9]([a-z0-9]*[a-z0-9])?)*`
+	re := regexp.MustCompile(usernameRegex)
+	if !re.MatchString(username) {
+		return errors.New("username must contain only alphanumeric characters")
+	}
+	reservedNames := []string{
+		"user", "system", "space", "default", "os", "kubesphere", "kube", "kubekey", "kubernetes", "gpu", "tapr", "bfl", "bytetrade", "project", "pod",
+	}
+	for _, reservedName := range reservedNames {
+		if strings.EqualFold(reservedName, username) {
+			return fmt.Errorf("\"%s\" is a system reserved keyword and cannot be set as a username", reservedName)
+		}
+	}
+	return nil
+}

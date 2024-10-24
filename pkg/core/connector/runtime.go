@@ -52,7 +52,7 @@ type BaseRuntime struct {
 	k8sClient       *kubernetes.Clientset
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, isMacos bool, isWsl bool, systemInfo Systems) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, systemInfo Systems) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,

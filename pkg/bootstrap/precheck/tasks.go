@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -36,6 +35,21 @@ import (
 	"github.com/pkg/errors"
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
+
+type PreCheckSupport struct {
+	common.KubeAction
+}
+
+func (t *PreCheckSupport) Execute(runtime connector.Runtime) error {
+	si := runtime.GetSystemInfo()
+	if err := si.IsSupport(); err != nil {
+		return err
+	}
+	if err := si.IsLocalIpValid(); err != nil {
+		return err
+	}
+	return nil
+}
 
 type CorrectHostname struct {
 	common.KubeAction
@@ -133,7 +147,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	hostname := sysInfo.GetHostname()
 	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
 		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
-			return err
+			return errors.Wrap(err, "failed to set hostname mapping")
 		}
 	}
 
@@ -151,6 +165,12 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	if runtime.GetSystemInfo().IsWsl() {
+		if _, err := runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, true); err != nil {
+			return errors.Wrap(err, "failed to change attributes of /etc/hosts and /etc/resolv.conf")
+		}
+	}
+
 	return nil
 }
 
@@ -158,7 +178,7 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 	var err error
 	var cmd string
 
-	if constants.CloudVendor == common.AliYun {
+	if common.CloudVendor == common.CloudVendorAliYun {
 		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
 		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("exec %s error %v", cmd, err)
@@ -177,26 +197,6 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
-	return nil
-}
-
-type GetSysInfoTask struct {
-	action.BaseAction
-}
-
-func (t *GetSysInfoTask) Execute(runtime connector.Runtime) error {
-	// logger.Infof("os info, all: %s", constants.OsInfo)
-	// logger.Infof("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, version: %s, arch: %s",
-	// 	constants.CurrentUser, constants.HostName, constants.HostId, constants.OsType, constants.OsPlatform, constants.OsVersion, constants.OsArch)
-	// logger.Infof("kernel info, version: %s", constants.OsKernel)
-	// logger.Infof("virtual info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
-	// logger.Infof("cpu info, model: %s, logical count: %d, physical count: %d",
-	// 	constants.CpuModel, constants.CpuLogicalCount, constants.CpuPhysicalCount)
-	// logger.Infof("disk info, total: %s, free: %s", utils.FormatBytes(int64(constants.DiskTotal)), utils.FormatBytes(int64(constants.DiskFree)))
-	// logger.Infof("fs info, fs: %s, zfsmount: %s", constants.FsType, constants.DefaultZfsPrefixName)
-	// logger.Infof("mem info, total: %s, free: %s", utils.FormatBytes(int64(constants.MemTotal)), utils.FormatBytes(int64(constants.MemFree)))
-	// logger.Infof("cgroup info, cpu: %d, mem: %d", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
-
 	return nil
 }
 

@@ -18,6 +18,8 @@ package kubernetes
 
 import (
 	"bufio"
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -213,6 +215,25 @@ func (s *SyncKubelet) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "sync kubelet service failed")
 	}
 	return nil
+}
+
+type GenerateKubeletService struct {
+	common.KubeAction
+}
+
+func (t *GenerateKubeletService) Execute(runtime connector.Runtime) error {
+	tplActions := &action.Template{
+		Name:     "GenerateKubeletService",
+		Template: templates.KubeletService,
+		Dst:      filepath.Join("/etc/systemd/system/", templates.KubeletService.Name()),
+		Data: util.Data{
+			"JuiceFSPreCheckEnabled": runtime.GetSystemInfo().IsLinux(),
+			"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
+			"JuiceFSBinPath":         storage.JuiceFsFile,
+			"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
+		},
+	}
+	return tplActions.Execute(runtime)
 }
 
 type EnableKubelet struct {
@@ -599,6 +620,8 @@ func (u *UmountKubelet) Execute(runtime connector.Runtime) error {
 	for _, m := range mounts {
 		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("umount %s", m), false, true)
 	}
+
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop kubepods.slice", false, true)
 
 	return nil
 }
@@ -1000,6 +1023,8 @@ func OverrideCoreDNSService(runtime connector.Runtime, kubeAction common.KubeAct
 			new(common.OnlyFirstMaster),
 		},
 		Action:   new(dns.OverrideCoreDNS),
+		Delay:    2 * time.Second,
+		Retry:    2,
 		Parallel: false,
 	}
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	"os"
 	"time"
 
@@ -53,7 +54,11 @@ func InstallCharts(ctx context.Context, actionConfig *action.Configuration, sett
 	// logger.Debugw("[helm] action config", "reachable", actionConfig.KubeClient.IsReachable())
 
 	instClient := action.NewInstall(actionConfig)
-	instClient.CreateNamespace = true
+	if namespace == "" {
+		instClient.CreateNamespace = false
+	} else {
+		instClient.CreateNamespace = true
+	}
 	instClient.Namespace = namespace
 	instClient.Timeout = 300 * time.Second
 
@@ -95,7 +100,10 @@ func UpgradeCharts(ctx context.Context, actionConfig *action.Configuration, sett
 	}
 	r, err := runUpgrade(ctx, []string{appName, chartName}, client, settings, vals)
 	if err != nil {
-		return err
+		if !errors.Is(err, driver.ErrNoDeployedReleases) {
+			return err
+		}
+		return InstallCharts(ctx, actionConfig, settings, appName, chartName, repoURL, namespace, vals)
 	}
 	logReleaseUpgrade(r)
 	return nil

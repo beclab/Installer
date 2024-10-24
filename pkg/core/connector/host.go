@@ -235,7 +235,9 @@ func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool)
 func (b *BaseHost) Scp(local, remote string) error {
 	var remoteDir = filepath.Dir(remote)
 	if !util.IsExist(remoteDir) {
-		util.Mkdir(remoteDir)
+		if err := util.Mkdir(remoteDir); err != nil {
+			return err
+		}
 	}
 	var cmd = fmt.Sprintf("cp %s %s", local, remote)
 	_, _, err := b.Exec(context.Background(), cmd, false, false)
@@ -263,6 +265,10 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 	var remoteDir = filepath.Dir(remote)
 	if !util.IsExist(remoteDir) {
 		util.Mkdir(remoteDir)
+	}
+
+	if b.GetOs() == common.Darwin {
+		return nil
 	}
 
 	if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {

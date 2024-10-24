@@ -23,14 +23,6 @@ jobs:
         with:
           fallback: latest
 
-      - name: Setup Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: "18"
-
-      - name: Build
-        run: cd frontend;npm install;npm i -g @quasar/cli;quasar build;rm -rf ./package-lock.json;
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:

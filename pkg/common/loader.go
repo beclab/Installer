@@ -30,7 +30,6 @@ import (
 	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -108,7 +107,7 @@ func (c *CommandLineLoader) validate() error {
 }
 
 func (c *CommandLineLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, err := currentUser(c.arg.SystemInfo.GetHostname())
+	u, err := currentUser(c.arg.SystemInfo.GetOsType())
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +179,7 @@ func NewDefaultLoader(arg Argument) *DefaultLoader {
 }
 
 func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, err := currentUser(d.arg.SystemInfo.GetHostname())
+	u, err := currentUser(d.arg.SystemInfo.GetOsType())
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +455,6 @@ func currentUser(osType string) (*user.User, error) {
 			return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
 		}
 	}
-	constants.CurrentUser = u.Name
 	return u, nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -78,8 +79,8 @@ type Systems interface {
 	GetOsArch() string
 	GetOsVersion() string
 	GetPkgManager() string
-	SetNatGateway(ip string)
-	GetNatGateway() string
+	SetNATGateway(ip string)
+	GetNATGateway() string
 
 	GetOsPlatformFamily() string
 
@@ -115,9 +116,9 @@ func (s *SystemInfo) IsSupport() error {
 		return fmt.Errorf("unsupported arch '%s', exit ...", s.GetOsArch())
 	}
 
-	if !s.IsUbuntu() && !s.IsDebian() {
-		return fmt.Errorf("unsupported os type '%s', exit ...", s.GetOsPlatformFamily())
-	}
+	//if !s.IsUbuntu() && !s.IsDebian() {
+	//	return fmt.Errorf("unsupported os type '%s', exit ...", s.GetOsPlatformFamily())
+	//}
 
 	if s.IsUbuntu() {
 		if !s.IsUbuntuVersionEqual(Ubuntu20) && !s.IsUbuntuVersionEqual(Ubuntu22) && !s.IsUbuntuVersionEqual(Ubuntu24) {
@@ -135,6 +136,14 @@ func (s *SystemInfo) IsSupport() error {
 }
 
 func (s *SystemInfo) IsLocalIpValid() error {
+	ip := net.ParseIP(s.LocalIp)
+	if ip == nil {
+		return fmt.Errorf("invalid local ip %s", s.LocalIp)
+	}
+
+	if ip4 := ip.To4(); ip4 == nil {
+		return fmt.Errorf("invalid local ip %s", s.LocalIp)
+	}
 	switch s.LocalIp {
 	case "", "172.17.0.1", "127.0.0.1", "127.0.1.1":
 		return fmt.Errorf("incorrect ip %s for hostname %s, please check", s.LocalIp, s.HostInfo.HostName)
@@ -147,10 +156,10 @@ func (s *SystemInfo) GetLocalIp() string {
 	return s.LocalIp
 }
 
-func (s *SystemInfo) SetNatGateway(ip string) {
+func (s *SystemInfo) SetNATGateway(ip string) {
 	s.NatGateway = ip
 }
-func (s *SystemInfo) GetNatGateway() string {
+func (s *SystemInfo) GetNATGateway() string {
 	return s.NatGateway
 }
 
@@ -267,7 +276,7 @@ func GetSystemInfo() *SystemInfo {
 	si.DiskInfo = getDisk()
 	si.MemoryInfo = getMem()
 	si.FsInfo = getFs()
-	si.LocalIp = util.LocalIP()
+	si.LocalIp = util.GetLocalIP()
 
 	if si.IsLinux() {
 		si.CgroupInfo = getCGroups()
