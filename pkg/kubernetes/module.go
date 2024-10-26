@@ -101,9 +101,10 @@ func (i *InstallKubeBinariesModule) Init() {
 			Template: templates.KubeletService,
 			Dst:      filepath.Join("/etc/systemd/system/", templates.KubeletService.Name()),
 			Data: util.Data{
-				"JuiceFSServiceUnit": storagetpl.JuicefsService.Name(),
-				"JuiceFSBinPath":     storage.JuiceFsFile,
-				"JuiceFSMountPoint":  storage.JuiceFsMountPointDir,
+				"JuiceFSPreCheckEnabled": !i.KubeConf.Arg.WSL,
+				"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
+				"JuiceFSBinPath":         storage.JuiceFsFile,
+				"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
 			},
 		},
 		Parallel: true,
