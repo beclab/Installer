@@ -500,7 +500,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 	var storageAccessKey, storageSecretKey, storageToken, storageClusterId string
-	var ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", kubectl), false, false); err != nil {

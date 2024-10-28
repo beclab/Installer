@@ -703,7 +703,7 @@ type DeleteCalicoCNI struct {
 }
 
 func (t *DeleteCalicoCNI) Execute(runtime connector.Runtime) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	ifInfo, _ := net.InterfacesWithContext(ctx)

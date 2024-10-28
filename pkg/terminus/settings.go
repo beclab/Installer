@@ -106,7 +106,7 @@ func (t *InstallSettings) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var settingsPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "settings")

@@ -497,7 +497,7 @@ func (b *KubeBinary) Download() error {
 		req, _ := grab.NewRequest(fmt.Sprintf("%s/%s", b.BaseDir, b.FileName), b.Url)
 		// req.RateLimiter = NewLimiter(1024 * 1024) // todo
 		req.HTTPRequest = req.HTTPRequest.WithContext(context.Background())
-		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 5*time.Minute)
+		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 10*time.Minute)
 		defer cancel()
 
 		req.HTTPRequest = req.HTTPRequest.WithContext(ctx)

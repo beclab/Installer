@@ -55,7 +55,7 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var systemPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "system")

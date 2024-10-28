@@ -105,7 +105,7 @@ func (t *DeployRedis) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if err := utils.InstallCharts(ctx, actionConfig, settings, appName, appPath, "", common.NamespaceKubesphereSystem, nil); err != nil {

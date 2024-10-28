@@ -86,7 +86,7 @@ func (g *GetKubeVersion) Execute() (string, string, error) {
 		return "", "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get nodes -l node-role.kubernetes.io/master -o jsonpath='{.items[*].status.nodeInfo.kubeletVersion}'", kubectlpath))

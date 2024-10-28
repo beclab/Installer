@@ -1,6 +1,7 @@
 package gpu
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -28,7 +29,7 @@ func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
 		return
 	}
 
-	stdout, _, err := util.Exec("/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, true)
+	stdout, _, err := util.Exec(context.Background(), "/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, true)
 	if err != nil {
 		logger.Errorf("nvidia-smi not found")
 		return

@@ -29,7 +29,7 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get terminus -o jsonpath='{.items[*].spec.version}'", kubectlpath))
@@ -60,12 +60,12 @@ func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "kubectl not found")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 	for ns, labels := range c.labels {
 		for _, label := range labels {
 			var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[*].status.phase}'", kubectl, ns, label)
-			phase, err := runtime.GetRunner().Host.SudoCmdContext(ctx, cmd, false, true)
+			phase, err := runtime.GetRunner().Host.SudoCmdContext(ctx, cmd, false, false)
 			if err != nil {
 				return fmt.Errorf("pod status invalid, namespace: %s, label: %s, waiting ...", ns, label)
 			}

@@ -55,7 +55,7 @@ func (t *InstallBFL) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var r = utils.Random()
