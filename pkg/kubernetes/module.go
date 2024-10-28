@@ -17,12 +17,18 @@
 package kubernetes
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/kubernetes/templates"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
@@ -86,11 +92,21 @@ func (i *InstallKubeBinariesModule) Init() {
 	}
 
 	generateKubeletService := &task.RemoteTask{
-		Name:     "GenerateKubeletService",
-		Desc:     "Generate kubelet service",
-		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
-		Prepare:  &NodeInCluster{Not: true},
-		Action:   new(GenerateKubeletService),
+		Name:    "GenerateKubeletService",
+		Desc:    "Generate kubelet service",
+		Hosts:   i.Runtime.GetHostsByRole(common.K8s),
+		Prepare: &NodeInCluster{Not: true},
+		Action: &action.Template{
+			Name:     "GenerateKubeletService",
+			Template: templates.KubeletService,
+			Dst:      filepath.Join("/etc/systemd/system/", templates.KubeletService.Name()),
+			Data: util.Data{
+				"JuiceFSPreCheckEnabled": !i.KubeConf.Arg.WSL,
+				"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
+				"JuiceFSBinPath":         storage.JuiceFsFile,
+				"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
+			},
+		},
 		Parallel: true,
 		Retry:    2,
 	}

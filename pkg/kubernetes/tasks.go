@@ -227,7 +227,7 @@ func (t *GenerateKubeletService) Execute(runtime connector.Runtime) error {
 		Template: templates.KubeletService,
 		Dst:      filepath.Join("/etc/systemd/system/", templates.KubeletService.Name()),
 		Data: util.Data{
-			"JuiceFSPreCheckEnabled": runtime.GetSystemInfo().IsLinux(),
+			"JuiceFSPreCheckEnabled": !runtime.GetSystemInfo().IsWsl(),
 			"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
 			"JuiceFSBinPath":         storage.JuiceFsFile,
 			"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
