@@ -164,8 +164,8 @@ func NewArgument() *Argument {
 			StorageType: Minio,
 		},
 		GPU: &GPU{
-			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
-			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
+			Enable: strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "1"),
+			Share:  strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_SHARE), "1"),
 		},
 		Cloudflare:             &Cloudflare{},
 		Frp:                    &Frp{},

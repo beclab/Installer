@@ -60,6 +60,7 @@ type Systems interface {
 	IsSupport() error
 	IsLocalIpValid() error
 
+	IsWindows() bool
 	IsDarwin() bool
 	IsWsl() bool
 	IsPve() bool
@@ -77,6 +78,8 @@ type Systems interface {
 	GetHostname() string
 	GetOsType() string
 	GetOsArch() string
+	GetUsername() string
+	GetHomeDir() string
 	GetOsVersion() string
 	GetPkgManager() string
 	SetNATGateway(ip string)
@@ -179,6 +182,14 @@ func (s *SystemInfo) GetOsArch() string {
 	return s.HostInfo.OsArch
 }
 
+func (s *SystemInfo) GetUsername() string {
+	return s.HostInfo.CurrentUser
+}
+
+func (s *SystemInfo) GetHomeDir() string {
+	return s.HostInfo.HomeDir
+}
+
 func (s *SystemInfo) IsOsArchInvalid() bool {
 	return strings.EqualFold(s.HostInfo.OsArch, "")
 }
@@ -194,6 +205,10 @@ func (s *SystemInfo) GetOsPlatformFamily() string {
 func (s *SystemInfo) String() string {
 	str, _ := json.Marshal(s)
 	return string(str)
+}
+
+func (s *SystemInfo) IsWindows() bool {
+	return s.HostInfo.OsType == common.Windows
 }
 
 func (s *SystemInfo) IsDarwin() bool {
@@ -309,6 +324,7 @@ type HostInfo struct {
 	OsKernel             string `json:"os_kernel"`
 	OsInfo               string `json:"os_info"`
 	CurrentUser          string `json:"current_user"`
+	HomeDir              string `json:"home_dir"`
 }
 
 func getHost() *HostInfo {
@@ -318,10 +334,10 @@ func getHost() *HostInfo {
 	}
 
 	cmd := exec.Command("sh", "-c", "echo $(uname -a) |tr -d '\\n'")
-	output, err := cmd.Output()
-	if err != nil {
-		panic(err)
-	}
+	output, _ := cmd.Output()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	var _osType = hostInfo.OS
 	var _osPlatform = hostInfo.Platform
@@ -333,7 +349,7 @@ func getHost() *HostInfo {
 	return &HostInfo{
 		HostName:             hostInfo.Hostname,
 		HostId:               hostInfo.HostID,
-		OsType:               _osType,                                           // darwin linux
+		OsType:               _osType,                                           // darwin linux windows
 		OsPlatform:           formatOsPlatform(_osType, _osPlatform, _osKernel), // darwin linux wsl raspbian pve
 		OsPlatformFamily:     formatOsPlatformFamily(_osPlatform, _osPlatformFamily),
 		OsVersion:            hostInfo.PlatformVersion,
@@ -343,6 +359,7 @@ func getHost() *HostInfo {
 		OsKernel:             hostInfo.KernelVersion,
 		OsInfo:               string(output),
 		CurrentUser:          u.Username,
+		HomeDir:              u.HomeDir,
 	}
 }
 

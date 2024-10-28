@@ -101,8 +101,11 @@ func (l *LocalTask) Execute() *ending.TaskResult {
 		return l.TaskResult
 	}
 
+	si := l.Runtime.GetSystemInfo()
 	host := &connector.BaseHost{
 		Name: common.LocalHost,
+		Arch: si.GetOsArch(),
+		Os:   si.GetOsType(),
 	}
 
 	selfRuntime := l.Runtime.Copy()

@@ -75,6 +75,7 @@ const (
 
 const (
 	Linux    = "linux"
+	Windows  = "windows"
 	Darwin   = "darwin"
 	Raspbian = "raspbian"
 	WSL      = "wsl"

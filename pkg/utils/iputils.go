@@ -1,12 +1,14 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -161,4 +163,22 @@ func ExtractIP(host string) ([]string, error) {
 
 func IsValidIP(ip string) bool {
 	return net.ParseIP(ip) != nil
+}
+
+func ExtractIPAddress(addr string) string {
+	var ip string
+	scanner := bufio.NewScanner(strings.NewReader(addr))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.Contains(line, "inet ") {
+			continue
+		}
+		ip = line
+		break
+	}
+
+	ip = strings.TrimSpace(ip)
+	fields := strings.Split(ip, " ")
+	ips := strings.Split(fields[1], "/")
+	return ips[0]
 }

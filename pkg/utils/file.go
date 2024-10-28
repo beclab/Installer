@@ -96,6 +96,7 @@ func CountDirFiles(dirName string) int {
 
 func FileMD5(path string) (string, error) {
 	file, err := os.Open(path)
+	defer file.Close()
 	if err != nil {
 		return "", err
 	}

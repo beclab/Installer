@@ -99,7 +99,7 @@ func (c *CommandLineLoader) validate() error {
 		return errors.New("No master ssh password and private key file, with flag '--master-ssh-password' or '--master-ssh-private-keyfile'")
 	}
 
-	if err := localSSH(); err != nil {
+	if err := localSSH(c.arg.SystemInfo.GetOsType()); err != nil {
 		return err
 	}
 
@@ -179,16 +179,26 @@ func NewDefaultLoader(arg Argument) *DefaultLoader {
 }
 
 func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, err := currentUser(d.arg.SystemInfo.GetOsType())
-	if err != nil {
-		return nil, err
+	osType := d.arg.SystemInfo.GetOsType()
+	user := d.arg.SystemInfo.GetUsername()
+	homeDir := d.arg.SystemInfo.GetHomeDir()
+
+	if osType != Darwin && osType != Windows {
+		if user != "root" {
+			return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", user))
+		}
 	}
 
-	fmt.Printf("current: %s\n", u.Name)
+	// u, err := currentUser(osType)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	fmt.Printf("current: %s\n", user)
 
 	allInOne := &kubekeyapiv1alpha2.Cluster{}
 
-	if err := localSSH(); err != nil {
+	if err := localSSH(osType); err != nil {
 		return nil, err
 	}
 
@@ -202,9 +212,9 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 		Address:         d.arg.SystemInfo.GetLocalIp(),
 		InternalAddress: d.arg.SystemInfo.GetLocalIp(),
 		Port:            kubekeyapiv1alpha2.DefaultSSHPort,
-		User:            u.Name,
+		User:            user,
 		Password:        "",
-		PrivateKeyPath:  fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir),
+		PrivateKeyPath:  fmt.Sprintf("%s/.ssh/id_rsa", homeDir),
 		Arch:            d.arg.SystemInfo.GetOsArch(),
 	})
 
@@ -450,7 +460,7 @@ func currentUser(osType string) (*user.User, error) {
 		return nil, err
 	}
 
-	if osType != Darwin {
+	if osType != Darwin && osType != Windows {
 		if u.Username != "root" {
 			return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
 		}
@@ -458,7 +468,12 @@ func currentUser(osType string) (*user.User, error) {
 	return u, nil
 }
 
-func localSSH() error {
+func localSSH(osType string) error {
+	switch osType {
+	case Windows:
+		return nil
+	default:
+	}
 	if output, err := exec.Command("/bin/sh", "-c", "if [ ! -f \"$HOME/.ssh/id_rsa\" ]; then mkdir -p \"$HOME/.ssh\" && ssh-keygen -t rsa-sha2-512 -P \"\" -f $HOME/.ssh/id_rsa && ls $HOME/.ssh;fi;").CombinedOutput(); err != nil {
 		return errors.New(fmt.Sprintf("Failed to generate public key: %v\n%s", err, string(output)))
 	}
