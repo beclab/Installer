@@ -1,6 +1,7 @@
 package gpu
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -28,7 +29,7 @@ func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
 		return
 	}
 
-	stdout, err := runtime.GetRunner().Host.CmdExt("/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, true)
+	stdout, _, err := util.Exec(context.Background(), "/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, false)
 	if err != nil {
 		logger.Errorf("nvidia-smi not found")
 		return
@@ -177,10 +178,10 @@ func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 		}
 
 		if driverPath == "" {
-			logger.Debugf("cuda driver not found")
+			logger.Infof("cuda driver not found")
 			return nil
 		} else {
-			logger.Debugf("cuda driver found: %s", driverPath)
+			logger.Infof("cuda driver found: %s", driverPath)
 		}
 
 		templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)

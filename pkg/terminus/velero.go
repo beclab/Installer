@@ -143,15 +143,15 @@ type PatchVelero struct {
 }
 
 func (v *PatchVelero) Execute(runtime connector.Runtime) error {
-	velero, err := util.GetCommand(common.CommandVelero)
+	kubectl, err := util.GetCommand(common.CommandKubectl)
 	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "velero not found")
+		return errors.Wrap(errors.WithStack(err), "kubectl not found")
 	}
 
 	var ns = "os-system"
-	var patch = `[{"op":"replace","path":"/spec/template/spec/volumes","value": [{"name":"plugins","emptyDir":{}},{"name":"scratch","emptyDir":{}},{"name":"terminus-cloud","hostPath":{"path":"/terminus/rootfs/k8s-backup", "type":"DirectoryOrCreate"}}]},{"op": "replace", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"name":"plugins","mountPath":"/plugins"},{"name":"scratch","mountPath":"/scratch"},{"mountPath":"/data","name":"terminus-cloud"}]},{"op": "replace", "path": "/spec/template/spec/containers/0/securityContext", "value": {"privileged": true, "runAsNonRoot": false, "runAsUser": 0}}]`
+	var patch = "[{\\\"op\\\":\\\"replace\\\",\\\"path\\\":\\\"/spec/template/spec/volumes\\\",\\\"value\\\": [{\\\"name\\\":\\\"plugins\\\",\\\"emptyDir\\\":{}},{\\\"name\\\":\\\"scratch\\\",\\\"emptyDir\\\":{}},{\\\"name\\\":\\\"terminus-cloud\\\",\\\"hostPath\\\":{\\\"path\\\":\\\"/terminus/rootfs/k8s-backup\\\", \\\"type\\\":\\\"DirectoryOrCreate\\\"}}]},{\\\"op\\\": \\\"replace\\\", \\\"path\\\": \\\"/spec/template/spec/containers/0/volumeMounts\\\", \\\"value\\\": [{\\\"name\\\":\\\"plugins\\\",\\\"mountPath\\\":\\\"/plugins\\\"},{\\\"name\\\":\\\"scratch\\\",\\\"mountPath\\\":\\\"/scratch\\\"},{\\\"mountPath\\\":\\\"/data\\\",\\\"name\\\":\\\"terminus-cloud\\\"}]},{\\\"op\\\": \\\"replace\\\", \\\"path\\\": \\\"/spec/template/spec/containers/0/securityContext\\\", \\\"value\\\": {\\\"privileged\\\": true, \\\"runAsNonRoot\\\": false, \\\"runAsUser\\\": 0}}]"
 
-	if stdout, _ := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s patch deploy velero -n %s --type='json' -p='%s'", velero, ns, patch), false, true); stdout != "" && !strings.Contains(stdout, "patched") {
+	if stdout, _ := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s patch deploy velero -n %s --type='json' -p='%s'", kubectl, ns, patch), false, true); stdout != "" && !strings.Contains(stdout, "patched") {
 		logger.Errorf("velero plugin patched error %s", stdout)
 	}
 
@@ -164,6 +164,7 @@ type InstallVeleroModule struct {
 }
 
 func (m *InstallVeleroModule) Init() {
+	logger.InfoInstallationProgress("Installing backup component ...")
 	m.Name = "InstallVelero"
 
 	installVeleroBinary := &task.LocalTask{

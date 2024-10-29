@@ -90,7 +90,7 @@ func (i *InstallKubeBinariesModule) Init() {
 		Desc:     "Generate kubelet service",
 		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
 		Prepare:  &NodeInCluster{Not: true},
-		Action:   new(GenerateKubeletService),
+		Action:   &GenerateKubeletService{},
 		Parallel: true,
 		Retry:    2,
 	}

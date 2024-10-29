@@ -1,6 +1,7 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
 	"os"
@@ -26,6 +27,7 @@ type InstallAppsModule struct {
 }
 
 func (i *InstallAppsModule) Init() {
+	logger.InfoInstallationProgress("Installing built-in apps ...")
 	i.Name = "Install Built-in apps"
 	i.Desc = "Install Built-in apps"
 
@@ -222,7 +224,7 @@ func (c *CopyAppServiceHelmFiles) Execute(runtime connector.Runtime) error {
 }
 
 func getAppServiceName(client clientset.Client, runtime connector.Runtime) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	pods, err := client.Kubernetes().CoreV1().Pods(common.NamespaceOsSystem).List(ctx, metav1.ListOptions{LabelSelector: "tier=app-service"})
@@ -270,11 +272,11 @@ func getBflAnnotation(ctx context.Context, ns string, client clientset.Client, r
 	return sts.Annotations, nil
 }
 
-func getAppSecrets(patches map[string]map[string]string) map[string]map[string]string {
-	var secrests = make(map[string]map[string]string)
+func getAppSecrets(patches map[string]map[string]interface{}) map[string]interface{} {
+	var secrets = make(map[string]interface{})
 	for _, app := range BuiltInApps {
 		s, _ := utils.GeneratePassword(16)
-		var v = make(map[string]string)
+		var v = make(map[string]interface{})
 		v["appKey"] = fmt.Sprintf("bytetrade_%s_%d", app, utils.Random())
 		v["appSecret"] = s
 
@@ -285,15 +287,15 @@ func getAppSecrets(patches map[string]map[string]string) map[string]map[string]s
 			}
 		}
 
-		secrests[app] = v
+		secrets[app] = v
 	}
 
-	return secrests
+	return secrets
 }
 
-func getAppPatches() map[string]map[string]string {
-	var patches = make(map[string]map[string]string)
-	var value = make(map[string]string)
+func getAppPatches() map[string]map[string]interface{} {
+	var patches = make(map[string]map[string]interface{})
+	var value = make(map[string]interface{})
 	value["marketProvider"] = os.Getenv("MARKET_PROVIDER")
 	patches["appstore"] = value
 	return patches

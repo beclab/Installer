@@ -146,7 +146,7 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 				return nil
 			}
 			var dur = 5 + (i+1)*10
-			logger.Debugf("load image %s failed, wait for %d seconds(%d times)", err, dur, i+1)
+			logger.Warnf("load image %s failed, wait for %d seconds(%d times)", err, dur, i+1)
 			if (i + 1) < times {
 				time.Sleep(time.Duration(dur) * time.Second)
 			}
@@ -177,11 +177,11 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 
 				// continue if load image error
 				if err := retry(func() error {
-					logger.Debugf("preloading image: %s", fileName)
+					logger.Infof("preloading image: %s", fileName)
 					if stdout, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("env PATH=$PATH gunzip -c %s | %s", image.Filename, loadCmd), false, false); err != nil {
 						return fmt.Errorf("%s", fileName)
 					} else {
-						logger.Debugf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
+						logger.Infof("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
 						// fmt.Printf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
 					}
 					return nil
@@ -201,11 +201,11 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 				}
 
 				if err := retry(func() error {
-					logger.Debugf("preloading image: %s", fileName)
+					logger.Infof("preloading image: %s", fileName)
 					if stdout, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("env PATH=$PATH %s %s", loadCmd, image.Filename), false, false); err != nil {
 						return fmt.Errorf("%s", fileName)
 					} else {
-						logger.Debugf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
+						logger.Infof("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
 						// fmt.Printf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
 					}
 
@@ -214,7 +214,7 @@ func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.Kube
 					return fmt.Errorf("%s", fileName)
 				}
 			} else {
-				logger.Debugf("invalid image file name %s, skip ...", image.Filename)
+				logger.Warnf("invalid image file name %s, skip ...", image.Filename)
 				return nil
 			}
 		default:

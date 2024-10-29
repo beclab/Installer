@@ -64,7 +64,7 @@ func (p *Pipeline) Init() error {
 }
 
 func (p *Pipeline) Start() error {
-	logger.Debugf("[Job] [%s] start ...", p.Name)
+	logger.Infof("[Job] [%s] start ...", p.Name)
 	if err := p.Init(); err != nil {
 		logger.Errorf("[Job] %s execute failed %v", p.Name, err)
 		return errors.Wrapf(err, "Job %s execute failed", p.Name)
@@ -79,7 +79,7 @@ func (p *Pipeline) Start() error {
 		m.Default(p.Runtime, p.PipelineCache, moduleCache)
 		m.AutoAssert()
 		m.Init()
-		logger.Debugf("[Module] %s", m.GetName())
+		logger.Infof("[Module] %s", m.GetName())
 		for j := range p.ModulePostHooks {
 			m.AppendPostHook(p.ModulePostHooks[j])
 		}
@@ -108,7 +108,7 @@ func (p *Pipeline) Start() error {
 		logger.Errorf("[Job] %s execute failed: there are some error in your spec hosts", p.Name)
 		return errors.Errorf("[Job] %s execute failed: there are some error in your spec hosts", p.Name)
 	}
-	logger.Debugf("[Job] %s execute successfully!!! (%s)", p.Name, p.since())
+	logger.Infof("[Job] %s execute successfully!!! (%s)", p.Name, p.since())
 	logger.Sync()
 
 	return nil

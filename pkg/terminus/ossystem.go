@@ -1,6 +1,7 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
 	"path"
@@ -55,7 +56,7 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var systemPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "system")
@@ -205,6 +206,7 @@ type InstallOsSystemModule struct {
 }
 
 func (m *InstallOsSystemModule) Init() {
+	logger.InfoInstallationProgress("Installing appservice ...")
 	m.Name = "InstallOsSystemModule"
 
 	installOsSystem := &task.LocalTask{

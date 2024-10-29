@@ -44,9 +44,6 @@ func (r *Runner) Exec(cmd string, printOutput bool) (string, int, error) {
 	if stdout != "" {
 		logger.Debugf("stdout: [%s]\n%s", r.Host.GetName(), stdout)
 	}
-	if err != nil {
-		logger.Debugf("stderr: [%s]\n%s", r.Host.GetName(), err)
-	}
 
 	if err != nil {
 		logger.Errorf("[exec] %s CMD: %s, ERROR: %s", r.Host.GetName(), cmd, err)
@@ -54,7 +51,7 @@ func (r *Runner) Exec(cmd string, printOutput bool) (string, int, error) {
 
 	if printOutput {
 		if stdout != "" {
-			logger.Infof("stdout: [%s]\n%s", r.Host.GetName(), stdout)
+			fmt.Printf("stdout: [%s]\n%s\n", r.Host.GetName(), stdout)
 		}
 	}
 	return stdout, code, err
@@ -82,10 +79,10 @@ func (r *Runner) Fetch(local, remote string, printOutput bool) error {
 	}
 
 	if err := r.Conn.Fetch(local, remote, r.Host); err != nil {
-		logger.Debugf("fetch remote file %s to local %s failed: %v", remote, local, err)
+		logger.Errorf("fetch remote file %s to local %s failed: %v", remote, local, err)
 		return err
 	}
-	logger.Debugf("fetch remote file %s to local %s success", remote, local)
+	logger.Infof("fetch remote file %s to local %s success", remote, local)
 	return nil
 }
 

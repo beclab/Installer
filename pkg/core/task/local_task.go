@@ -208,7 +208,6 @@ func (l *LocalTask) When(runtime connector.Runtime) (bool, error) {
 }
 
 func (l *LocalTask) ExecuteWithRetry(runtime connector.Runtime, host connector.Host) error {
-	logger.Debugf("[A] %s: %s", host.GetName(), l.Name)
 	err := fmt.Errorf("[A] %s: %s exec failed after %d retires: ",
 		host.GetName(), l.Name, l.Retry)
 	for i := 0; i < l.Retry; i++ {

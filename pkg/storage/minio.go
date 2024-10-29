@@ -23,12 +23,10 @@ type CheckMinioState struct {
 
 func (t *CheckMinioState) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl --no-pager -n 0 status minio" //
-	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("Minio Pending")
 	}
-
-	logger.Debug(stdout)
 
 	return nil
 }

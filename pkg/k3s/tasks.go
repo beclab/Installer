@@ -231,7 +231,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"SchedulerArgs":          kubeSchedulerArgs,
 		"KubeletArgs":            kubeletArgs,
 		"KubeProxyArgs":          kubeProxyArgs,
-		"JuiceFSPreCheckEnabled": runtime.GetSystemInfo().IsLinux(),
+		"JuiceFSPreCheckEnabled": !runtime.GetSystemInfo().IsWsl(),
 		"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
 		"JuiceFSBinPath":         storage.JuiceFsFile,
 		"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
@@ -703,7 +703,7 @@ type DeleteCalicoCNI struct {
 }
 
 func (t *DeleteCalicoCNI) Execute(runtime connector.Runtime) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	ifInfo, _ := net.InterfacesWithContext(ctx)

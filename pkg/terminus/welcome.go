@@ -3,6 +3,7 @@ package terminus
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"fmt"
 	"time"
@@ -45,15 +46,19 @@ func (t *WelcomeMessage) Execute(runtime connector.Runtime) error {
 	if ip == "" {
 		ip = t.KubeConf.Arg.PublicNetworkInfo.PublicIp
 	}
-	fmt.Println("\n\n------------------------------------------------\n")
-	fmt.Println("Installation is completed")
-	fmt.Println("Terminus is running at")
-	fmt.Printf("http://%s:%d\n", ip, port)
-	fmt.Println("Open your browser and visit the above address")
-	fmt.Printf("Username: %s\n", t.KubeConf.Arg.User.UserName)
-	fmt.Printf("Password: %s\n", t.KubeConf.Arg.User.Password)
-	fmt.Println("Please change the default password after login")
+
+	logger.InfoInstallationProgress("Installation wizard is complete")
+
+	fmt.Printf("\n\n------------------------------------------------\n")
+	logger.Info("Terminus is running at")
+	logger.Infof("http://%s:%d", ip, port)
+	logger.Info("Open your browser and visit the above address")
+	logger.Infof("Username: %s", t.KubeConf.Arg.User.UserName)
+	logger.Infof("Password: %s", t.KubeConf.Arg.User.Password)
+	logger.Info("Please change the default password after login")
 	fmt.Println("\n------------------------------------------------\n\n")
+
+	logger.InfoInstallationProgress("All done")
 	return nil
 }
 
@@ -62,6 +67,7 @@ type WelcomeModule struct {
 }
 
 func (m *WelcomeModule) Init() {
+	logger.InfoInstallationProgress("Starting Terminus ...")
 	m.Name = "Welcome"
 
 	waitServicesReady := &task.LocalTask{

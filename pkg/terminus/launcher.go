@@ -2,6 +2,7 @@ package terminus
 
 import (
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"context"
@@ -55,7 +56,7 @@ func (t *InstallBFL) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var r = utils.Random()
@@ -87,6 +88,7 @@ type InstallLauncherModule struct {
 }
 
 func (m *InstallLauncherModule) Init() {
+	logger.InfoInstallationProgress("Installing launcher ...")
 	m.Name = "InstallLauncher"
 
 	generateBFLDefaultValues := &task.LocalTask{

@@ -1,6 +1,7 @@
 package system
 
 import (
+	"bytetrade.io/web3os/installer/pkg/daemon"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os"
@@ -87,5 +88,15 @@ func (l *wslPhaseBuilder) build() []module.Module {
 			}
 
 		}).withGPU(l.runtime)...).
+		addModule(terminusBoxModuleBuilder(func() []module.Module {
+			return []module.Module{
+				&daemon.InstallTerminusdBinaryModule{
+					ManifestModule: manifest.ManifestModule{
+						Manifest: l.manifestMap,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
+					},
+				},
+			}
+		}).inBox(l.runtime)...).
 		addModule(&terminus.PreparedModule{})
 }

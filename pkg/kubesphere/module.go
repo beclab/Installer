@@ -18,6 +18,7 @@ package kubesphere
 
 import (
 	"bytetrade.io/web3os/installer/pkg/core/action"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
 	"fmt"
 	"os"
@@ -76,6 +77,7 @@ func (d *DeployModule) IsSkip() bool {
 }
 
 func (d *DeployModule) Init() {
+	logger.InfoInstallationProgress("Installing kubesphere ...")
 	d.Name = "DeployKubeSphereModule"
 	d.Desc = "Deploy KubeSphere"
 

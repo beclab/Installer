@@ -37,14 +37,14 @@ func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
 		}
 
 	} else {
-		logger.Debugf("found old minikube cluster %s, deleting...", t.KubeConf.Arg.MinikubeProfile)
+		logger.Infof("found old minikube cluster %s, deleting...", t.KubeConf.Arg.MinikubeProfile)
 		cmd = fmt.Sprintf("%s delete -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
 		stdout, err = runtime.GetRunner().Host.CmdExt(cmd, false, true)
 		if err != nil {
 			return errors.Wrap(err, "failed to delete old minikube cluster")
 		}
 	}
-	logger.Debugf("creating minikube cluster %s ...", t.KubeConf.Arg.MinikubeProfile)
+	logger.Infof("creating minikube cluster %s ...", t.KubeConf.Arg.MinikubeProfile)
 	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
 	if _, err := runtime.GetRunner().Host.CmdExt(cmd, false, true); err != nil {
 		return errors.Wrap(err, "failed to create minikube cluster")

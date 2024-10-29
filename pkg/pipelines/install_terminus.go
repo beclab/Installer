@@ -33,6 +33,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
+		fmt.Printf("Error creating installation runtime: %v\n", err)
 		return nil
 	}
 
