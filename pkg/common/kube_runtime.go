@@ -18,14 +18,12 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
@@ -69,6 +67,7 @@ type Argument struct {
 	Role             string `json:"role"`
 	Type             string `json:"type"`
 	Kubetype         string `json:"kube_type"`
+	SystemInfo       connector.Systems
 
 	// Extra args
 	ExtraAddon      string `json:"extra_addon"` // addon yaml config
@@ -90,28 +89,26 @@ type Argument struct {
 	// User
 	User *User `json:"user"`
 	// storage
-	Storage                *Storage    `json:"storage"`
-	AWS                    *AwsHost    `json:"aws"`
-	GPU                    *GPU        `json:"gpu"`
-	Cloudflare             *Cloudflare `json:"cloudflare"`
-	Frp                    *Frp        `json:"frp"`
-	TokenMaxAge            int64       `json:"token_max_age"` // nanosecond
-	MarketProvider         string      `json:"market_provider"`
-	TerminusCertServiceAPI string      `json:"terminus_cert_service_api"`
-	TerminusDNSServiceAPI  string      `json:"terminus_dns_service_api"`
+	Storage                *Storage           `json:"storage"`
+	PublicNetworkInfo      *PublicNetworkInfo `json:"public_network_info"`
+	GPU                    *GPU               `json:"gpu"`
+	Cloudflare             *Cloudflare        `json:"cloudflare"`
+	Frp                    *Frp               `json:"frp"`
+	TokenMaxAge            int64              `json:"token_max_age"` // nanosecond
+	MarketProvider         string             `json:"market_provider"`
+	TerminusCertServiceAPI string             `json:"terminus_cert_service_api"`
+	TerminusDNSServiceAPI  string             `json:"terminus_dns_service_api"`
 
 	Request any `json:"-"`
 
 	IsCloudInstance bool   `json:"is_cloud_instance"`
-	Minikube        bool   `json:"minikube"`
 	MinikubeProfile string `json:"minikube_profile"`
-	WSL             bool   `json:"wsl"`
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
 }
 
-type AwsHost struct {
+type PublicNetworkInfo struct {
 	PublicIp string `json:"aws_public_ip"`
 	Hostname string `json:"aws_hostname"`
 }
@@ -126,15 +123,15 @@ type User struct {
 type Storage struct {
 	StorageVendor    string `json:"storage_vendor"`
 	StorageType      string `json:"storage_type"`
-	StorageDomain    string `json:"storage_domain"`
 	StorageBucket    string `json:"storage_bucket"`
 	StoragePrefix    string `json:"storage_prefix"`
 	StorageAccessKey string `json:"storage_access_key"`
 	StorageSecretKey string `json:"storage_secret_key"`
 
-	StorageToken      string `json:"storage_token"`       // juicefs  --> from env
-	StorageClusterId  string `json:"storage_cluster_id"`  // use only on the Terminus cloud, juicefs  --> from env
-	StorageSyncSecret string `json:"storage_sync_secret"` // use only on the Terminus cloud  --> from env
+	StorageToken        string `json:"storage_token"`       // juicefs  --> from env
+	StorageClusterId    string `json:"storage_cluster_id"`  // use only on the Terminus cloud, juicefs  --> from env
+	StorageSyncSecret   string `json:"storage_sync_secret"` // use only on the Terminus cloud  --> from env
+	BackupClusterBucket string `json:"backup_cluster_bucket"`
 }
 
 type GPU struct {
@@ -151,6 +148,7 @@ type Frp struct {
 	Server     string `json:"frp_server"`
 	Port       string `json:"frp_port"`
 	AuthMethod string `json:"frp_auth_method"`
+	AuthToken  string `json:"frp_auth_token"`
 }
 
 func NewArgument() *Argument {
@@ -160,7 +158,8 @@ func NewArgument() *Argument {
 		InstallPackages:  false,
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
-		IsCloudInstance:  strings.EqualFold(os.Getenv(EnvCloudInstanceName), TRUE),
+		SystemInfo:       connector.GetSystemInfo(),
+		IsCloudInstance:  strings.EqualFold(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION), TRUE),
 		Storage: &Storage{
 			StorageType: Minio,
 		},
@@ -170,15 +169,16 @@ func NewArgument() *Argument {
 		},
 		Cloudflare:             &Cloudflare{},
 		Frp:                    &Frp{},
-		WSL:                    strings.Contains(constants.OsKernel, "-WSL"),
-		MarketProvider:         os.Getenv(EnvMarketProvider),
-		TerminusCertServiceAPI: os.Getenv(EnvTerminusCertServiceAPI),
-		TerminusDNSServiceAPI:  os.Getenv(EnvTerminusDNSServiceAPI),
+		User:                   &User{},
+		PublicNetworkInfo:      &PublicNetworkInfo{},
+		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
+		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
+		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
 	}
 }
 
 func (a *Argument) SetTokenMaxAge() {
-	s := os.Getenv(EnvTokenMaxAge)
+	s := os.Getenv(ENV_TOKEN_MAX_AGE)
 	age, err := strconv.ParseInt(s, 10, 64)
 	if err != nil || age == 0 {
 		age = DefaultTokenMaxAge
@@ -221,20 +221,22 @@ func (a *Argument) SetStorage(storage *Storage) {
 	a.Storage = storage
 }
 
-func (a *Argument) SetMinikube(minikube bool, profile string) {
-	a.Minikube = minikube
+func (a *Argument) SetMinikubeProfile(profile string) {
 	a.MinikubeProfile = profile
 }
 
 func (a *Argument) SetReverseProxy() {
-	var enableCloudflare = "1"
+	var enableCloudflare = os.Getenv("CLOUDFLARE_ENABLE")
 	var enableFrp = "0"
 	var frpServer = ""
 	var frpPort = "0"
 	var frpAuthMethod = ""
+	var frpAuthToken = ""
 
-	cloudVersion := os.Getenv("TERMINUS_IS_CLOUD_VERSION")
-	if cloudVersion == "true" {
+	if enableCloudflare == "" {
+		enableCloudflare = "1"
+	}
+	if a.IsCloudInstance {
 		enableCloudflare = "0"
 	} else if os.Getenv("FRP_ENABLE") == "1" {
 		enableCloudflare = "0"
@@ -242,6 +244,7 @@ func (a *Argument) SetReverseProxy() {
 		frpServer = os.Getenv("FRP_SERVER")
 		frpPort = os.Getenv("FRP_PORT")
 		frpAuthMethod = os.Getenv("FRP_AUTH_METHOD")
+		frpAuthToken = os.Getenv("FRP_AUTH_TOKEN")
 	}
 
 	a.Cloudflare.Enable = enableCloudflare
@@ -249,14 +252,7 @@ func (a *Argument) SetReverseProxy() {
 	a.Frp.Server = util.RemoveHTTPPrefix(frpServer)
 	a.Frp.Port = frpPort
 	a.Frp.AuthMethod = frpAuthMethod
-}
-
-func (a *Argument) IsProxmox() bool {
-	return strings.Contains(constants.OsKernel, "-pve")
-}
-
-func (a *Argument) IsRaspbian() bool {
-	return constants.OsPlatform == Raspbian
+	a.Frp.AuthToken = frpAuthToken
 }
 
 func (a *Argument) SetKubeVersion(kubeType string) {
@@ -281,14 +277,6 @@ func (a *Argument) SetManifest(manifest string) {
 	a.Manifest = manifest
 }
 
-func (a *Argument) ArgValidate() error {
-	if a.Minikube && constants.OsType != Darwin {
-		return fmt.Errorf("arch invalid, only support --minikube for macOS")
-	}
-
-	return nil
-}
-
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	loader := NewLoader(flag, arg)
 	cluster, err := loader.Load()
@@ -300,10 +288,11 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 		return nil, err
 	}
 
-	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(), arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion)
+	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.SystemInfo)
 
 	clusterSpec := &cluster.Spec
-	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.Minikube)
+	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.SystemInfo.IsDarwin())
 	hostSet := make(map[string]struct{})
 	for _, role := range roleGroups {
 		for _, host := range role {
@@ -318,14 +307,13 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 				base.AppendHost(host)
 				base.AppendRoleMap(host)
 			}
-			host.SetOs(constants.OsType)
-			host.SetMinikube(arg.Minikube)
+			host.SetOs(arg.SystemInfo.GetOsType())
 			host.SetMinikubeProfile(arg.MinikubeProfile)
 		}
 	}
 
 	args, _ := json.Marshal(arg)
-	logger.Infof("[runtime] arg: %s", string(args))
+	logger.Debugf("[runtime] arg: %s", string(args))
 
 	arg.KsEnable = defaultCluster.KubeSphere.Enabled
 	arg.KsVersion = defaultCluster.KubeSphere.Version

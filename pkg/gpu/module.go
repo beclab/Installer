@@ -51,7 +51,7 @@ func (m *InstallDepsModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			&common.Skip{
-				Not: m.KubeConf.Arg.WSL,
+				Not: m.KubeConf.Arg.SystemInfo.IsWsl(),
 			},
 		},
 		Action:   new(InstallCudaDriver),

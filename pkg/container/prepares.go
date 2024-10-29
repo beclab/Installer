@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 )
 
@@ -30,7 +29,7 @@ type DockerExist struct {
 }
 
 func (d *DockerExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	output, err := runtime.GetRunner().SudoCmd("if [ -z $(which docker) ] || [ ! -e /var/run/docker.sock ]; "+
+	output, err := runtime.GetRunner().Host.SudoCmd("if [ -z $(which docker) ] || [ ! -e /var/run/docker.sock ]; "+
 		"then echo 'not exist'; "+
 		"fi", false, false)
 	if err != nil {
@@ -97,7 +96,7 @@ type ZfsResetPrepare struct {
 }
 
 func (p *ZfsResetPrepare) PreCheck(runtime connector.Runtime) (bool, error) {
-	if constants.FsType == "zfs" {
+	if runtime.GetSystemInfo().GetFsType() == "zfs" {
 		return true, nil
 	}
 	return false, nil

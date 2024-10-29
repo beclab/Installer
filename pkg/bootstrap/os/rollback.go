@@ -34,7 +34,7 @@ type RollbackUmount struct {
 func (r *RollbackUmount) Execute(runtime connector.Runtime, result *ending.ActionResult) error {
 	mountPath := filepath.Join(common.TmpDir, "iso")
 	umountCmd := fmt.Sprintf("umount %s", mountPath)
-	if _, err := runtime.GetRunner().SudoCmd(umountCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(umountCmd, false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "umount %s failed", mountPath)
 	}
 	return nil
@@ -60,7 +60,7 @@ func (r *RecoverBackupSuccessNode) Execute(runtime connector.Runtime, result *en
 
 	mountPath := filepath.Join(common.TmpDir, "iso")
 	umountCmd := fmt.Sprintf("umount %s", mountPath)
-	if _, err := runtime.GetRunner().SudoCmd(umountCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(umountCmd, false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "umount %s failed", mountPath)
 	}
 	return nil
@@ -82,7 +82,7 @@ func (r *RecoverRepository) Execute(runtime connector.Runtime, result *ending.Ac
 
 	mountPath := filepath.Join(common.TmpDir, "iso")
 	umountCmd := fmt.Sprintf("umount %s", mountPath)
-	if _, err := runtime.GetRunner().SudoCmd(umountCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(umountCmd, false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "umount %s failed", mountPath)
 	}
 	return nil

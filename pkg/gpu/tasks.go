@@ -1,13 +1,13 @@
 package gpu
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -21,7 +21,7 @@ type CheckWslGPU struct {
 }
 
 func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
-	if !runtime.Arg.WSL {
+	if !runtime.GetSystemInfo().IsWsl() {
 		return
 	}
 	var nvidiaSmiFile = "/usr/lib/wsl/lib/nvidia-smi"
@@ -29,7 +29,7 @@ func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
 		return
 	}
 
-	stdout, _, err := util.Exec("/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, true)
+	stdout, _, err := util.Exec(context.Background(), "/usr/lib/wsl/lib/nvidia-smi -L|grep 'NVIDIA'|grep UUID", false, false)
 	if err != nil {
 		logger.Errorf("nvidia-smi not found")
 		return
@@ -47,8 +47,9 @@ type InstallCudaDeps struct {
 }
 
 func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
 	var fileId = fmt.Sprintf("%s-%s_cuda-keyring_%s-1",
-		strings.ToLower(constants.OsPlatform), constants.OsVersion,
+		strings.ToLower(systemInfo.GetOsPlatformFamily()), systemInfo.GetOsVersion(),
 		kubekeyapiv1alpha2.DefaultCudaKeyringVersion)
 
 	cudakeyring, err := t.Manifest.Get(fileId)
@@ -100,9 +101,10 @@ type UpdateCudaSource struct {
 
 func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	// only for ubuntu20.04  ubunt22.04
+	systemInfo := runtime.GetSystemInfo()
 
 	var version string
-	if strings.Contains(constants.OsVersion, "22.") {
+	if strings.Contains(systemInfo.GetOsVersion(), "22.") {
 		version = "22.04"
 	} else {
 		version = "20.04"
@@ -125,12 +127,12 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	if strings.Contains(constants.OsVersion, "24.") {
+	if strings.Contains(systemInfo.GetOsVersion(), "24.") {
 		return nil
 	}
 
 	var fileId = fmt.Sprintf("%s_%s_libnvidia-container.list",
-		strings.ToLower(constants.OsPlatform), version)
+		strings.ToLower(systemInfo.GetOsPlatformFamily()), version)
 
 	libnvidia, err := t.Manifest.Get(fileId)
 	if err != nil {
@@ -168,7 +170,7 @@ type PatchK3sDriver struct { // patch k3s on wsl
 }
 
 func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
-	if t.KubeConf.Arg.WSL {
+	if runtime.GetSystemInfo().IsWsl() {
 		var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
 		driverPath, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 		if err != nil {
@@ -176,10 +178,10 @@ func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 		}
 
 		if driverPath == "" {
-			logger.Debugf("cuda driver not found")
+			logger.Infof("cuda driver not found")
 			return nil
 		} else {
-			logger.Debugf("cuda driver found: %s", driverPath)
+			logger.Infof("cuda driver found: %s", driverPath)
 		}
 
 		templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)

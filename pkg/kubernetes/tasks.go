@@ -18,6 +18,8 @@ package kubernetes
 
 import (
 	"bufio"
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -84,7 +86,7 @@ func (g *GetKubeVersion) Execute() (string, string, error) {
 		return "", "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get nodes -l node-role.kubernetes.io/master -o jsonpath='{.items[*].status.nodeInfo.kubeletVersion}'", kubectlpath))
@@ -108,11 +110,7 @@ type GetClusterStatus struct {
 }
 
 func (g *GetClusterStatus) Execute(runtime connector.Runtime) error {
-	exist, err := runtime.GetRunner().FileExist("/etc/kubernetes/admin.conf")
-	if err != nil {
-		return err
-	}
-
+	exist := runtime.GetRunner().Host.FileExist("/etc/kubernetes/admin.conf")
 	if !exist {
 		g.PipelineCache.Set(common.ClusterExist, false)
 		return nil
@@ -170,37 +168,37 @@ func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 		fileName := binary.Filename
 		switch name {
 		//case "kubelet":
-		//	if err := runtime.GetRunner().Scp(binary.Path, fmt.Sprintf("%s/%s", common.TmpDir, binary.Name)); err != nil {
+		//	if err := runtime.GetRunner().Host.Scp(binary.Path, fmt.Sprintf("%s/%s", common.TmpDir, binary.Name)); err != nil {
 		//		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 		//	}
 		case "cni-plugins-k8s":
 			dst := filepath.Join(common.TmpDir, fileName)
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
-			if err := runtime.GetRunner().Scp(path, dst); err != nil {
+			if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
-			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar -zxf %s -C /opt/cni/bin", dst), false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar -zxf %s -C /opt/cni/bin", dst), false, false); err != nil {
 				return err
 			}
 		case "helm":
 			dst := filepath.Join(common.TmpDir, fileName)
 			untarDst := filepath.Join(common.TmpDir, strings.TrimSuffix(fileName, ".tar.gz"))
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
-			if err := runtime.GetRunner().Scp(path, dst); err != nil {
+			if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
 
 			cmd := fmt.Sprintf("mkdir -p %s && tar -zxf %s -C %s && cd %s/linux-* && mv ./helm /usr/local/bin/.",
 				untarDst, dst, untarDst, untarDst)
-			if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 				return err
 			}
 		default:
 			dst := filepath.Join(common.BinDir, fileName)
-			if err := runtime.GetRunner().SudoScp(path, dst); err != nil {
+			if err := runtime.GetRunner().Host.SudoScp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
-			if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("chmod +x %s", dst), false, false); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("chmod +x %s", dst), false, false); err != nil {
 				return err
 			}
 		}
@@ -213,10 +211,29 @@ type SyncKubelet struct {
 }
 
 func (s *SyncKubelet) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("chmod +x /usr/local/bin/kubelet", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("chmod +x /usr/local/bin/kubelet", false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync kubelet service failed")
 	}
 	return nil
+}
+
+type GenerateKubeletService struct {
+	common.KubeAction
+}
+
+func (t *GenerateKubeletService) Execute(runtime connector.Runtime) error {
+	tplActions := &action.Template{
+		Name:     "GenerateKubeletService",
+		Template: templates.KubeletService,
+		Dst:      filepath.Join("/etc/systemd/system/", templates.KubeletService.Name()),
+		Data: util.Data{
+			"JuiceFSPreCheckEnabled": !runtime.GetSystemInfo().IsWsl(),
+			"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
+			"JuiceFSBinPath":         storage.JuiceFsFile,
+			"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
+		},
+	}
+	return tplActions.Execute(runtime)
 }
 
 type EnableKubelet struct {
@@ -224,7 +241,7 @@ type EnableKubelet struct {
 }
 
 func (e *EnableKubelet) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("systemctl disable kubelet "+
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl disable kubelet "+
 		"&& systemctl enable kubelet "+
 		"&& ln -snf /usr/local/bin/kubelet /usr/bin/kubelet", false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "enable kubelet service failed")
@@ -268,7 +285,7 @@ func (g *GenerateKubeadmConfig) Execute(runtime connector.Runtime) error {
 	localConfig := filepath.Join(runtime.GetWorkDir(), "kubeadm-config.yaml")
 	if util.IsExist(localConfig) {
 		// todo: if it is necessary?
-		if err := runtime.GetRunner().SudoScp(localConfig, "/etc/kubernetes/kubeadm-config.yaml"); err != nil {
+		if err := runtime.GetRunner().Host.SudoScp(localConfig, "/etc/kubernetes/kubeadm-config.yaml"); err != nil {
 			return errors.Wrap(errors.WithStack(err), "scp local kubeadm config failed")
 		}
 	} else {
@@ -382,13 +399,13 @@ func (k *KubeadmInit) Execute(runtime connector.Runtime) error {
 		initCmd = initCmd + " --skip-phases=addon/kube-proxy"
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(initCmd, false, false); err != nil {
 		// kubeadm reset and then retry
 		resetCmd := "/usr/local/bin/kubeadm reset -f"
 		if k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint != "" {
 			resetCmd = resetCmd + " --cri-socket " + k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint
 		}
-		_, _ = runtime.GetRunner().SudoCmd(resetCmd, false, true)
+		_, _ = runtime.GetRunner().Host.SudoCmd(resetCmd, false, true)
 		return errors.Wrap(errors.WithStack(err), "init kubernetes cluster failed")
 	}
 	return nil
@@ -402,46 +419,46 @@ func (c *CopyKubeConfigForControlPlane) Execute(runtime connector.Runtime) error
 	createConfigDirCmd := "mkdir -p /root/.kube"
 	getKubeConfigCmd := "cp -f /etc/kubernetes/admin.conf /root/.kube/config"
 	cmd := strings.Join([]string{createConfigDirCmd, getKubeConfigCmd}, " && ")
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "copy kube config failed")
 	}
 
 	userMkdir := "mkdir -p $HOME/.kube"
-	if _, err := runtime.GetRunner().Cmd(userMkdir, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.Cmd(userMkdir, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "user mkdir $HOME/.kube failed")
 	}
 
 	userCopyKubeConfig := "cp -f /etc/kubernetes/admin.conf $HOME/.kube/config"
-	if _, err := runtime.GetRunner().SudoCmd(userCopyKubeConfig, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(userCopyKubeConfig, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "user copy /etc/kubernetes/admin.conf to $HOME/.kube/config failed")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("chmod 0600 $HOME/.kube/config", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("chmod 0600 $HOME/.kube/config", false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "chmod $HOME/.kube/config failed")
 	}
 
-	// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+	// userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
 	// if err != nil {
 	// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
 	// }
 
-	// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+	// userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
 	// if err != nil {
 	// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
 	// }
 
-	userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
+	userId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_UID", false, false)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get user id failed")
 	}
 
-	userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
+	userGroupId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_GID", false, false)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get user group id failed")
 	}
 
 	chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
-	if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
 	}
 	return nil
@@ -452,12 +469,12 @@ type RemoveMasterTaint struct {
 }
 
 func (r *RemoveMasterTaint) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf(
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"/usr/local/bin/kubectl taint nodes %s node-role.kubernetes.io/master=:NoSchedule-",
 		runtime.RemoteHost().GetName()), false, true); err != nil {
 		logger.Warn(err.Error())
 	}
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf(
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"/usr/local/bin/kubectl taint nodes %s node-role.kubernetes.io/control-plane=:NoSchedule-",
 		runtime.RemoteHost().GetName()), false, true); err != nil {
 		logger.Warn(err.Error())
@@ -470,7 +487,7 @@ type AddWorkerLabel struct {
 }
 
 func (a *AddWorkerLabel) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmdExt(fmt.Sprintf(
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"/usr/local/bin/kubectl label --overwrite node %s node-role.kubernetes.io/worker=",
 		runtime.RemoteHost().GetName()), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "add worker label failed")
@@ -483,13 +500,13 @@ type JoinNode struct {
 }
 
 func (j *JoinNode) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubeadm join --config=/etc/kubernetes/kubeadm-config.yaml --ignore-preflight-errors=FileExisting-crictl,ImagePull",
+	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubeadm join --config=/etc/kubernetes/kubeadm-config.yaml --ignore-preflight-errors=FileExisting-crictl,ImagePull",
 		true, false); err != nil {
 		resetCmd := "/usr/local/bin/kubeadm reset -f"
 		if j.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint != "" {
 			resetCmd = resetCmd + " --cri-socket " + j.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint
 		}
-		_, _ = runtime.GetRunner().SudoCmd(resetCmd, true, false)
+		_, _ = runtime.GetRunner().Host.SudoCmd(resetCmd, true, false)
 		return errors.Wrap(errors.WithStack(err), "join node failed")
 	}
 	return nil
@@ -504,51 +521,51 @@ func (s *SyncKubeConfigToWorker) Execute(runtime connector.Runtime) error {
 		cluster := v.(*KubernetesStatus)
 
 		createConfigDirCmd := "mkdir -p /root/.kube"
-		if _, err := runtime.GetRunner().SudoCmd(createConfigDirCmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(createConfigDirCmd, false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "create .kube dir failed")
 		}
 
 		syncKubeConfigForRootCmd := fmt.Sprintf("echo '%s' > %s", cluster.KubeConfig, "/root/.kube/config")
-		if _, err := runtime.GetRunner().SudoCmd(syncKubeConfigForRootCmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(syncKubeConfigForRootCmd, false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "sync kube config for root failed")
 		}
 
-		if _, err := runtime.GetRunner().SudoCmd("chmod 0600 /root/.kube/config", false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd("chmod 0600 /root/.kube/config", false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "chmod $HOME/.kube/config failed")
 		}
 
 		userConfigDirCmd := "mkdir -p $HOME/.kube"
-		if _, err := runtime.GetRunner().Cmd(userConfigDirCmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.Cmd(userConfigDirCmd, false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "user mkdir $HOME/.kube failed")
 		}
 
 		syncKubeConfigForUserCmd := fmt.Sprintf("echo '%s' > %s", cluster.KubeConfig, "$HOME/.kube/config")
-		if _, err := runtime.GetRunner().Cmd(syncKubeConfigForUserCmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.Cmd(syncKubeConfigForUserCmd, false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "sync kube config for normal user failed")
 		}
 
-		// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
+		// userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
 		// if err != nil {
 		// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
 		// }
 
-		// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
+		// userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
 		// if err != nil {
 		// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		// }
 
-		userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
+		userId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_UID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user id failed")
 		}
 
-		userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
+		userGroupId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_GID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		}
 
 		chownKubeConfig := fmt.Sprintf("chown -R %s:%s -R $HOME/.kube", userId, userGroupId)
-		if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
 		}
 	}
@@ -564,7 +581,7 @@ func (k *KubeadmReset) Execute(runtime connector.Runtime) error {
 	if k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint != "" {
 		resetCmd = resetCmd + " --cri-socket " + k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint
 	}
-	_, _ = runtime.GetRunner().SudoCmd(resetCmd, false, true)
+	_, _ = runtime.GetRunner().Host.SudoCmd(resetCmd, false, true)
 	return nil
 }
 
@@ -578,7 +595,7 @@ func (u *UmountKubelet) Execute(runtime connector.Runtime) error {
 	}
 
 	var cmd = fmt.Sprintf("cat /proc/self/mounts |grep 'kubelet' | sort -r")
-	var stdout, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	var stdout, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if stdout == "" {
 		return nil
 	}
@@ -601,8 +618,10 @@ func (u *UmountKubelet) Execute(runtime connector.Runtime) error {
 	logger.Infof("kubelet mounts %v", mounts)
 
 	for _, m := range mounts {
-		runtime.GetRunner().SudoCmdExt(fmt.Sprintf("umount %s", m), false, true)
+		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("umount %s", m), false, true)
 	}
+
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop kubepods.slice", false, true)
 
 	return nil
 }
@@ -613,7 +632,7 @@ type FindNode struct {
 
 func (f *FindNode) Execute(runtime connector.Runtime) error {
 	var resArr []string
-	res, err := runtime.GetRunner().Cmd(
+	res, err := runtime.GetRunner().Host.Cmd(
 		"sudo -E /usr/local/bin/kubectl get nodes | grep -v NAME | grep -v 'master\\|control-plane' | awk '{print $1}'",
 		true, false)
 	if err != nil {
@@ -659,7 +678,7 @@ func (d *DrainNode) Execute(runtime connector.Runtime) error {
 	if !ok {
 		return errors.New("get dstNode failed by pipeline cache")
 	}
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf(
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"/usr/local/bin/kubectl drain %s --delete-emptydir-data --ignore-daemonsets --timeout=2m --force", nodeName),
 		true, false); err != nil {
 		return errors.Wrap(err, "drain the node failed")
@@ -676,7 +695,7 @@ func (k *KubectlDeleteNode) Execute(runtime connector.Runtime) error {
 	if !ok {
 		return errors.New("get dstNode failed by pipeline cache")
 	}
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf(
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"/usr/local/bin/kubectl delete node %s", nodeName),
 		true, false); err != nil {
 		return errors.Wrap(err, "delete the node failed")
@@ -782,14 +801,14 @@ func (u *UpgradeKubeMaster) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("upgrade cluster using kubeadm failed: %s", host.GetName()))
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("systemctl stop kubelet", false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl stop kubelet", false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("stop kubelet failed: %s", host.GetName()))
 	}
 
 	if err := SetKubeletTasks(runtime, u.KubeAction); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("set kubelet failed: %s", host.GetName()))
 	}
-	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload && systemctl restart kubelet", true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload && systemctl restart kubelet", true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("restart kubelet failed: %s", host.GetName()))
 	}
 
@@ -806,16 +825,16 @@ func (u *UpgradeKubeWorker) Execute(runtime connector.Runtime) error {
 
 	host := runtime.RemoteHost()
 
-	if _, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubeadm upgrade node", true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubeadm upgrade node", true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("upgrade node using kubeadm failed: %s", host.GetName()))
 	}
-	if _, err := runtime.GetRunner().SudoCmd("systemctl stop kubelet", true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl stop kubelet", true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("stop kubelet failed: %s", host.GetName()))
 	}
 	if err := SetKubeletTasks(runtime, u.KubeAction); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("set kubelet failed: %s", host.GetName()))
 	}
-	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload && systemctl restart kubelet", true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload && systemctl restart kubelet", true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("restart kubelet failed: %s", host.GetName()))
 	}
 	time.Sleep(10 * time.Second)
@@ -871,7 +890,7 @@ type KubeadmUpgrade struct {
 func (k *KubeadmUpgrade) Execute(runtime connector.Runtime) error {
 
 	host := runtime.RemoteHost()
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf(
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"timeout -k 600s 600s /usr/local/bin/kubeadm upgrade apply %s -y "+
 			"--ignore-preflight-errors=all "+
 			"--allow-experimental-upgrades "+
@@ -967,7 +986,7 @@ spec:
                  items:
                  - key: Corefile
                    path: Corefile\"`
-	if _, err := runtime.GetRunner().SudoCmd(patchCorednsCmd, true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(patchCorednsCmd, true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch the coredns failed")
 	}
 	if err := OverrideCoreDNSService(runtime, r.KubeAction); err != nil {
@@ -1004,6 +1023,8 @@ func OverrideCoreDNSService(runtime connector.Runtime, kubeAction common.KubeAct
 			new(common.OnlyFirstMaster),
 		},
 		Action:   new(dns.OverrideCoreDNS),
+		Delay:    2 * time.Second,
+		Retry:    2,
 		Parallel: false,
 	}
 
@@ -1188,7 +1209,7 @@ func (c *ConfigureKubernetes) Execute(runtime connector.Runtime) error {
 	kubeHost := host.(*kubekeyv1alpha2.KubeHost)
 	for k, v := range kubeHost.Labels {
 		labelCmd := fmt.Sprintf("/usr/local/bin/kubectl label --overwrite node %s %s=%s", host.GetName(), k, v)
-		_, err := runtime.GetRunner().SudoCmd(labelCmd, true, false)
+		_, err := runtime.GetRunner().Host.SudoCmd(labelCmd, true, false)
 		if err != nil {
 			return err
 		}
@@ -1214,7 +1235,7 @@ func (s *EtcdSecurityEnhancemenAction) Execute(runtime connector.Runtime) error 
 
 	ETCDcmds := []string{chmodEtcdCertsDirCmd, chmodEtcdCertsCmd, chmodEtcdDataDirCmd, chmodEtcdCmd, chownEtcdCertsDirCmd, chownEtcdCertsCmd, chownEtcdDataDirCmd, chownEtcdCmd}
 
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(ETCDcmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(ETCDcmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 
@@ -1263,20 +1284,20 @@ func (k *MasterSecurityEnhancemenAction) Execute(runtime connector.Runtime) erro
 	chownCertsRenew := "chown root:root /etc/systemd/system/k8s-certs-renew*"
 
 	chmodMasterCmds := []string{chmodKubernetesConfigCmd, chmodKubernetesDirCmd, chmodKubenretesManifestsDirCmd, chmodKubenretesCertsDirCmd}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chmodMasterCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chmodMasterCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 	chownMasterCmds := []string{chownKubernetesConfigCmd, chownKubernetesDirCmd, chownKubenretesManifestsDirCmd, chownKubenretesCertsDirCmd}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chownMasterCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chownMasterCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 
 	chmodNodesCmds := []string{chmodBinDir, chmodKubeCmd, chmodHelmCmd, chmodCniDir, chmodCniConfigDir, chmodKubeletConfig, chmodCertsRenew}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chmodNodesCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chmodNodesCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 	chownNodesCmds := []string{chownBinDir, chownKubeCmd, chownHelmCmd, chownCniDir, chownCniConfigDir, chownKubeletConfig, chownCertsRenew}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chownNodesCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chownNodesCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 
@@ -1322,20 +1343,20 @@ func (n *NodesSecurityEnhancemenAction) Execute(runtime connector.Runtime) error
 	chownKubeletConfig := "chown root:root /var/lib/kubelet/config.yaml && chown root:root -R /etc/systemd/system/kubelet.service*"
 
 	chmodMasterCmds := []string{chmodKubernetesConfigCmd, chmodKubernetesDirCmd, chmodKubenretesManifestsDirCmd, chmodKubenretesCertsDirCmd}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chmodMasterCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chmodMasterCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 	chownMasterCmds := []string{chownKubernetesConfigCmd, chownKubernetesDirCmd, chownKubenretesManifestsDirCmd, chownKubenretesCertsDirCmd}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chownMasterCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chownMasterCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 
 	chmodNodesCmds := []string{chmodBinDir, chmodKubeCmd, chmodHelmCmd, chmodCniDir, chmodCniConfigDir, chmodKubeletConfig}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chmodNodesCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chmodNodesCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 	chownNodesCmds := []string{chownBinDir, chownKubeCmd, chownHelmCmd, chownCniDir, chownCniConfigDir, chownKubeletConfig}
-	if _, err := runtime.GetRunner().SudoCmd(strings.Join(chownNodesCmds, " && "), true, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(strings.Join(chownNodesCmds, " && "), true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Updating permissions failed.")
 	}
 

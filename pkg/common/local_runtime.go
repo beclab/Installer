@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"os/user"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"github.com/pkg/errors"
 )
@@ -52,17 +51,17 @@ func NewLocalRuntime(debug, ingoreErr bool) (LocalRuntime, error) {
 	if err != nil {
 		return localRuntime, err
 	}
-	base := connector.NewBaseRuntime(name, connector.NewDialer(), debug, ingoreErr, nil, "", "")
+	base := connector.NewBaseRuntime(name, connector.NewDialer(), debug, ingoreErr, nil, "", "", nil)
 
 	host := connector.NewHost()
 	host.Name = name
-	host.Address = constants.LocalIp
-	host.InternalAddress = constants.LocalIp
+	host.Address = ""
+	host.InternalAddress = ""
 	host.Port = 22
 	host.User = u.Name
 	host.Password = ""
 	host.PrivateKeyPath = fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir)
-	host.Arch = constants.OsArch
+	host.Arch = ""
 	host.SetRole(KubeKey)
 
 	base.AppendHost(host)

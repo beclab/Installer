@@ -30,17 +30,17 @@ import (
 )
 
 // CriDownloadHTTP defines the kubernetes' binaries that need to be downloaded in advance and downloads them.
-func CriDownloadHTTP(kubeConf *common.KubeConf, path, arch string, pipelineCache *cache.Cache) error {
+func CriDownloadHTTP(kubeConf *common.KubeConf, path, arch, osType, osVersion, osPlatformFamily string, pipelineCache *cache.Cache) error {
 
 	binaries := []*files.KubeBinary{}
 	switch kubeConf.Arg.Type {
 	case common.Docker:
-		docker := files.NewKubeBinary("docker", arch, kubekeyapiv1alpha2.DefaultDockerVersion, path)
+		docker := files.NewKubeBinary("docker", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultDockerVersion, path)
 		binaries = append(binaries, docker)
 	case common.Containerd:
-		containerd := files.NewKubeBinary("containerd", arch, kubekeyapiv1alpha2.DefaultContainerdVersion, path)
-		runc := files.NewKubeBinary("runc", arch, kubekeyapiv1alpha2.DefaultRuncVersion, path)
-		crictl := files.NewKubeBinary("crictl", arch, kubekeyapiv1alpha2.DefaultCrictlVersion, path)
+		containerd := files.NewKubeBinary("containerd", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultContainerdVersion, path)
+		runc := files.NewKubeBinary("runc", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultRuncVersion, path)
+		crictl := files.NewKubeBinary("crictl", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultCrictlVersion, path)
 		binaries = append(binaries, containerd, runc, crictl)
 	default:
 	}

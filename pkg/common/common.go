@@ -16,6 +16,8 @@
 
 package common
 
+import "os"
+
 const (
 	DefaultK8sVersion        = "v1.22.10"
 	DefaultK3sVersion        = "v1.21.4-k3s" //"v1.22.16-k3s"
@@ -58,6 +60,7 @@ const (
 	KubeScriptDir                = "/usr/local/bin/kube-scripts"
 	KubeletFlexvolumesPluginsDir = "/usr/libexec/kubernetes/kubelet-plugins/volume/exec"
 	K3sImageDir                  = "/var/lib/images"
+	MinikubeDefaultProfileName   = "terminus-0"
 	MinikubeEtcdCertDir          = "/var/lib/minikube/certs/etcd"
 	RunLockDir                   = "/var/run/lock"
 
@@ -137,6 +140,8 @@ const (
 	Fedora   = "fedora"
 	RHEl     = "rhel"
 	Raspbian = "raspbian"
+	PVE      = "pve"
+	WSL      = "wsl"
 )
 
 const (
@@ -153,9 +158,14 @@ const (
 	Minio = "minio"
 )
 
+var (
+	CloudVendor = os.Getenv("CLOUD_VENDOR")
+	ResolvProxy = os.Getenv("PROXY")
+)
+
 const (
-	AliYun = "aliyun"
-	AWS    = "aws"
+	CloudVendorAliYun = "aliyun"
+	CloudVendorAWS    = "aws"
 )
 
 const (
@@ -177,11 +187,10 @@ const (
 	CommandHwclock   = "hwclock"
 	CommandKubectl   = "kubectl"
 	CommandDocker    = "docker"
-	CommandHelm      = "helm"
 	CommandMinikube  = "minikube"
 	CommandUnzip     = "unzip"
+	CommandVelero    = "velero"
 
-	CacheCommandHelmPath     = "helm_bin_path"
 	CacheCommandKubectlPath  = "kubectl_bin_path"
 	CacheCommandMinikubePath = "minikube_bin_path"
 	CacheCommandDockerPath   = "docker_bin_path"
@@ -221,6 +230,9 @@ const (
 	CacheSecretKey = "storage_secret_key"
 	CacheToken     = "storage_token"
 	CacheClusterId = "storage_cluster_id"
+
+	CacheAppServicePod = "app_service_pod_name"
+	CacheAppValues     = "app_built_in_values"
 )
 
 const (
@@ -229,15 +241,18 @@ const (
 )
 
 const (
-	EnvCloudInstanceName      = "TERMINUS_IS_CLOUD_VERSION"
-	EnvStorageTypeName        = "STORAGE"
-	EnvStorageBucketName      = "S3_BUCKET"
-	EnvStorageAccessKeyName   = "AWS_ACCESS_KEY_ID_SETUP"
-	EnvStorageSecretKeyName   = "AWS_SECRET_ACCESS_KEY_SETUP"
-	EnvStorageTokenName       = "AWS_SESSION_TOKEN_SETUP"
-	EnvStorageClusterIdName   = "CLUSTER_ID"
-	EnvTokenMaxAge            = "TOKEN_MAX_AGE"
-	EnvMarketProvider         = "MARKET_PROVIDER"
-	EnvTerminusCertServiceAPI = "TERMINUS_CERT_SERVICE_API"
-	EnvTerminusDNSServiceAPI  = "TERMINUS_DNS_SERVICE_API"
+	ENV_TERMINUS_IS_CLOUD_VERSION   = "TERMINUS_IS_CLOUD_VERSION"
+	ENV_STORAGE                     = "STORAGE"
+	ENV_S3_BUCKET                   = "S3_BUCKET"
+	ENV_AWS_ACCESS_KEY_ID_SETUP     = "AWS_ACCESS_KEY_ID_SETUP"
+	ENV_AWS_SECRET_ACCESS_KEY_SETUP = "AWS_SECRET_ACCESS_KEY_SETUP"
+	ENV_AWS_SESSION_TOKEN_SETUP     = "AWS_SESSION_TOKEN_SETUP"
+	ENV_BACKUP_KEY_PREFIX           = "BACKUP_KEY_PREFIX"
+	ENV_BACKUP_SECRET               = "BACKUP_SECRET"
+	ENV_CLUSTER_ID                  = "CLUSTER_ID"
+	ENV_BACKUP_CLUSTER_BUCKET       = "BACKUP_CLUSTER_BUCKET"
+	ENV_TOKEN_MAX_AGE               = "TOKEN_MAX_AGE"
+	ENV_MARKET_PROVIDER             = "MARKET_PROVIDER"
+	ENV_TERMINUS_CERT_SERVICE_API   = "TERMINUS_CERT_SERVICE_API"
+	ENV_TERMINUS_DNS_SERVICE_API    = "TERMINUS_DNS_SERVICE_API"
 )

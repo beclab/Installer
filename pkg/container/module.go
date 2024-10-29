@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/registry"
@@ -162,7 +161,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 				"SandBoxImage":       images.GetImage(m.Runtime, m.KubeConf, "pause").ImageName(),
 				"Auths":              registry.DockerRegistryAuthEntries(m.KubeConf.Cluster.Registry.Auths),
 				"DataRoot":           templates.DataRoot(m.KubeConf),
-				"FsType":             constants.FsType,
+				"FsType":             m.KubeConf.Arg.SystemInfo.GetFsType(),
 				"ZfsRootPath":        cc.ZfsSnapshotter,
 			},
 		},

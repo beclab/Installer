@@ -30,7 +30,6 @@ import (
 	"time"
 
 	cm "bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
@@ -115,10 +114,10 @@ type KubeBinary struct {
 	CheckMd5Sum         bool
 }
 
-func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
+func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, prePath string) *KubeBinary {
 	component := new(KubeBinary)
 	component.ID = name
-	component.Os = constants.OsType
+	component.Os = osType
 	component.Arch = arch
 	component.Version = version
 	component.CheckSum = false
@@ -251,8 +250,8 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case terminus:
 		component.Type = COMPONENT
-		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, constants.OsType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
-		component.Url = fmt.Sprintf(TerminusUrl, version, version, constants.OsType, arch)
+		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, osType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
+		component.Url = fmt.Sprintf(TerminusUrl, version, version, osType, arch)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath)
 	case minio:
@@ -327,11 +326,11 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, fmt.Sprintf("v%s", version))
 	case cudakeyring: // + gpu
-		if strings.Contains(constants.OsVersion, "24.") {
+		if strings.Contains(osVersion, "24.") {
 			version = "1.1"
 		}
 		component.Type = GPU
-		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", constants.OsPlatform, constants.OsVersion, version)
+		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", osPlatformFamily, osVersion, version)
 		component.FileNameHash = utils.MD5(component.FileName)
 		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash)) //getCudaKeyringUrl(arch, constants.OsVersion, version)
 		component.CheckSum = false
@@ -345,10 +344,9 @@ func NewKubeBinary(name, arch, version, prePath string) *KubeBinary {
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case libnvidia:
 		component.Type = GPU
-		component.FileName = fmt.Sprintf("%s_%s_libnvidia-container.list", constants.OsPlatform, constants.OsVersion)
+		component.FileName = fmt.Sprintf("%s_%s_libnvidia-container.list", osPlatformFamily, osVersion)
 		component.FileNameHash = utils.MD5(component.FileName)
 		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
-		// component.Url = getNvidiaLibUrl(constants.OsPlatform, constants.OsVersion)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	default:
@@ -492,14 +490,14 @@ func (b *KubeBinary) Download() error {
 		if err != nil {
 			logger.Warnf("get file %s %s size failed", b.FileName, b.Version)
 		} else if totalSize > 0 {
-			logger.Debugf("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
+			logger.Infof("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
 		}
 
 		client := grab.NewClient()
 		req, _ := grab.NewRequest(fmt.Sprintf("%s/%s", b.BaseDir, b.FileName), b.Url)
 		// req.RateLimiter = NewLimiter(1024 * 1024) // todo
 		req.HTTPRequest = req.HTTPRequest.WithContext(context.Background())
-		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 5*time.Minute)
+		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 10*time.Minute)
 		defer cancel()
 
 		req.HTTPRequest = req.HTTPRequest.WithContext(ctx)
@@ -521,7 +519,7 @@ func (b *KubeBinary) Download() error {
 					if b.PrintOutput {
 						fmt.Println(progressInfo)
 					}
-					logger.Info(progressInfo)
+					logger.Debug(progressInfo)
 					line <- []interface{}{fmt.Sprintf("downloading %s %s (%0.2f%%)", b.FileName, utils.FormatBytes(resp.BytesComplete()), math.Round(result*10000)/100),
 						common.StateDownload, math.Round(result * 10000 / float64(common.DefaultInstallSteps))}
 				} else {
@@ -529,7 +527,7 @@ func (b *KubeBinary) Download() error {
 					if b.PrintOutput {
 						fmt.Println(progressInfo)
 					}
-					logger.Infof(progressInfo)
+					logger.Debug(progressInfo)
 					line <- []interface{}{fmt.Sprintf("downloading %s %s", b.FileName, utils.FormatBytes(resp.BytesComplete())),
 						common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 				}
@@ -579,7 +577,7 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
-		logger.Debugf("%s download succeeded", b.FileName)
+		logger.Infof("%s download succeeded", b.FileName)
 		line <- []interface{}{fmt.Sprintf("%s download succeeded", b.FileName), common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 		break
 	}

@@ -26,7 +26,6 @@ func NewCmdDownload() *cobra.Command {
 		Use:   "component",
 		Short: "Download the packages and components needed to install Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
-			// helper.InitLog(o.BaseDir)
 
 			if err := pipelines.DownloadInstallationPackage(o); err != nil {
 				logger.Fatalf("download terminus installation package error: %v", err)
@@ -44,7 +43,7 @@ func NewCmdDownloadWizard() *cobra.Command {
 		Use:   "wizard",
 		Short: "Download the Terminus installation wizard",
 		Run: func(cmd *cobra.Command, args []string) {
-			// helper.InitLog(o.BaseDir)
+
 			if err := pipelines.DownloadInstallationWizard(o); err != nil {
 				logger.Fatalf("download terminus installation wizard error: %v", err)
 			}
@@ -61,7 +60,6 @@ func NewCmdCheckDownload() *cobra.Command {
 		Use:   "check",
 		Short: "Check Downloaded Terminus Installation Package",
 		Run: func(cmd *cobra.Command, args []string) {
-			// helper.InitLog(o.BaseDir)
 
 			if err := pipelines.CheckDownloadInstallationPackage(o); err != nil {
 				logger.Errorf("check download error: %v", err)

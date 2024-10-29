@@ -3,6 +3,7 @@ package pipelines
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -11,10 +12,7 @@ import (
 )
 
 func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
-	// ksVersion, _, exists := kubernetes.CheckKubeExists()
-	// if exists {
-	// 	return fmt.Errorf("Kubernetes %s is already installed", ksVersion)
-	// }
+
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
 		fmt.Printf("Terminus is already installed, please uninstall it first.")
@@ -24,6 +22,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	var arg = common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
+	arg.SetMinikubeProfile(opts.MinikubeProfile)
 	arg.SetTerminusVersion(opts.Version)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(getStorageValueFromEnv())
@@ -36,9 +35,8 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
 	}
 
 	runtime.Arg.SetManifest(manifest)
@@ -54,21 +52,21 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 func getStorageValueFromEnv() *common.Storage {
 	storageType := os.Getenv("STORAGE")
 	switch storageType {
-	case "s3", "oss":
+	case common.S3, common.OSS:
 	default:
-		storageType = "minio"
+		storageType = common.Minio
 	}
 
 	return &common.Storage{
-		StorageType:       storageType,
-		StorageDomain:     os.Getenv("S3_BUCKET"),
-		StorageBucket:     os.Getenv("S3_BUCKET"), // os.Getenv("BACKUP_CLUSTER_BUCKET"),
-		StoragePrefix:     os.Getenv("BACKUP_KEY_PREFIX"),
-		StorageAccessKey:  os.Getenv("AWS_ACCESS_KEY_ID_SETUP"),
-		StorageSecretKey:  os.Getenv("AWS_SECRET_ACCESS_KEY_SETUP"),
-		StorageToken:      os.Getenv("AWS_SESSION_TOKEN_SETUP"),
-		StorageClusterId:  os.Getenv("CLUSTER_ID"),
-		StorageSyncSecret: os.Getenv("BACKUP_SECRET"),
-		StorageVendor:     os.Getenv("TERMINUS_IS_CLOUD_VERSION"),
+		StorageType:         storageType,
+		StorageBucket:       os.Getenv(common.ENV_S3_BUCKET),
+		StoragePrefix:       os.Getenv(common.ENV_BACKUP_KEY_PREFIX),
+		StorageAccessKey:    os.Getenv(common.ENV_AWS_ACCESS_KEY_ID_SETUP),
+		StorageSecretKey:    os.Getenv(common.ENV_AWS_SECRET_ACCESS_KEY_SETUP),
+		StorageToken:        os.Getenv(common.ENV_AWS_SESSION_TOKEN_SETUP),
+		StorageClusterId:    os.Getenv(common.ENV_CLUSTER_ID),
+		StorageSyncSecret:   os.Getenv(common.ENV_BACKUP_SECRET),
+		StorageVendor:       os.Getenv(common.ENV_TERMINUS_IS_CLOUD_VERSION),
+		BackupClusterBucket: os.Getenv(common.ENV_BACKUP_CLUSTER_BUCKET),
 	}
 }

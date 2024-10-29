@@ -10,13 +10,11 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
-	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
 	mk "bytetrade.io/web3os/installer/pkg/version/minikube"
 	"github.com/pkg/errors"
 )
@@ -31,15 +29,25 @@ func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("Please install minikube on your machine")
 	}
 
-	var cmd = fmt.Sprintf("%s profile list|grep '%s'|grep Running", minikube, t.KubeConf.Arg.MinikubeProfile)
-	stdout, err := runtime.GetRunner().SudoCmdExt(cmd, false, true)
-	if stdout != "" {
-		return fmt.Errorf("minikube profile already exists")
-	}
+	cmd := fmt.Sprintf("%s profile %s", minikube, t.KubeConf.Arg.MinikubeProfile)
+	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	if err != nil {
+		if !strings.Contains(stdout, "not found") {
+			return errors.Wrap(err, "failed to check minikube profile")
+		}
 
+	} else {
+		logger.Infof("found old minikube cluster %s, deleting...", t.KubeConf.Arg.MinikubeProfile)
+		cmd = fmt.Sprintf("%s delete -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
+		stdout, err = runtime.GetRunner().Host.CmdExt(cmd, false, true)
+		if err != nil {
+			return errors.Wrap(err, "failed to delete old minikube cluster")
+		}
+	}
+	logger.Infof("creating minikube cluster %s ...", t.KubeConf.Arg.MinikubeProfile)
 	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
-		return err
+	if _, err := runtime.GetRunner().Host.CmdExt(cmd, false, true); err != nil {
+		return errors.Wrap(err, "failed to create minikube cluster")
 	}
 
 	return nil
@@ -109,7 +117,12 @@ type Download struct {
 
 func (t *Download) Execute(runtime connector.Runtime) error {
 	var arch = runtime.GetRunner().Host.GetArch()
-	helm := files.NewKubeBinary("helm", arch, kubekeyapiv1alpha2.DefaultHelmVersion, runtime.GetWorkDir())
+
+	var systemInfo = runtime.GetSystemInfo()
+	var osType = systemInfo.GetOsType()
+	var osVersion = systemInfo.GetOsVersion()
+	var osPlatformFamily = systemInfo.GetOsPlatformFamily()
+	helm := files.NewKubeBinary("helm", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultHelmVersion, runtime.GetWorkDir())
 
 	if err := helm.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", helm.FileName)
@@ -204,6 +217,24 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 
 }
 
+type PatchCoreDNSSVC struct {
+	common.KubeAction
+}
+
+func (t *PatchCoreDNSSVC) Execute(runtime connector.Runtime) error {
+	var kubectlcmd, ok = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	if !ok || kubectlcmd == "" {
+		kubectlcmd = path.Join(common.BinDir, "kubectl")
+	}
+
+	coreDNSSVCPatchFilePath := filepath.Join(runtime.GetInstallerDir(), "deploy/patch-k3s.yaml")
+	_, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s apply -f %s", kubectlcmd, coreDNSSVCPatchFilePath), false, true)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("failed to patch coredns service", err))
+	}
+	return nil
+}
+
 type InitMinikubeNs struct {
 	common.KubeAction
 }
@@ -229,12 +260,6 @@ func (t *InitMinikubeNs) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	filePath := path.Join(common.TmpDir, common.KubeAddonsDir, "clusterconfigurations.yaml")
-	deployKubesphereCmd := fmt.Sprintf("%s apply -f %s --force", kubectlcmd, filePath)
-	if _, err := runtime.GetRunner().Host.CmdExt(deployKubesphereCmd, false, true); err != nil {
-		return errors.Wrapf(errors.WithStack(err), "deploy %s failed", filePath)
-	}
-
 	return nil
 }
 
@@ -246,7 +271,6 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 	var err error
 	var minikubepath string
 	var kubectlpath string
-	var helmpath string
 	var dockerpath string
 
 	if minikubepath, err = util.GetCommand(common.CommandMinikube); err != nil || minikubepath == "" {
@@ -257,20 +281,14 @@ func (t *CheckMacCommandExists) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	if helmpath, err = util.GetCommand(common.CommandHelm); err != nil || helmpath == "" {
-		return fmt.Errorf("helm not found")
-	}
-
 	if dockerpath, err = util.GetCommand(common.CommandDocker); err != nil || dockerpath == "" {
 		return fmt.Errorf("docker not found")
 	}
 
-	fmt.Println("helm path:", helmpath)
 	fmt.Println("kubectl path:", kubectlpath)
 	fmt.Println("minikube path:", minikubepath)
 	fmt.Println("docker path:", dockerpath)
 
-	t.PipelineCache.Set(common.CacheCommandHelmPath, helmpath)
 	t.PipelineCache.Set(common.CacheCommandMinikubePath, minikubepath)
 	t.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
 	t.PipelineCache.Set(common.CacheCommandDockerPath, dockerpath)
@@ -310,16 +328,10 @@ func (m *DeployMiniKubeModule) Init() {
 		Retry:    1,
 	}
 
-	generateManifests := &task.RemoteTask{
-		Name:  "GenerateKsInstallerCRD",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Action: &action.Template{
-			Name:     "GenerateKsInstallerCRD",
-			Template: templates.KsInstaller,
-			Dst:      filepath.Join(common.KubeAddonsDir, "clusterconfigurations.yaml"),
-		},
-		Parallel: false,
-		Retry:    1,
+	patchCoreDNSSVC := &task.LocalTask{
+		Name:   "PatchCoreDNSSVC",
+		Action: new(PatchCoreDNSSVC),
+		Retry:  1,
 	}
 
 	initMinikubeNs := &task.LocalTask{
@@ -330,7 +342,7 @@ func (m *DeployMiniKubeModule) Init() {
 
 	m.Tasks = []task.Interface{
 		getMinikubeProfile,
-		generateManifests,
+		patchCoreDNSSVC,
 		initMinikubeNs,
 	}
 }

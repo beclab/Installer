@@ -18,9 +18,6 @@ phase="$1"
 if [ -z "$phase" ]; then
   args+=" --all"
 fi
-if [ "${os_type}" == "Darwin" ]; then
-  args+=" --minikube"
-fi
 
 if [[ ! -z "$phase" && x"$phase" != x"prepare" ]]; then
   echo "The parameter is incorrect, the parameter value is: prepare."

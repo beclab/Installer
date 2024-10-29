@@ -74,9 +74,17 @@ const (
 )
 
 const (
-	Linux   = "linux"
-	Darwin  = "darwin"
-	Windows = "windows"
+	Linux    = "linux"
+	Darwin   = "darwin"
+	Raspbian = "raspbian"
+	WSL      = "wsl"
+	PVE      = "pve"
+
+	Ubuntu = "ubuntu"
+	Debian = "debian"
+	Fedora = "fedora"
+	CentOs = "centos"
+	RHEL   = "rhel"
 )
 
 const (

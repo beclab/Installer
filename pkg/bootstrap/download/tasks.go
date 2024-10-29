@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/files"
@@ -98,24 +97,25 @@ func (d *CheckDownload) Execute(runtime connector.Runtime) error {
 
 // if the file exists and the checksum passed
 func isRealExists(runtime connector.Runtime, item *manifest.ManifestItem, baseDir string) (bool, error) {
+	arch := runtime.GetSystemInfo().GetOsArch()
 	targetPath := getDownloadTargetPath(item, baseDir)
-	if exists, err := runtime.GetRunner().FileExist(targetPath); err != nil {
-		return false, err
-	} else if !exists {
+	exists := runtime.GetRunner().Host.FileExist(targetPath)
+	if !exists {
 		return false, nil
 	}
 
 	checksum := utils.LocalMd5Sum(targetPath)
 	// FIXME: run in remote
-	return checksum == item.GetItemUrlForHost().Checksum, nil
+	return checksum == item.GetItemUrlForHost(arch).Checksum, nil
 }
 
 func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest.ManifestItem, baseDir string) error {
-	url := item.GetItemUrlForHost()
+	arch := runtime.GetSystemInfo().GetOsArch()
+	url := item.GetItemUrlForHost(arch)
 
 	component := new(files.KubeBinary)
 	component.ID = item.Filename
-	component.Arch = constants.OsArch
+	component.Arch = runtime.GetSystemInfo().GetOsArch()
 	component.BaseDir = getDownloadTargetBasePath(item, baseDir)
 	component.Url = url.Url
 	component.FileName = item.Filename
@@ -124,7 +124,7 @@ func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest
 
 	downloadPath := component.Path()
 	if utils.IsExist(downloadPath) {
-		_, _ = runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf %s", downloadPath), false, false)
+		_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", downloadPath), false, false)
 	}
 
 	if !utils.IsExist(component.BaseDir) {

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/task"
@@ -23,10 +22,12 @@ type CheckRedisServiceState struct {
 }
 
 func (t *CheckRedisServiceState) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
+	var localIp = systemInfo.GetLocalIp()
 	var rpwd, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
-	var cmd = fmt.Sprintf("%s -h %s -a %s ping", RedisCliFile, constants.LocalIp, rpwd)
+	var cmd = fmt.Sprintf("%s -h %s -a %s ping", RedisCliFile, localIp, rpwd)
 	if pong, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false); !strings.Contains(pong, "PONG") {
-		return fmt.Errorf("failed to connect redis server: %s:6379", constants.LocalIp)
+		return fmt.Errorf("failed to connect redis server: %s:6379", localIp)
 	}
 
 	return nil
@@ -71,6 +72,8 @@ type ConfigRedis struct {
 }
 
 func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
+	var localIp = systemInfo.GetLocalIp()
 	var redisPassword, _ = utils.GeneratePassword(16) // todo
 	if !utils.IsExist(RedisRootDir) {
 		utils.Mkdir(RedisConfigDir)
@@ -80,7 +83,7 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 	}
 
 	var data = util.Data{
-		"LocalIP":  constants.LocalIp,
+		"LocalIP":  localIp,
 		"RootPath": RedisRootDir,
 		"Password": redisPassword,
 	}
@@ -149,7 +152,7 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
-	// if _, err := runtime.GetRunner().SudoCmdExt("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
+	// if _, err := runtime.GetRunner().Host.SudoCmd("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
 	// 	return err
 	// }
 	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisServerFile, RedisServerInstalledFile, RedisServerFile), false, true); err != nil {

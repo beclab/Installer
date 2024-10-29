@@ -1,10 +1,15 @@
 package terminus
 
 import (
+	"bufio"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"net/mail"
+	"os"
 	"path"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -14,31 +19,153 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	accounttemplates "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"github.com/pkg/errors"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-type UpdateAccountValues struct {
+type GetUserInfo struct {
 	common.KubeAction
 }
 
-func (p *UpdateAccountValues) Execute(runtime connector.Runtime) error {
-	var installPath = filepath.Dir(p.KubeConf.Arg.Manifest)
-	var accountFile = path.Join(installPath, "wizard", "config", "account", accounttemplates.AccountValues.Name())
+func (s *GetUserInfo) Execute(runtime connector.Runtime) error {
+	var err error
+	if len(s.KubeConf.Arg.User.DomainName) == 0 {
+		s.KubeConf.Arg.User.DomainName, err = s.getDomainName()
+		if err != nil {
+			return err
+		}
+		logger.Infof("using domain name: %s", s.KubeConf.Arg.User.DomainName)
+	}
+	if len(s.KubeConf.Arg.User.UserName) == 0 {
+		s.KubeConf.Arg.User.UserName, err = s.getUserName()
+		if err != nil {
+			return err
+		}
+		logger.Infof("using user name: %s", s.KubeConf.Arg.User.UserName)
+	}
+	s.KubeConf.Arg.User.Email, err = s.getUserEmail()
+	if err != nil {
+		return err
+	}
+	logger.Infof("using email: %s", s.KubeConf.Arg.User.Email)
+	s.KubeConf.Arg.User.Password, err = s.getUserPassword()
+	if err != nil {
+		return err
+	}
+	logger.Infof("using password: %s", s.KubeConf.Arg.User.Password)
+
+	return nil
+}
+
+func (s *GetUserInfo) getDomainName() (string, error) {
+	domainName := strings.TrimSpace(os.Getenv("TERMINUS_OS_DOMAINNAME"))
+	if len(domainName) > 0 {
+		if !utils.IsValidDomain(domainName) {
+			return "", errors.New(fmt.Sprintf("invalid domain name \"%s\" set in env, please reset", domainName))
+		}
+		return domainName, nil
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+
+	var err error
+LOOP:
+	fmt.Printf("\nEnter the domain name ( myterminus.com by default ): ")
+	domainName, err = reader.ReadString('\n')
+	if err != nil {
+		return domainName, errors.Wrap(errors.WithStack(err), "read domain name failed")
+	}
+	domainName = strings.TrimSpace(domainName)
+	if domainName == "" {
+		return "myterminus.com", nil
+	}
+
+	if !utils.IsValidDomain(domainName) {
+		fmt.Printf("\ninvalid domain name, please try again")
+		goto LOOP
+	}
+	return domainName, nil
+}
+
+func (s *GetUserInfo) getUserName() (string, error) {
+	userName := os.Getenv("TERMINUS_OS_USERNAME")
+	if strings.Contains(userName, "@") {
+		userName = strings.Split(userName, "@")[0]
+	}
+	userName = strings.TrimSpace(userName)
+	if len(userName) > 0 {
+		if err := utils.ValidateUserName(userName); err != nil {
+			return "", fmt.Errorf("invalid username \"%s\" set in env: %s, please reset", userName, err.Error())
+		}
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	var err error
+LOOP:
+	fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
+	userName, err = reader.ReadString('\n')
+	if err != nil {
+		return "", errors.Wrap(errors.WithStack(err), "read username failed")
+	}
+	if strings.Contains(userName, "@") {
+		userName = strings.Split(userName, "@")[0]
+	}
+	userName = strings.TrimSpace(userName)
+	if err := utils.ValidateUserName(userName); err != nil {
+		fmt.Printf("\ninvalid username: %s, please try again", err.Error())
+		goto LOOP
+	}
+
+	return userName, nil
+}
+
+func (s *GetUserInfo) getUserEmail() (string, error) {
+	userEmail := strings.TrimSpace(os.Getenv("TERMINUS_OS_EMAIL"))
+	if len(userEmail) == 0 {
+		return s.KubeConf.Arg.User.UserName + "@" + s.KubeConf.Arg.User.DomainName, nil
+	}
+	if _, err := mail.ParseAddress(userEmail); err != nil {
+		return "", fmt.Errorf("invalid email address \"%s\" set in env: %s, please reset", userEmail, err.Error())
+	}
+	return userEmail, nil
+}
+
+func (s *GetUserInfo) getUserPassword() (string, error) {
+	userPassword := strings.TrimSpace(os.Getenv("TERMINUS_OS_PASSWORD"))
+	if len(userPassword) == 0 {
+		return utils.GeneratePassword(8)
+	}
+	if len(userPassword) < 6 || len(userPassword) > 32 {
+		return "", fmt.Errorf("invalid password \"%s\" set in env: length should be between 6 and 32, please reset", userPassword)
+	}
+	return userPassword, nil
+}
+
+type SetAccountValues struct {
+	common.KubeAction
+}
+
+func (p *SetAccountValues) Execute(runtime connector.Runtime) error {
+	var accountFile = path.Join(runtime.GetInstallerDir(), "wizard", "config", "account", accounttemplates.AccountValues.Name())
+	encryptedPassword, err := util.Bcrypt(p.KubeConf.Arg.User.Password)
+	if err != nil {
+		return errors.Wrap(err, "failed to encrypt account password")
+	}
 	var data = util.Data{
 		"UserName":   p.KubeConf.Arg.User.UserName,
-		"Password":   p.KubeConf.Arg.User.Password,
+		"Password":   encryptedPassword,
 		"Email":      p.KubeConf.Arg.User.Email,
 		"DomainName": p.KubeConf.Arg.User.DomainName,
 	}
 
 	accountStr, err := util.Render(accounttemplates.AccountValues, data)
 	if err != nil {
-		return err
+		return errors.Wrap(errors.WithStack(err), "render account template failed")
 	}
 
 	if err := util.WriteFile(accountFile, []byte(accountStr), cc.FileMode0644); err != nil {
-		return err
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write account %s failed", accountFile))
 	}
 
 	return nil
@@ -53,7 +180,8 @@ func (t *InstallAccount) Execute(runtime connector.Runtime) error {
 	if err != nil {
 		return err
 	}
-	actionConfig, settings, err := utils.InitConfig(config, "")
+	ns := corev1.NamespaceDefault
+	actionConfig, settings, err := utils.InitConfig(config, ns)
 	if err != nil {
 		return err
 	}
@@ -61,22 +189,18 @@ func (t *InstallAccount) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	var installPath = filepath.Dir(t.KubeConf.Arg.Manifest)
-	var accountPath = path.Join(installPath, "wizard", "config", "account")
+	var accountPath = path.Join(runtime.GetInstallerDir(), "wizard", "config", "account")
 
 	if !util.IsExist(accountPath) {
 		return fmt.Errorf("account not exists")
 	}
 
-	var args = make(map[string]interface{})
-	args["force"] = true
-	if t.KubeConf.Arg.WSL {
-		var sets = make(map[string]interface{})
-		sets["nat_gateway_ip"] = "" // todo natgateway
-		args["set"] = sets
+	vals := make(map[string]interface{})
+	if si := runtime.GetSystemInfo(); si.GetNATGateway() != "" {
+		vals["nat_gateway_ip"] = si.GetNATGateway()
 	}
 
-	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameAccount, accountPath, "", "", args, false); err != nil {
+	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameAccount, accountPath, "", ns, vals, false); err != nil {
 		return err
 	}
 
@@ -88,17 +212,29 @@ type InstallAccountModule struct {
 }
 
 func (m *InstallAccountModule) Init() {
+	logger.InfoInstallationProgress("Installing account ...")
 	m.Name = "InstallAccount"
 
-	installAccount := &task.RemoteTask{
-		Name:     "InstallAccount",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Action:   &InstallAccount{},
-		Parallel: false,
-		Retry:    1,
+	getUserInfo := &task.LocalTask{
+		Name:   "GetUserInfo",
+		Action: new(GetUserInfo),
+	}
+
+	setAccountValues := &task.LocalTask{
+		Name:   "SetAccountValues",
+		Action: &SetAccountValues{},
+		Retry:  1,
+	}
+
+	installAccount := &task.LocalTask{
+		Name:   "InstallAccount",
+		Action: &InstallAccount{},
+		Retry:  1,
 	}
 
 	m.Tasks = []task.Interface{
+		getUserInfo,
+		setAccountValues,
 		installAccount,
 	}
 }

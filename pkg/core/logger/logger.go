@@ -13,18 +13,6 @@ import (
 
 var logger *zap.SugaredLogger
 
-type LevelLog = zapcore.Level
-
-const (
-	LevelDebug  = zapcore.DebugLevel
-	LevelInfo   = zapcore.InfoLevel
-	LevelWarn   = zapcore.WarnLevel
-	LevelError  = zapcore.ErrorLevel
-	LevelFatal  = zapcore.FatalLevel
-	LevelDpanic = zapcore.DPanicLevel
-	LevelPanic  = zapcore.PanicLevel
-)
-
 func InitLog(logDir string) {
 	found, err := isDirExist(logDir)
 	if err != nil {
@@ -47,10 +35,10 @@ func InitLog(logDir string) {
 	}
 
 	consolePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl == zapcore.DebugLevel || lvl == zapcore.ErrorLevel
+		return lvl > zapcore.DebugLevel
 	})
 	filePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= zapcore.DebugLevel
+		return true
 	})
 
 	fileEncoder := zapcore.EncoderConfig{
@@ -68,10 +56,7 @@ func InitLog(logDir string) {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 	consoleEncoderConfig := zapcore.EncoderConfig{
-		TimeKey: "T",
-		// NameKey:        "N",
-		// CallerKey:      "C",
-		// FunctionKey:    zapcore.OmitKey,
+		TimeKey:        "T",
 		MessageKey:     "M",
 		StacktraceKey:  "S",
 		LineEnding:     zapcore.DefaultLineEnding,
@@ -150,6 +135,10 @@ func Infof(format string, args ...any) {
 
 func Infow(msg string, args ...any) {
 	logger.Infow(msg, args...)
+}
+
+func InfoInstallationProgress(format string, args ...any) {
+	logger.Infof("[INFO] "+format, args...)
 }
 
 func Warn(args ...any) {

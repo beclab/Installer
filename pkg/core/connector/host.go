@@ -41,7 +41,6 @@ type BaseHost struct {
 	Arch            string `yaml:"arch,omitempty" json:"arch,omitempty"`
 	Os              string `yaml:"os,omitempty" json:"os,omitempty"`
 	Timeout         int64  `yaml:"timeout,omitempty" json:"timeout,omitempty"`
-	Minikube        bool   `yaml:"minikube,omitempty" json:"minikube,omitempty"`
 	MiniKubeProfile string `json:"minikubeProfileName,omitempty" json:"minikubeProfileName,omitempty"`
 
 	Roles     []string        `json:"-"`
@@ -137,12 +136,6 @@ func (b *BaseHost) SetOs(osType string) {
 	b.Os = osType
 }
 
-func (b *BaseHost) SetMinikube(minikube bool) {
-	b.Minikube = minikube
-}
-func (b *BaseHost) GetMinikube() bool {
-	return b.Minikube
-}
 func (b *BaseHost) SetMinikubeProfile(profile string) {
 	b.MiniKubeProfile = profile
 }
@@ -186,35 +179,16 @@ func (b *BaseHost) SetCache(c *cache.Cache) {
 	b.Cache = c
 }
 
-func (b *BaseHost) Exec(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
-	stdout, code, err = util.Exec(cmd, printOutput, printLine)
-	// if err != nil {
-	// 	logger.Errorf("[exec] %s CMD: %s, ERROR: %s", b.GetName(), cmd, err)
-	// }
-
-	if printOutput {
-		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
-	}
-
-	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
-
-	return stdout, code, err
+func (b *BaseHost) Exec(ctx context.Context, cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
+	return util.Exec(ctx, cmd, printOutput, printLine)
 }
 
 func (b *BaseHost) ExecExt(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
-	stdout, code, err = util.Exec(cmd, printOutput, printLine)
-
-	if printOutput {
-		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
-	}
-
-	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
-
-	return stdout, code, err
+	return util.Exec(context.Background(), cmd, printOutput, printLine)
 }
 
 func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool) error {
-	output, _, err := b.Exec(SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), printOutput, printLine)
+	output, _, err := b.Exec(context.Background(), SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), printOutput, printLine)
 	if err != nil {
 		return fmt.Errorf("open remote file failed %v, remote path: %s", err, remote)
 	}
@@ -245,10 +219,12 @@ func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool)
 func (b *BaseHost) Scp(local, remote string) error {
 	var remoteDir = filepath.Dir(remote)
 	if !util.IsExist(remoteDir) {
-		util.Mkdir(remoteDir)
+		if err := util.Mkdir(remoteDir); err != nil {
+			return err
+		}
 	}
 	var cmd = fmt.Sprintf("cp %s %s", local, remote)
-	_, _, err := b.Exec(cmd, false, false)
+	_, _, err := b.Exec(context.Background(), cmd, false, false)
 	return err
 }
 
@@ -275,28 +251,46 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 		util.Mkdir(remoteDir)
 	}
 
-	if !b.GetMinikube() {
-		if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
-			return err
-		}
+	if b.GetOs() == common.Darwin {
+		return nil
+	}
 
-		if _, err := b.SudoCmd(fmt.Sprintf("rm -rf %s", filepath.Join(common.TmpDir, "*")), false, false); err != nil {
-			return err
-		}
+	if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
+		return err
+	}
+
+	if _, err := b.SudoCmd(fmt.Sprintf("rm -rf %s", filepath.Join(common.TmpDir, "*")), false, false); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (b *BaseHost) FileExist(remote string) bool {
-	return util.IsExist(remote)
+func (b *BaseHost) FileExist(f string) bool {
+	return util.IsExist(f)
 }
-func (b *BaseHost) DirExist(remote string) (bool, error) {
-	return util.IsExist(remote), nil
+func (b *BaseHost) DirExist(d string) bool {
+	return util.IsExist(d)
+}
+
+func (b *BaseHost) MkDir(path string) error {
+	if err := b.MkDirAll(path, ""); err != nil {
+		logger.Errorf("make dir %s failed: %v", path, err)
+		return err
+	}
+	return nil
 }
 
 func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, error) {
-	stdout, _, err := b.Exec(cmd, printOutput, printLine)
+	stdout, _, err := b.Exec(context.Background(), cmd, printOutput, printLine)
+	if err != nil {
+		return stdout, err
+	}
+	return stdout, nil
+}
+
+func (b *BaseHost) CmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
+	stdout, _, err := b.Exec(ctx, cmd, printOutput, printLine)
 	if err != nil {
 		return stdout, err
 	}
@@ -304,19 +298,17 @@ func (b *BaseHost) Cmd(cmd string, printOutput bool, printLine bool) (string, er
 }
 
 func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
-	stdout, _, err := util.Exec(cmd, printOutput, printLine)
-
-	if printOutput {
-		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
-	}
-
-	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
+	stdout, _, err := util.Exec(context.Background(), cmd, printOutput, printLine)
 
 	return stdout, err
 }
 
 func (b *BaseHost) SudoCmd(cmd string, printOutput bool, printLine bool) (string, error) {
 	return b.Cmd(SudoPrefix(cmd), printOutput, printLine)
+}
+
+func (b *BaseHost) SudoCmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
+	return b.CmdContext(ctx, SudoPrefix(cmd), printOutput, printLine)
 }
 
 func (b *BaseHost) CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
@@ -336,7 +328,7 @@ func (b *BaseHost) MkDirAll(path string, mode string) error {
 		mode = "775"
 	}
 	mkDstDir := fmt.Sprintf("mkdir -p -m %s %s || true", mode, path)
-	if _, _, err := b.Exec(mkDstDir, false, false); err != nil {
+	if _, _, err := b.Exec(context.Background(), SudoPrefix(mkDstDir), false, false); err != nil {
 		return err
 	}
 

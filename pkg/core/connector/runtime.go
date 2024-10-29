@@ -24,8 +24,8 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
@@ -47,11 +47,12 @@ type BaseRuntime struct {
 	roleHosts       map[string][]Host
 	deprecatedHosts map[string]string
 	cmdSed          string
-	minikube        bool
 	terminusVersion string
+	systemInfo      Systems
+	k8sClient       *kubernetes.Clientset
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, systemInfo Systems) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -61,7 +62,8 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		allHosts:        make([]Host, 0, 0),
 		roleHosts:       make(map[string][]Host),
 		deprecatedHosts: make(map[string]string),
-		cmdSed:          util.FormatSed(constants.OsType == common.Darwin),
+		cmdSed:          util.FormatSed(systemInfo.IsDarwin()),
+		systemInfo:      systemInfo,
 		terminusVersion: terminusVersion,
 	}
 
@@ -81,12 +83,8 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 	return base
 }
 
-func (b *BaseRuntime) SetMinikube(minikube bool) {
-	b.minikube = minikube
-}
-
-func (b *BaseRuntime) GetMinikube() bool {
-	return b.minikube
+func (b *BaseRuntime) GetSystemInfo() Systems {
+	return b.systemInfo
 }
 
 func (b *BaseRuntime) GetObjName() string {
@@ -232,15 +230,6 @@ func (b *BaseRuntime) HostIsDeprecated(host Host) bool {
 }
 
 func (b *BaseRuntime) InitLogger() error {
-	// if b.GetWorkDir() == "" {
-	// 	if err := b.GenerateWorkDir(); err != nil {
-	// 		return err
-	// 	}
-	// }
-	// logDir := filepath.Join(b.GetWorkDir(), "logs")
-	// logger.InitLog(logDir, b.verbose)
-	// return nil
-
 	logger.InitLog(path.Join(b.baseDir, "logs"))
 	return nil
 }

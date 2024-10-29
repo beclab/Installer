@@ -30,7 +30,6 @@ import (
 	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -108,7 +107,7 @@ func (c *CommandLineLoader) validate() error {
 }
 
 func (c *CommandLineLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, err := currentUser()
+	u, err := currentUser(c.arg.SystemInfo.GetOsType())
 	if err != nil {
 		return nil, err
 	}
@@ -122,12 +121,12 @@ func (c *CommandLineLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 	// current node
 	cluster.Spec.Hosts = append(cluster.Spec.Hosts, kubekeyapiv1alpha2.HostCfg{
 		Name:            c.hostname,
-		Address:         constants.LocalIp,
-		InternalAddress: constants.LocalIp,
+		Address:         "",
+		InternalAddress: "",
 		Port:            c.arg.LocalSSHPort,
 		User:            u.Name,
 		PrivateKeyPath:  fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir),
-		Arch:            constants.OsArch,
+		Arch:            "",
 	})
 
 	cluster.Spec.RoleGroups = map[string][]string{
@@ -141,7 +140,7 @@ func (c *CommandLineLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 		InternalAddress: c.arg.MasterHost,
 		Port:            c.arg.MasterSSHPort,
 		User:            c.arg.MasterSSHUser,
-		Arch:            constants.OsArch,
+		Arch:            "",
 	}
 	if c.arg.MasterSSHPassword != "" {
 		masterHostCfg.Password = c.arg.MasterSSHPassword
@@ -180,7 +179,7 @@ func NewDefaultLoader(arg Argument) *DefaultLoader {
 }
 
 func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, err := currentUser()
+	u, err := currentUser(d.arg.SystemInfo.GetOsType())
 	if err != nil {
 		return nil, err
 	}
@@ -200,13 +199,13 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 
 	allInOne.Spec.Hosts = append(allInOne.Spec.Hosts, kubekeyapiv1alpha2.HostCfg{
 		Name:            hostname,
-		Address:         constants.LocalIp,
-		InternalAddress: constants.LocalIp,
+		Address:         d.arg.SystemInfo.GetLocalIp(),
+		InternalAddress: d.arg.SystemInfo.GetLocalIp(),
 		Port:            kubekeyapiv1alpha2.DefaultSSHPort,
 		User:            u.Name,
 		Password:        "",
 		PrivateKeyPath:  fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir),
-		Arch:            constants.OsArch,
+		Arch:            d.arg.SystemInfo.GetOsArch(),
 	})
 
 	allInOne.Spec.RoleGroups = map[string][]string{
@@ -445,18 +444,17 @@ func loadExtraAddons(cluster *kubekeyapiv1alpha2.Cluster, addonFile string) erro
 	return nil
 }
 
-func currentUser() (*user.User, error) {
+func currentUser(osType string) (*user.User, error) {
 	u, err := user.Current()
 	if err != nil {
 		return nil, err
 	}
 
-	if constants.OsType != Darwin {
+	if osType != Darwin {
 		if u.Username != "root" {
 			return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
 		}
 	}
-	constants.CurrentUser = u.Name
 	return u, nil
 }
 

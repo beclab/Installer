@@ -25,10 +25,7 @@ type FileExist struct {
 }
 
 func (f *FileExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	exist, err := runtime.GetRunner().FileExist(f.FilePath)
-	if err != nil {
-		return false, err
-	}
+	exist := runtime.GetRunner().Host.FileExist(f.FilePath)
 	if f.Not {
 		return !exist, nil
 	}

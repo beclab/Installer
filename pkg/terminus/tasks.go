@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -30,7 +29,7 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get terminus -o jsonpath='{.items[*].spec.version}'", kubectlpath))
@@ -46,33 +45,39 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 	}
 }
 
-type SetUserInfo struct {
+type CheckPodsRunning struct {
 	common.KubeAction
+	labels map[string][]string
 }
 
-func (t *SetUserInfo) Execute(runtime connector.Runtime) error {
-	var userName = t.KubeConf.Arg.User.UserName
-	var email = t.KubeConf.Arg.User.Email
-	var password = t.KubeConf.Arg.User.Password
-	var domainName = t.KubeConf.Arg.User.DomainName
-
-	if userName == "" {
-		return fmt.Errorf("user info invalid")
+func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
+	if c.labels == nil {
+		return nil
 	}
 
-	if domainName == "" {
-		domainName = cc.DefaultDomainName
+	kubectl, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubectl not found")
 	}
 
-	if email == "" {
-		email = fmt.Sprintf("%s@%s", userName, domainName)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	for ns, labels := range c.labels {
+		for _, label := range labels {
+			var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[*].status.phase}'", kubectl, ns, label)
+			phase, err := runtime.GetRunner().Host.SudoCmdContext(ctx, cmd, false, false)
+			if err != nil {
+				return fmt.Errorf("pod status invalid, namespace: %s, label: %s, waiting ...", ns, label)
+			}
+
+			if phase != "Running" {
+				logger.Infof("pod in namespace: %s, label: %s, current phase: %s, waiting ...", ns, label, phase)
+				return fmt.Errorf("pod is %s, namespace: %s, label: %s, waiting ...", phase, ns, label)
+			}
+		}
 	}
 
-	if password == "" {
-		password, _ = utils.GeneratePassword(8)
-	}
-
-	return fmt.Errorf("Not Implemented")
+	return nil
 }
 
 type Download struct {
@@ -92,9 +97,13 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		return errors.New("get md5sum failed")
 	}
 
+	var osArch = runtime.GetSystemInfo().GetOsArch()
+	var osType = runtime.GetSystemInfo().GetOsType()
+	var osVersion = runtime.GetSystemInfo().GetOsVersion()
+	var osPlatformFamily = runtime.GetSystemInfo().GetOsPlatformFamily()
 	var baseDir = runtime.GetBaseDir()
 	var prePath = path.Join(baseDir, "versions")
-	var wizard = files.NewKubeBinary("install-wizard", constants.OsArch, t.Version, prePath)
+	var wizard = files.NewKubeBinary("install-wizard", osArch, osType, osVersion, osPlatformFamily, t.Version, prePath)
 	wizard.CheckMd5Sum = true
 	wizard.Md5sum = md5sum
 
@@ -145,15 +154,15 @@ func (t *DownloadFullInstaller) Execute(runtime connector.Runtime) error {
 
 type PrepareFinished struct {
 	common.KubeAction
-	BaseDir string
 }
 
 func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
-	var finPath = filepath.Join(t.BaseDir, ".prepared")
-	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", finPath), false, true); err != nil {
-		return err
-	}
-	return nil
+	var preparedFile = filepath.Join(runtime.GetBaseDir(), ".prepared")
+	return util.WriteFile(preparedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
+	// if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", preparedFile), false, true); err != nil {
+	// 	return err
+	// }
+	// return nil
 }
 
 type CheckPepared struct {
@@ -196,7 +205,7 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", filePath))
 	}
 
-	if err := runtime.GetRunner().SudoScp(filePath, uninstallPath); err != nil {
+	if err := runtime.GetRunner().Host.SudoScp(filePath, uninstallPath); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", filePath, uninstallPath))
 	}
 
@@ -207,12 +216,11 @@ func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) err
 	return nil
 }
 
-type GenerateInstalledPhaseState struct {
+type InstallFinished struct {
 	common.KubeAction
-	Phase string
 }
 
-func (t *GenerateInstalledPhaseState) Execute(runtime connector.Runtime) error {
+func (t *InstallFinished) Execute(runtime connector.Runtime) error {
 	var content = fmt.Sprintf("%s %s", t.KubeConf.Arg.TerminusVersion, t.KubeConf.Arg.Kubetype)
 	var phaseState = path.Join(runtime.GetBaseDir(), ".installed")
 	if err := util.WriteFile(phaseState, []byte(content), cc.FileMode0644); err != nil {

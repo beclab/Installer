@@ -45,14 +45,14 @@ func (b *BaseTaskModule) Run(result *ending.ModuleResult) {
 		t := b.Tasks[i]
 		t.Init(b.Runtime.(connector.Runtime), b.ModuleCache, b.PipelineCache)
 
-		// logger.Infof("[%s] %s", b.Name, t.GetDesc())
+		// logger.Infof("[A] %s: %s", b.Name, t.GetDesc())
 		res := t.Execute()
 		for j := range res.ActionResults {
 			ac := res.ActionResults[j]
 			// logger.Infof("[Module] %s: %s %s", ac.Host.GetName(), b.Name, ac.Status.String())
 			elapsed := ac.EndTime.Sub(ac.StartTime)
 			// logger.Infof("[Module] %s: %s %s", ac.Host.GetName(), b.Name, ac.Status.String())
-			logger.Debugf("[A] %s: %s %s (%s)", ac.Host.GetName(), t.GetName(), ac.Status.String(), util.ShortDur(elapsed))
+			logger.Infof("[A] %s: %s %s (%s)", ac.Host.GetName(), t.GetName(), ac.Status.String(), util.ShortDur(elapsed))
 
 			result.AppendHostResult(ac)
 

@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -24,12 +23,10 @@ type CheckMinioState struct {
 
 func (t *CheckMinioState) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl --no-pager -n 0 status minio" //
-	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("Minio Pending")
 	}
-
-	logger.Debug(stdout)
 
 	return nil
 }
@@ -62,6 +59,8 @@ type ConfigMinio struct {
 
 func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 	// write file
+	var systemInfo = runtime.GetSystemInfo()
+	var localIp = systemInfo.GetLocalIp()
 	var minioPassword, _ = utils.GeneratePassword(16)
 	var data = util.Data{
 		"MinioCommand": MinioFile,
@@ -76,7 +75,7 @@ func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 
 	data = util.Data{
 		"MinioDataPath": MinioDataDir,
-		"LocalIP":       constants.LocalIp,
+		"LocalIP":       localIp,
 		"User":          MinioRootUser,
 		"Password":      minioPassword,
 	}

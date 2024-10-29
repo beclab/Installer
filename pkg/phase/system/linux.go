@@ -27,7 +27,6 @@ type linuxPhaseBuilder struct {
 
 func (l *linuxPhaseBuilder) base() phase {
 	m := []module.Module{
-		&precheck.GetSysInfoModel{},
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
@@ -136,6 +135,5 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				},
 			}
 		}).inBox(l.runtime)...).
-		addModule(&terminus.PreparedModule{BaseDir: l.runtime.GetBaseDir()})
-	// addModule(&terminus.PreparedModule{BaseDir: l.runtime.Arg.BaseDir})
+		addModule(&terminus.PreparedModule{})
 }

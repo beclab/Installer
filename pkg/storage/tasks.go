@@ -10,73 +10,14 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
 	"bytetrade.io/web3os/installer/pkg/utils"
-	"bytetrade.io/web3os/installer/version"
 	"github.com/pkg/errors"
 )
-
-type DownloadStorageBinaries struct {
-	common.KubeAction
-}
-
-func (t *DownloadStorageBinaries) Execute(runtime connector.Runtime) error {
-	var arch = constants.OsArch
-
-	// var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
-	var prePath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir)
-	terminus := files.NewKubeBinary("terminus-cli", arch, version.VERSION, path.Join(prePath, cc.WizardDir))
-	minio := files.NewKubeBinary("minio", arch, kubekeyapiv1alpha2.DefaultMinioVersion, prePath)
-	miniooperator := files.NewKubeBinary("minio-operator", arch, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, prePath)
-	redis := files.NewKubeBinary("redis", arch, kubekeyapiv1alpha2.DefaultRedisVersion, prePath)
-	juicefs := files.NewKubeBinary("juicefs", arch, kubekeyapiv1alpha2.DefaultJuiceFsVersion, prePath)
-	velero := files.NewKubeBinary("velero", arch, kubekeyapiv1alpha2.DefaultVeleroVersion, prePath)
-
-	// gpu
-	keyring := files.NewKubeBinary("cuda-keyring", arch, "1.0", prePath)
-	gpgkey := files.NewKubeBinary("gpgkey", arch, "", prePath)
-	libnvidia := files.NewKubeBinary("libnvidia-container", arch, "", prePath)
-
-	binaries := []*files.KubeBinary{terminus, minio, miniooperator, redis, juicefs, velero, keyring, gpgkey}
-	if constants.OsPlatform == common.Ubuntu && !strings.Contains(constants.OsVersion, "24.") {
-		binaries = append(binaries, libnvidia)
-	}
-	// libnvidia
-	for _, binary := range binaries {
-		if err := binary.CreateBaseDir(); err != nil {
-			return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)
-		}
-
-		logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
-
-		var exists = util.IsExist(binary.Path())
-		if exists {
-			p := binary.Path()
-			if err := binary.SHA256Check(); err != nil {
-				_ = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -f %s", p)).Run()
-			} else {
-				logger.Debugf("%s exists", binary.FileName)
-			}
-			continue
-		}
-
-		if !exists || binary.OverWrite {
-			logger.Infof("%s downloading %s %s %s ...", common.LocalHost, arch, binary.ID, binary.Version)
-			if err := binary.Download(); err != nil {
-				return fmt.Errorf("Failed to download %s binary: %s error: %w ", binary.ID, binary.Url, err)
-			}
-		}
-
-		t.PipelineCache.Set(common.KubeBinaries+"-"+arch+"-"+binary.ID, binary)
-	}
-
-	return nil
-}
 
 type MkStorageDir struct {
 	common.KubeAction
@@ -105,20 +46,24 @@ type DownloadStorageCli struct {
 
 func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	if _, err := util.GetCommand(common.CommandUnzip); err != nil {
-		runtime.GetRunner().SudoCmdExt("apt install -y unzip", false, true)
+		runtime.GetRunner().Host.SudoCmd("apt install -y unzip", false, true)
 	}
 
 	var storageType = t.KubeConf.Arg.Storage.StorageType
-	var arch = fmt.Sprintf("%s-%s", constants.OsType, constants.OsArch)
+	var osType = runtime.GetSystemInfo().GetOsType()
+	var osArch = runtime.GetSystemInfo().GetOsArch()
+	var osVersion = runtime.GetSystemInfo().GetOsVersion()
+	var osPlatformFamily = runtime.GetSystemInfo().GetOsPlatformFamily()
+	var arch = fmt.Sprintf("%s-%s", osType, osArch)
 
 	// var prePath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir)
 	var prePath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir)
 	var binary *files.KubeBinary
 	switch storageType {
 	case "s3":
-		binary = files.NewKubeBinary("awscli", arch, "", prePath)
+		binary = files.NewKubeBinary("awscli", arch, osType, osVersion, osPlatformFamily, "", prePath)
 	case "oss":
-		binary = files.NewKubeBinary("ossutil", arch, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
+		binary = files.NewKubeBinary("ossutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
 	default:
 		return nil
 	}
@@ -187,7 +132,7 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 		storageAccessKey, storageSecretKey, storageToken, endpoint, storageClusterId,
 	)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("failed to unmount s3 bucket %s: %v", storageBucket, err)
 	}
 
@@ -229,7 +174,7 @@ func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
 
 	var cmd = fmt.Sprintf("/usr/local/sbin/ossutil64 rm %s/%s/ --endpoint=%s --access-key-id=%s --access-key-secret=%s --sts-token=%s -r -f", ossName, storageClusterId, ossEndpoint, storageAccessKey, storageSecretKey, storageToken)
 
-	if _, err := runtime.GetRunner().SudoCmdExt(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount oss bucket %s: %v", storageBucket, err)
 	}
 
@@ -241,13 +186,13 @@ type StopJuiceFS struct {
 }
 
 func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop juicefs; systemctl disable juicefs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop juicefs; systemctl disable juicefs", false, false)
 
-	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /var/jfsCache /terminus/jfscache", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("rm -rf /var/jfsCache /terminus/jfscache", false, false)
 
-	_, _ = runtime.GetRunner().SudoCmdExt("umount /terminus/rootfs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("umount /terminus/rootfs", false, false)
 
-	_, _ = runtime.GetRunner().SudoCmdExt("rm -rf /terminus/rootfs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("rm -rf /terminus/rootfs", false, false)
 
 	return nil
 }
@@ -257,7 +202,7 @@ type StopMinio struct {
 }
 
 func (t *StopMinio) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().SudoCmdExt("systemctl stop minio; systemctl disable minio", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop minio; systemctl disable minio", false, false)
 	return nil
 }
 
@@ -267,7 +212,7 @@ type StopMinioOperator struct {
 
 func (t *StopMinioOperator) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop minio-operator; systemctl disable minio-operator"
-	_, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 	return nil
 }
 
@@ -277,9 +222,9 @@ type StopRedis struct {
 
 func (t *StopRedis) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop redis-server; systemctl disable redis-server"
-	_, _ = runtime.GetRunner().SudoCmdExt(cmd, false, false)
-	_, _ = runtime.GetRunner().SudoCmdExt("killall -9 redis-server", false, false)
-	_, _ = runtime.GetRunner().SudoCmdExt("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("killall -9 redis-server", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
 
 	return nil
 }
@@ -304,7 +249,7 @@ func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, f := range files {
-		runtime.GetRunner().SudoCmdExt(fmt.Sprintf("rm -rf %s", f), false, true)
+		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
 	}
 
 	return nil
@@ -444,7 +389,7 @@ func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
 	}
 
 	if util.IsExist("/osdata") {
-		runtime.GetRunner().SudoCmdExt("umount /osdata", false, true)
+		runtime.GetRunner().Host.SudoCmd("umount /osdata", false, true)
 		if err := util.RemoveDir("/osdata"); err != nil {
 			logger.Errorf("remove %s failed %v", "/osdata", err)
 		}

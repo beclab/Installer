@@ -48,7 +48,7 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 1*time.Minute)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var values = make(map[string]interface{})
@@ -79,6 +79,7 @@ func (d *DeploySnapshotControllerModule) Init() {
 			new(NotEqualDesiredVersion),
 		},
 		Action:   new(DeploySnapshotController),
+		Retry:    2,
 		Parallel: false,
 	}
 

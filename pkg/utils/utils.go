@@ -29,6 +29,7 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -44,7 +45,7 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 type Data map[string]interface{}
 
 func ResetTmpDir(runtime connector.Runtime) error {
-	_, err := runtime.GetRunner().SudoCmd(fmt.Sprintf(
+	_, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf(
 		"if [ -d %s ]; then rm -rf %s ;fi && mkdir -m 777 -p %s",
 		common.TmpDir, common.TmpDir, common.TmpDir), false, false)
 	if err != nil {
@@ -187,6 +188,11 @@ func FormatBytes(bytes int64) string {
 	return result
 }
 
+func ParseInt(s string) int {
+	res, _ := strconv.ParseInt(s, 10, 64)
+	return int(res)
+}
+
 func GenerateNumberWithProbability(p float64) int {
 	rand.Seed(time.Now().UnixNano())
 	randomFloat := rand.Float64()
@@ -223,19 +229,9 @@ func ArchAlias(arch string) string {
 	case "ppc64le":
 		fallthrough
 	case "s390x":
-		fallthrough
-	default:
 		return "amd64"
-	}
-}
-
-func UbuntuVersionAlias(version string) string {
-	if strings.Contains(version, "24.") {
-		return "noble"
-	} else if strings.Contains(version, "22.") {
-		return "jammy"
-	} else {
-		return "focal"
+	default:
+		return ""
 	}
 }
 
@@ -275,4 +271,30 @@ func KubeVersionAlias(version string) (string, string) {
 	}
 
 	return kubeVersion, kubeType
+}
+
+func IsValidDomain(domain string) bool {
+	var domainRegex = `^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(domainRegex)
+	return re.MatchString(domain)
+}
+
+func ValidateUserName(username string) error {
+	if len(username) > 250 || len(username) < 2 {
+		return errors.New("username length must be between 2 and 250 characters")
+	}
+	var usernameRegex = `^[a-z0-9]([a-z0-9]*[a-z0-9])?([a-z0-9]([a-z0-9]*[a-z0-9])?)*`
+	re := regexp.MustCompile(usernameRegex)
+	if !re.MatchString(username) {
+		return errors.New("username must contain only alphanumeric characters")
+	}
+	reservedNames := []string{
+		"user", "system", "space", "default", "os", "kubesphere", "kube", "kubekey", "kubernetes", "gpu", "tapr", "bfl", "bytetrade", "project", "pod",
+	}
+	for _, reservedName := range reservedNames {
+		if strings.EqualFold(reservedName, username) {
+			return fmt.Errorf("\"%s\" is a system reserved keyword and cannot be set as a username", reservedName)
+		}
+	}
+	return nil
 }

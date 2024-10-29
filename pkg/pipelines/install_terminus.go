@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
@@ -15,47 +16,35 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-	// if !opts.MiniKube {
-	// 	if kubeVersion := phase.GetCurrentKubeVersion(); kubeVersion != "" {
-	// 		return fmt.Errorf("Kubernetes %s is already installed. You need to uninstall it before reinstalling.", kubeVersion)
-	// 	}
-	// } else {
-	// 	if err := checkMacOSParams(opts.MiniKube, opts.MiniKubeProfile); err != nil {
-	// 		return err
-	// 	}
-	// }
-
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
 		fmt.Printf("Terminus is already installed, please uninstall it first.")
 		return nil
 	}
-
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
 	arg.SetTerminusVersion(opts.Version)
-	arg.SetMinikube(opts.MiniKube, opts.MiniKubeProfile)
+	arg.SetMinikubeProfile(opts.MiniKubeProfile)
+	arg.SetStorage(getStorageValueFromEnv())
+	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
-
-	if err := arg.ArgValidate(); err != nil { // todo validate gpu for platform and os version
-		return err
-	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
+		fmt.Printf("Error creating installation runtime: %v\n", err)
 		return nil
 	}
 
 	manifest := opts.Manifest
-	home := runtime.GetHomeDir()
 	if manifest == "" {
-		manifest = home + "/.terminus/installation.manifest"
+		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
 	}
 
 	runtime.Arg.SetManifest(manifest)
 
-	var p = cluster.CreateTerminus(*arg, runtime)
+	var p = cluster.CreateTerminus(runtime)
+	logger.InfoInstallationProgress("Start to Install Terminus ...")
 	if err := p.Start(); err != nil {
 		return fmt.Errorf("create terminus error %v", err)
 	}

@@ -73,10 +73,9 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 
 		p.modules = []module.Module{
 			&precheck.GreetingsModule{},
-			&precheck.GetSysInfoModel{},
 		}
 
-		if p.runtime.Arg.WSL {
+		if p.runtime.Arg.SystemInfo.IsWsl() {
 			p.modules = append(p.modules, &precheck.RemoveChattrModule{})
 		}
 
@@ -150,7 +149,6 @@ func (p *phaseBuilder) phaseDownload() *phaseBuilder {
 func (p *phaseBuilder) phaseMacos() {
 	p.modules = []module.Module{
 		&precheck.GreetingsModule{},
-		&precheck.GetSysInfoModel{},
 	}
 	if p.convert() >= PhasePrepare {
 		p.modules = append(p.modules, &kubesphere.DeleteMinikubeModule{}, &certs.UninstallCertsFilesModule{})
@@ -169,7 +167,7 @@ func UninstallTerminus(phase string, args *common.Argument, runtime *common.Kube
 		runtime: runtime,
 	}
 
-	if args.Minikube {
+	if args.SystemInfo.IsDarwin() {
 		builder.phaseMacos()
 	} else {
 		builder.

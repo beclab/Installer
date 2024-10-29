@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/constants"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -37,19 +36,35 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
+type PreCheckSupport struct {
+	common.KubeAction
+}
+
+func (t *PreCheckSupport) Execute(runtime connector.Runtime) error {
+	si := runtime.GetSystemInfo()
+	if err := si.IsSupport(); err != nil {
+		return err
+	}
+	if err := si.IsLocalIpValid(); err != nil {
+		return err
+	}
+	return nil
+}
+
 type CorrectHostname struct {
 	common.KubeAction
 }
 
 func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
-	if !utils.ContainsUppercase(constants.HostName) {
+	hostName := runtime.GetSystemInfo().GetHostname()
+	if !utils.ContainsUppercase(hostName) {
 		return nil
 	}
-	hostname := strings.ToLower(constants.HostName)
+	hostname := strings.ToLower(hostName)
 	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
 		return err
 	}
-	constants.HostName = hostname
+	runtime.GetSystemInfo().SetHostname(hostname)
 	return nil
 }
 
@@ -59,7 +74,8 @@ type RaspbianCheckTask struct {
 
 func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 	// if util.IsExist(common.RaspbianCmdlineFile) || util.IsExist(common.RaspbianFirmwareFile) {
-	if constants.OsPlatform == common.Raspbian {
+	systemInfo := runtime.GetSystemInfo()
+	if systemInfo.IsRaspbian() {
 		if _, err := util.GetCommand(common.CommandIptables); err != nil {
 			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
 			if err != nil {
@@ -79,7 +95,7 @@ func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 
-			if constants.CgroupCpuEnabled == 0 || constants.CgroupMemoryEnabled == 0 {
+			if !systemInfo.CgroupCpuEnabled() || !systemInfo.CgroupMemoryEnabled() {
 				return fmt.Errorf("cpu or memory cgroups disabled, please edit /boot/cmdline.txt or /boot/firmware/cmdline.txt and reboot to enable it")
 			}
 		}
@@ -92,8 +108,8 @@ type DisableLocalDNSTask struct {
 }
 
 func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
-	switch constants.OsPlatform {
-	case common.Ubuntu, common.Debian, common.Raspbian:
+	switch runtime.GetSystemInfo().GetOsPlatformFamily() {
+	case common.Ubuntu, common.Debian:
 		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
 		if stdout != "active" {
 			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
@@ -126,9 +142,12 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	sysInfo := runtime.GetSystemInfo()
+	localIp := sysInfo.GetLocalIp()
+	hostname := sysInfo.GetHostname()
 	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", constants.LocalIp, constants.HostName), false, true); err != nil {
-			return err
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
+			return errors.Wrap(err, "failed to set hostname mapping")
 		}
 	}
 
@@ -146,6 +165,12 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	if runtime.GetSystemInfo().IsWsl() {
+		if _, err := runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, true); err != nil {
+			return errors.Wrap(err, "failed to change attributes of /etc/hosts and /etc/resolv.conf")
+		}
+	}
+
 	return nil
 }
 
@@ -153,7 +178,7 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 	var err error
 	var cmd string
 
-	if constants.CloudVendor == common.AliYun {
+	if common.CloudVendor == common.CloudVendorAliYun {
 		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
 		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("exec %s error %v", cmd, err)
@@ -172,26 +197,6 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
-	return nil
-}
-
-type GetSysInfoTask struct {
-	action.BaseAction
-}
-
-func (t *GetSysInfoTask) Execute(runtime connector.Runtime) error {
-	logger.Infof("os info, all: %s", constants.OsInfo)
-	logger.Infof("host info, user: %s, hostname: %s, hostid: %s, os: %s, platform: %s, version: %s, arch: %s",
-		constants.CurrentUser, constants.HostName, constants.HostId, constants.OsType, constants.OsPlatform, constants.OsVersion, constants.OsArch)
-	logger.Infof("kernel info, version: %s", constants.OsKernel)
-	logger.Infof("virtual info, role: %s, system: %s", constants.VirtualizationRole, constants.VirtualizationSystem)
-	logger.Infof("cpu info, model: %s, logical count: %d, physical count: %d",
-		constants.CpuModel, constants.CpuLogicalCount, constants.CpuPhysicalCount)
-	logger.Infof("disk info, total: %s, free: %s", utils.FormatBytes(int64(constants.DiskTotal)), utils.FormatBytes(int64(constants.DiskFree)))
-	logger.Infof("fs info, fs: %s, zfsmount: %s", constants.FsType, constants.DefaultZfsPrefixName)
-	logger.Infof("mem info, total: %s, free: %s", utils.FormatBytes(int64(constants.MemTotal)), utils.FormatBytes(int64(constants.MemFree)))
-	logger.Infof("cgroup info, cpu: %d, mem: %d", constants.CgroupCpuEnabled, constants.CgroupMemoryEnabled)
-
 	return nil
 }
 
@@ -281,50 +286,44 @@ type GetKubeConfig struct {
 }
 
 func (g *GetKubeConfig) Execute(runtime connector.Runtime) error {
-	if exist, err := runtime.GetRunner().FileExist("$HOME/.kube/config"); err != nil {
-		return err
-	} else {
-		if exist {
-			return nil
-		} else {
-			if exist, err := runtime.GetRunner().FileExist("/etc/kubernetes/admin.conf"); err != nil {
-				return err
-			} else {
-				if exist {
-					if _, err := runtime.GetRunner().Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
-						return err
-					}
-					if _, err := runtime.GetRunner().SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
-						return err
-					}
-					// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
-					// if err != nil {
-					// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
-					// }
+	var kubeConfigPath = "$HOME/.kube/config"
+	if util.IsExist(kubeConfigPath) {
+		return nil
+	}
 
-					// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
-					// if err != nil {
-					// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
-					// }
+	if util.IsExist("/etc/kubernetes/admin.conf") {
+		if _, err := runtime.GetRunner().Host.Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
+			return err
+		}
+		if _, err := runtime.GetRunner().Host.SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
+			return err
+		}
+		// userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
+		// }
 
-					userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
-					if err != nil {
-						return errors.Wrap(errors.WithStack(err), "get user id failed")
-					}
+		// userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
+		// if err != nil {
+		// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
+		// }
 
-					userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
-					if err != nil {
-						return errors.Wrap(errors.WithStack(err), "get user group id failed")
-					}
+		userId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_UID", false, false)
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), "get user id failed")
+		}
 
-					chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
-					if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
-						return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
-					}
-				}
-			}
+		userGroupId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_GID", false, false)
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), "get user group id failed")
+		}
+
+		chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
+		if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
+			return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
 		}
 	}
+
 	return errors.New("kube config not found")
 }
 
@@ -334,7 +333,7 @@ type GetAllNodesK8sVersion struct {
 
 func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 	var nodeK8sVersion string
-	kubeletVersionInfo, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubelet --version", false, false)
+	kubeletVersionInfo, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubelet --version", false, false)
 	if err != nil {
 		return errors.Wrap(err, "get current kubelet version failed")
 	}
@@ -342,7 +341,7 @@ func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 
 	host := runtime.RemoteHost()
 	if host.IsRole(common.Master) {
-		apiserverVersion, err := runtime.GetRunner().SudoCmd(
+		apiserverVersion, err := runtime.GetRunner().Host.SudoCmd(
 			"cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'image:' | rev | cut -d ':' -f1 | rev",
 			false, false)
 		if err != nil {
@@ -400,7 +399,7 @@ type KsVersionCheck struct {
 }
 
 func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
-	ksVersionStr, err := runtime.GetRunner().SudoCmd(
+	ksVersionStr, err := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get deploy -n  kubesphere-system ks-console -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if err != nil {
@@ -411,7 +410,7 @@ func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	ccKsVersionStr, ccErr := runtime.GetRunner().SudoCmd(
+	ccKsVersionStr, ccErr := runtime.GetRunner().Host.SudoCmd(
 		"/usr/local/bin/kubectl get ClusterConfiguration ks-installer -n  kubesphere-system  -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if ccErr == nil && ksVersionStr == "v3.1.0" {
@@ -477,13 +476,13 @@ type GetKubernetesNodesStatus struct {
 }
 
 func (g *GetKubernetesNodesStatus) Execute(runtime connector.Runtime) error {
-	nodeStatus, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
+	nodeStatus, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
 	if err != nil {
 		return err
 	}
 	g.PipelineCache.Set(common.ClusterNodeStatus, nodeStatus)
 
-	cri, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
+	cri, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
 	if err != nil {
 		return err
 	}
@@ -501,11 +500,11 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 	var storageAccessKey, storageSecretKey, storageToken, storageClusterId string
-	var ctx, cancel = context.WithTimeout(context.Background(), 6*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", kubectl), false, false); err != nil {
-		storageAccessKey = os.Getenv(common.EnvStorageAccessKeyName)
+		storageAccessKey = os.Getenv(common.ENV_AWS_ACCESS_KEY_ID_SETUP)
 		if storageAccessKey == "" {
 			logger.Errorf("storage access key not found")
 		}
@@ -514,7 +513,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sk}'", kubectl), false, false); err != nil {
-		storageSecretKey = os.Getenv(common.EnvStorageSecretKeyName)
+		storageSecretKey = os.Getenv(common.ENV_AWS_SECRET_ACCESS_KEY_SETUP)
 		if storageSecretKey == "" {
 			logger.Errorf("storage secret key not found")
 		}
@@ -523,7 +522,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sts}'", kubectl), false, false); err != nil {
-		storageToken = os.Getenv(common.EnvStorageTokenName)
+		storageToken = os.Getenv(common.ENV_AWS_SESSION_TOKEN_SETUP)
 		if storageToken == "" {
 			logger.Errorf("storage token not found")
 		}
@@ -532,7 +531,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.labels.bytetrade\\.io/cluster-id}'", kubectl), false, false); err != nil {
-		storageClusterId = os.Getenv(common.EnvStorageClusterIdName)
+		storageClusterId = os.Getenv(common.ENV_CLUSTER_ID)
 		if storageClusterId == "" {
 			logger.Errorf("storage cluster id not found")
 		}
@@ -557,7 +556,7 @@ type RemoveChattr struct {
 }
 
 func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
-	runtime.GetRunner().SudoCmd("chattr -i /etc/hosts", false, true)
-	runtime.GetRunner().SudoCmd("chattr -i /etc/resolv.conf", false, true)
+	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/hosts", false, true)
+	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/resolv.conf", false, true)
 	return nil
 }

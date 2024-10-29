@@ -71,28 +71,6 @@ type GetKubeVersionModule struct {
 	module.BaseTaskModule
 }
 
-type GetSysInfoModel struct {
-	module.BaseTaskModule
-}
-
-func (m *GetSysInfoModel) Init() {
-	m.Name = "GetInfo"
-
-	getSysInfoTask := &task.LocalTask{
-		Name:   "GetSysInfo",
-		Action: new(GetSysInfoTask),
-	}
-
-	m.Tasks = []task.Interface{
-		getSysInfoTask,
-	}
-
-	m.PostHook = []module.PostHookInterface{
-		&PrintMachineInfoHook{},
-	}
-
-}
-
 type PreCheckOsModule struct {
 	common.KubeModule
 	manifest.ManifestModule
@@ -100,6 +78,11 @@ type PreCheckOsModule struct {
 
 func (m *PreCheckOsModule) Init() {
 	m.Name = "PreCheckOs"
+
+	preCheckSupport := &task.LocalTask{
+		Name:   "PreCheckSupport",
+		Action: new(PreCheckSupport),
+	}
 
 	patchAppArmor := &task.RemoteTask{
 		Name:  "PatchAppArmor",
@@ -141,6 +124,7 @@ func (m *PreCheckOsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		preCheckSupport,
 		patchAppArmor,
 		raspbianCheck,
 		correctHostname,
@@ -162,11 +146,8 @@ func (h *GreetingsModule) Init() {
 	}
 
 	hello := &task.RemoteTask{
-		Name:  "Greetings",
-		Hosts: h.Runtime.GetAllHosts(),
-		Prepare: &prepare.PrepareCollection{
-			&KubeExist{},
-		},
+		Name:     "Greetings",
+		Hosts:    h.Runtime.GetAllHosts(),
 		Action:   new(GreetingsTask),
 		Parallel: false,
 		Timeout:  time.Duration(timeout) * time.Second,
