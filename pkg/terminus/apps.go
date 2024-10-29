@@ -1,6 +1,7 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
 	"os"
@@ -26,6 +27,7 @@ type InstallAppsModule struct {
 }
 
 func (i *InstallAppsModule) Init() {
+	logger.InfoInstallationProgress("Installing built-in apps ...")
 	i.Name = "Install Built-in apps"
 	i.Desc = "Install Built-in apps"
 

@@ -1,6 +1,7 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +40,7 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 	}
 
 	terminusdInstalled := "0"
-	if os.Getenv(common.ENV_TERMINUS_BOX) == "1" {
+	if !runtime.GetSystemInfo().IsDarwin() {
 		terminusdInstalled = "1"
 	}
 
@@ -126,6 +127,7 @@ type InstallSettingsModule struct {
 }
 
 func (m *InstallSettingsModule) Init() {
+	logger.InfoInstallationProgress("Installing settings ...")
 	m.Name = "InstallSettings"
 
 	setSettingsValues := &task.LocalTask{

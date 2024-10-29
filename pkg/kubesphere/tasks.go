@@ -356,6 +356,7 @@ func (t *GetKubeCommand) Execute(runtime connector.Runtime) error {
 	}
 
 	t.PipelineCache.Set(common.CacheCommandKubectlPath, kubectlpath)
+	logger.InfoInstallationProgress("k8s and kubesphere installation is complete")
 	return nil
 }
 

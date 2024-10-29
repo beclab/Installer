@@ -1,8 +1,6 @@
 package system
 
 import (
-	"os"
-
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/module"
@@ -54,9 +52,8 @@ func (m gpuModuleBuilder) withGPU(runtime *common.KubeRuntime) []module.Module {
 type terminusBoxModuleBuilder func() []module.Module
 
 func (m terminusBoxModuleBuilder) inBox(runtime *common.KubeRuntime) []module.Module {
-	if os.Getenv(common.ENV_TERMINUS_BOX) != "" {
-		return m()
+	if runtime.GetSystemInfo().IsDarwin() {
+		return nil
 	}
-
-	return nil
+	return m()
 }

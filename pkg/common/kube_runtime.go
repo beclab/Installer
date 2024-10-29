@@ -313,7 +313,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	args, _ := json.Marshal(arg)
-	logger.Infof("[runtime] arg: %s", string(args))
+	logger.Debugf("[runtime] arg: %s", string(args))
 
 	arg.KsEnable = defaultCluster.KubeSphere.Enabled
 	arg.KsVersion = defaultCluster.KubeSphere.Version

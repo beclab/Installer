@@ -1,6 +1,7 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
 	"path"
@@ -205,6 +206,7 @@ type InstallOsSystemModule struct {
 }
 
 func (m *InstallOsSystemModule) Init() {
+	logger.InfoInstallationProgress("Installing appservice ...")
 	m.Name = "InstallOsSystemModule"
 
 	installOsSystem := &task.LocalTask{

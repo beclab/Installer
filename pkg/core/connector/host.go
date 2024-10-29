@@ -180,27 +180,11 @@ func (b *BaseHost) SetCache(c *cache.Cache) {
 }
 
 func (b *BaseHost) Exec(ctx context.Context, cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
-	stdout, code, err = util.Exec(ctx, cmd, printOutput, printLine)
-
-	if printOutput {
-		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
-	}
-
-	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
-
-	return stdout, code, err
+	return util.Exec(ctx, cmd, printOutput, printLine)
 }
 
 func (b *BaseHost) ExecExt(cmd string, printOutput bool, printLine bool) (stdout string, code int, err error) {
-	stdout, code, err = util.Exec(context.Background(), cmd, printOutput, printLine)
-
-	if printOutput {
-		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
-	}
-
-	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
-
-	return stdout, code, err
+	return util.Exec(context.Background(), cmd, printOutput, printLine)
 }
 
 func (b *BaseHost) Fetch(local, remote string, printOutput bool, printLine bool) error {
@@ -315,12 +299,6 @@ func (b *BaseHost) CmdContext(ctx context.Context, cmd string, printOutput bool,
 
 func (b *BaseHost) CmdExt(cmd string, printOutput bool, printLine bool) (string, error) {
 	stdout, _, err := util.Exec(context.Background(), cmd, printOutput, printLine)
-
-	if printOutput {
-		logger.Debugf("[exec] %s CMD: %s, OUTPUT: \n%s", b.GetName(), cmd, stdout)
-	}
-
-	logger.Infof("[exec] %s CMD: %s, OUTPUT: %s", b.GetName(), cmd, stdout)
 
 	return stdout, err
 }

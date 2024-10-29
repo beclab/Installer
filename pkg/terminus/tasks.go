@@ -71,6 +71,7 @@ func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
 			}
 
 			if phase != "Running" {
+				logger.Infof("pod in namespace: %s, label: %s, current phase: %s, waiting ...", ns, label, phase)
 				return fmt.Errorf("pod is %s, namespace: %s, label: %s, waiting ...", phase, ns, label)
 			}
 		}

@@ -51,7 +51,6 @@ func InitConfig(kubeConfig *rest.Config, namespace string) (*action.Configuratio
 // InstallCharts installs helm chart using action config and environment settings.
 func InstallCharts(ctx context.Context, actionConfig *action.Configuration, settings *cli.EnvSettings,
 	appName, chartsName, repoURL, namespace string, vals map[string]interface{}) error {
-	// logger.Debugw("[helm] action config", "reachable", actionConfig.KubeClient.IsReachable())
 
 	instClient := action.NewInstall(actionConfig)
 	if namespace == "" {
@@ -88,7 +87,6 @@ func InstallCharts(ctx context.Context, actionConfig *action.Configuration, sett
 // UpgradeCharts upgrades helm chart using action config and environment settings.
 func UpgradeCharts(ctx context.Context, actionConfig *action.Configuration, settings *cli.EnvSettings,
 	appName, chartName, repoURL, namespace string, vals map[string]interface{}, reuseValue bool) error {
-	logger.Debugw("[helm] helm action config", "reachable", actionConfig.KubeClient.IsReachable())
 	client := action.NewUpgrade(actionConfig)
 	client.Namespace = namespace
 	client.Timeout = 300 * time.Second
@@ -234,7 +232,7 @@ func ReleaseName(appname, owner string) string {
 }
 
 func logReleaseInfo(release *release.Release) {
-	logger.Debugw("[helm] app installed success",
+	logger.Infow("[helm] app installed success",
 		"NAME", release.Name,
 		"LAST DEPLOYED", release.Info.LastDeployed.Format(time.ANSIC),
 		"NAMESPACE", release.Namespace,
@@ -243,14 +241,14 @@ func logReleaseInfo(release *release.Release) {
 }
 
 func logUninstallReleaseInfo(release *release.UninstallReleaseResponse) {
-	logger.Debugw("[helm] app uninstalled success",
+	logger.Infow("[helm] app uninstalled success",
 		"NAME", release.Release.Name,
 		"NAMESPACE", release.Release.Namespace,
 		"INFO", release.Info)
 }
 
 func logReleaseUpgrade(release *release.Release) {
-	logger.Debugw("[helm] app upgrade success",
+	logger.Infow("[helm] app upgrade success",
 		"NAME", release.Name,
 		"LAST DEPLOYED", release.Info.LastDeployed.Format(time.ANSIC),
 		"NAMESPACE", release.Namespace,

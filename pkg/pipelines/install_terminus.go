@@ -32,6 +32,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
+		fmt.Printf("Error creating installation runtime: %v\n", err)
 		return nil
 	}
 
@@ -43,6 +44,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	runtime.Arg.SetManifest(manifest)
 
 	var p = cluster.CreateTerminus(runtime)
+	logger.InfoInstallationProgress("Start to Install Terminus ...")
 	if err := p.Start(); err != nil {
 		return fmt.Errorf("create terminus error %v", err)
 	}

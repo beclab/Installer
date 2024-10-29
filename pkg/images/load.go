@@ -75,7 +75,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 		reserr = nil
 		if inspectImage(runtime.GetRunner(), containerManager, imageRepoTag) == nil {
-			logger.Debugf("%s already exists", imageRepoTag)
+			logger.Infof("%s already exists", imageRepoTag)
 			continue
 		}
 
@@ -147,7 +147,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 			if _, err := runtime.GetRunner().Host.SudoCmd(loadCmd, false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
-				logger.Debugf("import %s success (%s)", imageRepoTag, time.Since(start))
+				logger.Infof("import %s success (%s)", imageRepoTag, time.Since(start))
 			}
 			return nil
 		}, MAX_IMPORT_RETRY); err != nil {

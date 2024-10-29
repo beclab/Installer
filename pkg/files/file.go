@@ -490,7 +490,7 @@ func (b *KubeBinary) Download() error {
 		if err != nil {
 			logger.Warnf("get file %s %s size failed", b.FileName, b.Version)
 		} else if totalSize > 0 {
-			logger.Debugf("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
+			logger.Infof("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
 		}
 
 		client := grab.NewClient()
@@ -519,7 +519,7 @@ func (b *KubeBinary) Download() error {
 					if b.PrintOutput {
 						fmt.Println(progressInfo)
 					}
-					logger.Info(progressInfo)
+					logger.Debug(progressInfo)
 					line <- []interface{}{fmt.Sprintf("downloading %s %s (%0.2f%%)", b.FileName, utils.FormatBytes(resp.BytesComplete()), math.Round(result*10000)/100),
 						common.StateDownload, math.Round(result * 10000 / float64(common.DefaultInstallSteps))}
 				} else {
@@ -527,7 +527,7 @@ func (b *KubeBinary) Download() error {
 					if b.PrintOutput {
 						fmt.Println(progressInfo)
 					}
-					logger.Infof(progressInfo)
+					logger.Debug(progressInfo)
 					line <- []interface{}{fmt.Sprintf("downloading %s %s", b.FileName, utils.FormatBytes(resp.BytesComplete())),
 						common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 				}
@@ -577,7 +577,7 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
-		logger.Debugf("%s download succeeded", b.FileName)
+		logger.Infof("%s download succeeded", b.FileName)
 		line <- []interface{}{fmt.Sprintf("%s download succeeded", b.FileName), common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 		break
 	}
