@@ -98,6 +98,7 @@ func (s *GetUserInfo) getUserName() (string, error) {
 		if err := utils.ValidateUserName(userName); err != nil {
 			return "", fmt.Errorf("invalid username \"%s\" set in env: %s, please reset", userName, err.Error())
 		}
+		return userName, nil
 	}
 
 	reader := bufio.NewReader(os.Stdin)

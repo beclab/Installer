@@ -2,6 +2,7 @@ package download
 
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
@@ -12,6 +13,7 @@ type PackageDownloadModule struct {
 }
 
 func (i *PackageDownloadModule) Init() {
+	logger.InfoInstallationProgress("downloading terminus installation packages ...")
 	i.Name = "PackageDownloadModule"
 	i.Desc = "Download terminus installation package"
 
