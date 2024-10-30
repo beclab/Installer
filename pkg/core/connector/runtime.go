@@ -230,7 +230,9 @@ func (b *BaseRuntime) HostIsDeprecated(host Host) bool {
 }
 
 func (b *BaseRuntime) InitLogger() error {
-	logger.InitLog(path.Join(b.baseDir, "logs"))
+	// the JSON-structured logs under .terminus/logs/yyyy-mm-dd_hh-mm-ss.log
+	// and the console formatted logs under .terminus/versions/v{version}/install.log (for backward compatibility)
+	logger.InitLog(path.Join(b.baseDir, "logs"), path.Join(b.installerDir, "logs"))
 	return nil
 }
 

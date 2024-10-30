@@ -2,6 +2,7 @@ package patch
 
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 )
@@ -12,6 +13,7 @@ type InstallDepsModule struct {
 }
 
 func (m *InstallDepsModule) Init() {
+	logger.InfoInstallationProgress("installing and configuring OS dependencies ...")
 	m.Name = "InstallDeps"
 
 	patchOs := &task.RemoteTask{

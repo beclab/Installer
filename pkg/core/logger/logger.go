@@ -13,31 +13,39 @@ import (
 
 var logger *zap.SugaredLogger
 
-func InitLog(logDir string) {
-	found, err := isDirExist(logDir)
-	if err != nil {
-		fmt.Println("installer log dir found error", err)
-		os.Exit(1)
-	}
+var FatalMessagePrefix = "[FATAL] "
 
-	if !found {
-		err := os.MkdirAll(logDir, common.FileMode0755)
+func InitLog(jsonLogDir, consoleLogDir string) {
+	for _, logDir := range []string{jsonLogDir, consoleLogDir} {
+		found, err := isDirExist(logDir)
 		if err != nil {
-			fmt.Println("create log dir error", err)
+			fmt.Println("log dir found error", err)
 			os.Exit(1)
+		}
+
+		if !found {
+			err := os.MkdirAll(logDir, common.FileMode0755)
+			if err != nil {
+				fmt.Println("create log dir error", err)
+				os.Exit(1)
+			}
 		}
 	}
 
-	logName := path.Join(logDir, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02_15-04-05")))
-	file, err := os.OpenFile(logName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
+	jsonLogFileName := path.Join(jsonLogDir, fmt.Sprintf("%s.log", time.Now().Format("2006-01-02_15-04-05")))
+	jsonLogFile, err := os.OpenFile(jsonLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
 	if err != nil {
 		panic(err)
 	}
-
+	consoleLogFileName := path.Join(consoleLogDir, "install.log")
+	consoleLogFile, err := os.OpenFile(consoleLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
+	if err != nil {
+		panic(err)
+	}
 	consolePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl > zapcore.DebugLevel
 	})
-	filePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	jsonLogFilePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return true
 	})
 
@@ -70,7 +78,8 @@ func InitLog(logDir string) {
 
 	core := zapcore.NewTee(
 		zapcore.NewCore(zapcore.NewConsoleEncoder(consoleEncoderConfig), consoleDebugging, consolePriority),
-		zapcore.NewCore(zapcore.NewJSONEncoder(fileEncoder), zapcore.AddSync(file), filePriority),
+		zapcore.NewCore(zapcore.NewConsoleEncoder(consoleEncoderConfig), zapcore.AddSync(consoleLogFile), consolePriority),
+		zapcore.NewCore(zapcore.NewJSONEncoder(fileEncoder), zapcore.AddSync(jsonLogFile), jsonLogFilePriority),
 	)
 	logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.FatalLevel)).Sugar()
 }
@@ -190,11 +199,14 @@ func Panicw(msg string, args ...any) {
 }
 
 func Fatal(args ...any) {
-	logger.Fatal(args...)
+	var newArgs []any
+	newArgs = append(newArgs, FatalMessagePrefix)
+	newArgs = append(newArgs, args...)
+	logger.Fatal(newArgs...)
 }
 
 func Fatalf(format string, args ...any) {
-	logger.Fatalf(format, args...)
+	logger.Fatalf(FatalMessagePrefix+format, args...)
 }
 
 func Fatalw(msg string, args ...any) {
