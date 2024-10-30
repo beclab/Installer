@@ -106,6 +106,7 @@ type Argument struct {
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
+	HostIP   string `json:"host_ip"`
 }
 
 type PublicNetworkInfo struct {
@@ -174,6 +175,7 @@ func NewArgument() *Argument {
 		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
 		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
 		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
+		HostIP:                 os.Getenv(ENV_HOST_IP),
 	}
 }
 

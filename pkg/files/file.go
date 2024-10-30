@@ -352,8 +352,8 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case wsl: // + wsl
 		component.Type = common.WSL
-		component.FileName = fmt.Sprintf("install-wizard-wsl-image-v%s.tar.gz", version) // fmt.Sprintf("install-wizard-v%s.tar.gz", version)
-		component.Url = fmt.Sprintf(WslImageUrl, "", component.FileName)                 // todo arm64
+		component.FileName = fmt.Sprintf("Ubuntu%s.appx", version)
+		component.Url = WslImageUrl
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath)
 	default:
@@ -502,7 +502,7 @@ func (b *KubeBinary) Download() error {
 
 		client := grab.NewClient()
 		req, _ := grab.NewRequest(fmt.Sprintf("%s/%s", b.BaseDir, b.FileName), b.Url)
-		req.RateLimiter = NewLimiter(50 * 1024) // todo
+		// req.RateLimiter = NewLimiter(50 * 1024) // todo
 		req.HTTPRequest = req.HTTPRequest.WithContext(context.Background())
 		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 10*time.Minute)
 		defer cancel()

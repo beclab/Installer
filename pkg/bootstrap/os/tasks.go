@@ -155,9 +155,21 @@ func (n *NodeConfigureOS) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
+	if runtime.GetSystemInfo().IsWsl() {
+		if _, err := runtime.GetRunner().Host.SudoCmd("chattr -i /etc/hosts", false, true); err != nil {
+			return errors.Wrap(err, "failed to change attributes of /etc/hosts")
+		}
+	}
+
 	_, err1 := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s && sed -i '/^127.0.1.1/s/.*/127.0.1.1      %s/g' /etc/hosts", host.GetName(), host.GetName()), false, false)
 	if err1 != nil {
 		return errors.Wrap(errors.WithStack(err1), "Failed to override hostname")
+	}
+
+	if runtime.GetSystemInfo().IsWsl() {
+		if _, err := runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts", false, true); err != nil {
+			return errors.Wrap(err, "failed to change attributes of /etc/hosts")
+		}
 	}
 
 	return nil

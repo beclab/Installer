@@ -5,34 +5,44 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
-type DownloadImageModule struct {
+type InstallWSLModule struct {
 	common.KubeModule
 }
 
-func (d *DownloadImageModule) Init() {
-	d.Name = "DownloadWslImage"
-	downloadWslImage := &task.LocalTask{
-		Name:   "DownloadWslImage",
-		Action: new(DownloadImage),
+func (u *InstallWSLModule) Init() {
+	u.Name = "InstallWSL"
+
+	downloadAppxPackage := &task.LocalTask{
+		Name:   "InitAppxPackage",
+		Action: &AddAppxPackage{},
 	}
-	d.Tasks = []task.Interface{
-		downloadWslImage,
+
+	updateWSL := &task.LocalTask{
+		Name:   "UpdateWSL",
+		Action: &UpdateWSL{},
+	}
+
+	u.Tasks = []task.Interface{
+		downloadAppxPackage,
+		updateWSL,
 	}
 }
 
-type ImportImageModule struct {
+type InstallWSLUbuntuDistroModule struct {
 	common.KubeModule
 }
 
-func (i *ImportImageModule) Init() {
-	i.Name = "ImportTerminusDistro"
-	importWslImage := &task.LocalTask{
-		Name:   "ImportTerminusDistro",
-		Action: new(ImportImage),
+func (i *InstallWSLUbuntuDistroModule) Init() {
+	i.Name = "InstallWSLUbuntuDistro"
+
+	installWSLDistro := &task.LocalTask{
+		Name:   "InstallWSLDistro",
+		Action: &InstallWSLDistro{},
+		Retry:  1,
 	}
 
 	i.Tasks = []task.Interface{
-		importWslImage,
+		installWSLDistro,
 	}
 }
 
@@ -43,17 +53,23 @@ type ConfigWslModule struct {
 func (c *ConfigWslModule) Init() {
 	c.Name = "ConfigWslConfig"
 
+	configWslConf := &task.LocalTask{
+		Name:   "ConfigWslConf",
+		Action: &ConfigWslConf{},
+	}
+
 	configWSLForwardRules := &task.LocalTask{
 		Name:   "ConfigWslConfig",
-		Action: new(ConfigWSLForwardRules),
+		Action: &ConfigWSLForwardRules{},
 	}
 
 	configWSLHostsAndDns := &task.LocalTask{
 		Name:   "ConfigWslHostsAndDns",
-		Action: new(ConfigWSLHostsAndDns),
+		Action: &ConfigWSLHostsAndDns{},
 	}
 
 	c.Tasks = []task.Interface{
+		configWslConf,
 		configWSLForwardRules,
 		configWSLHostsAndDns,
 	}
@@ -68,7 +84,7 @@ func (i *InstallTerminusModule) Init() {
 	i.Tasks = []task.Interface{
 		&task.LocalTask{
 			Name:   "InstallTerminus",
-			Action: new(InstallTerminus),
+			Action: &InstallTerminus{},
 		},
 	}
 }

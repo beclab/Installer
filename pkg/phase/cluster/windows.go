@@ -12,8 +12,8 @@ type windowsInstallPhaseBuilder struct {
 
 func (w *windowsInstallPhaseBuilder) build() []module.Module {
 	return []module.Module{
-		&windows.DownloadImageModule{},
-		&windows.ImportImageModule{},
+		&windows.InstallWSLModule{},
+		&windows.InstallWSLUbuntuDistroModule{},
 		&windows.ConfigWslModule{},
 		&windows.InstallTerminusModule{},
 	}

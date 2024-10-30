@@ -54,6 +54,6 @@ func (l *linuxInstallPhaseBuilder) build() []module.Module {
 	return l.base().
 		addModule(l.installCluster()...).
 		addModule(l.installGpuPlugin()...).
-		addModule(l.installCluster()...).
+		addModule(l.installTerminus()...).
 		addModule(&terminus.WelcomeModule{})
 }

@@ -40,10 +40,7 @@ require (
 	github.com/containerd/containerd v1.7.18
 	github.com/containers/image/v5 v5.32.2
 	github.com/dominodatalab/os-release v0.0.0-20190522011736-bcdb4a3e3c2f
-	github.com/emicklei/go-restful-openapi/v2 v2.10.2
-	github.com/emicklei/go-restful/v3 v3.12.1
 	github.com/estesp/manifest-tool/v2 v2.1.6
-	github.com/go-openapi/spec v0.21.0
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lithammer/dedent v1.1.0
@@ -59,6 +56,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.24.0
+	golang.org/x/text v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.15.2
 	k8s.io/api v0.30.2
@@ -93,6 +91,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
@@ -175,7 +174,6 @@ require (
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/term v0.21.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
