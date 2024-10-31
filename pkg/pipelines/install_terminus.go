@@ -21,6 +21,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 		fmt.Printf("Terminus is already installed, please uninstall it first.")
 		return nil
 	}
+
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
@@ -43,30 +44,33 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	runtime.Arg.SetManifest(manifest)
 
-	var p = cluster.CreateTerminus(runtime)
+	// var p = cluster.CreateTerminus(runtime)
+	var p = cluster.InstallSystemPhase(runtime)
 	logger.InfoInstallationProgress("Start to Install Terminus ...")
 	if err := p.Start(); err != nil {
 		return fmt.Errorf("create terminus error %v", err)
 	}
 
-	if runtime.Arg.InCluster {
-		if err := ctrl.UpdateStatus(runtime); err != nil {
-			logger.Errorf("failed to update status: %v", err)
-			return err
-		}
-		kkConfigPath := filepath.Join(runtime.GetWorkDir(), fmt.Sprintf("config-%s", runtime.ObjName))
-		if config, err := ioutil.ReadFile(kkConfigPath); err != nil {
-			logger.Errorf("failed to read kubeconfig: %v", err)
-			return err
-		} else {
-			runtime.Kubeconfig = base64.StdEncoding.EncodeToString(config)
-			if err := ctrl.UpdateKubeSphereCluster(runtime); err != nil {
-				logger.Errorf("failed to update kubesphere cluster: %v", err)
+	if !runtime.GetSystemInfo().IsWindows() {
+		if runtime.Arg.InCluster {
+			if err := ctrl.UpdateStatus(runtime); err != nil {
+				logger.Errorf("failed to update status: %v", err)
 				return err
 			}
-			if err := ctrl.SaveKubeConfig(runtime); err != nil {
-				logger.Errorf("failed to save kubeconfig: %v", err)
+			kkConfigPath := filepath.Join(runtime.GetWorkDir(), fmt.Sprintf("config-%s", runtime.ObjName))
+			if config, err := ioutil.ReadFile(kkConfigPath); err != nil {
+				logger.Errorf("failed to read kubeconfig: %v", err)
 				return err
+			} else {
+				runtime.Kubeconfig = base64.StdEncoding.EncodeToString(config)
+				if err := ctrl.UpdateKubeSphereCluster(runtime); err != nil {
+					logger.Errorf("failed to update kubesphere cluster: %v", err)
+					return err
+				}
+				if err := ctrl.SaveKubeConfig(runtime); err != nil {
+					logger.Errorf("failed to save kubeconfig: %v", err)
+					return err
+				}
 			}
 		}
 	}

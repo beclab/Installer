@@ -75,6 +75,7 @@ const (
 	libnvidia     = "libnvidia-container"
 	installwizard = "install-wizard"
 	fullinstaller = "full-installer"
+	wsl           = "wsl"
 )
 
 // KubeBinary Type field const
@@ -349,6 +350,12 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
+	case wsl: // + wsl
+		component.Type = common.WSL
+		component.FileName = fmt.Sprintf("Ubuntu%s.appx", version)
+		component.Url = WslImageUrl
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath)
 	default:
 		logger.Fatalf("unsupported kube binaries %s", name)
 	}
@@ -495,7 +502,7 @@ func (b *KubeBinary) Download() error {
 
 		client := grab.NewClient()
 		req, _ := grab.NewRequest(fmt.Sprintf("%s/%s", b.BaseDir, b.FileName), b.Url)
-		// req.RateLimiter = NewLimiter(1024 * 1024) // todo
+		// req.RateLimiter = NewLimiter(50 * 1024) // todo
 		req.HTTPRequest = req.HTTPRequest.WithContext(context.Background())
 		ctx, cancel := context.WithTimeout(req.HTTPRequest.Context(), 10*time.Minute)
 		defer cancel()

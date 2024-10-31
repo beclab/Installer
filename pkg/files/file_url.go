@@ -89,6 +89,7 @@ var (
 	CudaGpgKeyUrl     = "https://nvidia.github.io/libnvidia-container/gpgkey"
 	CudaGpgKeyCDNUrl  = "https://dc3p1870nn3cj.cloudfront.net/%s"
 	CudaLibNvidiaUrl  = "https://nvidia.github.io/libnvidia-container/%s%s/libnvidia-container.list"
+	WslImageUrl       = "https://wslstorestorage.blob.core.windows.net/wslblob/Ubuntu2204-221101.AppxBundle"
 )
 
 func getGpuCDNPrefix(arch string, fileHash string) string {

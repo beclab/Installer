@@ -7,6 +7,7 @@ builds:
     goos:
       - linux
       - darwin
+      - windows
     goarch:
       - amd64
       - arm
@@ -17,6 +18,8 @@ builds:
       - goos: linux
         goarch: arm64
       - goos: darwin
+        goarch: arm
+      - goos: windows
         goarch: arm
     ldflags:
       - s

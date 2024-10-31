@@ -106,6 +106,7 @@ type Argument struct {
 
 	BaseDir  string `json:"base_dir"`
 	Manifest string `json:"manifest"`
+	HostIP   string `json:"host_ip"`
 }
 
 type PublicNetworkInfo struct {
@@ -164,8 +165,8 @@ func NewArgument() *Argument {
 			StorageType: Minio,
 		},
 		GPU: &GPU{
-			Enable: strings.EqualFold(os.Getenv("LOCAL_GPU_ENABLE"), "1"),
-			Share:  strings.EqualFold(os.Getenv("LOCAL_GPU_SHARE"), "1"),
+			Enable: strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "1"),
+			Share:  strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_SHARE), "1"),
 		},
 		Cloudflare:             &Cloudflare{},
 		Frp:                    &Frp{},
@@ -174,6 +175,7 @@ func NewArgument() *Argument {
 		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
 		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
 		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
+		HostIP:                 os.Getenv(ENV_HOST_IP),
 	}
 }
 

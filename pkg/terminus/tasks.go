@@ -123,7 +123,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		util.RemoveFile(wizard.Path())
 	}
 
-	logger.Infof("%s downloading %s %s %s ...", common.LocalHost, wizard.ID, wizard.Version)
+	logger.Infof("%s downloading %s %s ...", common.LocalHost, wizard.ID, wizard.Version)
 	if err := wizard.Download(); err != nil {
 		return fmt.Errorf("Failed to download %s binary: %s error: %w ", wizard.ID, wizard.Url, err)
 	}

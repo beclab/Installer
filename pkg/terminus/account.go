@@ -2,15 +2,16 @@ package terminus
 
 import (
 	"bufio"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"net/mail"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"bytetrade.io/web3os/installer/pkg/core/logger"
+	corev1 "k8s.io/api/core/v1"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
@@ -73,7 +74,7 @@ func (s *GetUserInfo) getDomainName() (string, error) {
 LOOP:
 	fmt.Printf("\nEnter the domain name ( myterminus.com by default ): ")
 	domainName, err = reader.ReadString('\n')
-	if err != nil {
+	if err != nil && err.Error() != "EOF" {
 		return domainName, errors.Wrap(errors.WithStack(err), "read domain name failed")
 	}
 	domainName = strings.TrimSpace(domainName)
@@ -106,7 +107,8 @@ func (s *GetUserInfo) getUserName() (string, error) {
 LOOP:
 	fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
 	userName, err = reader.ReadString('\n')
-	if err != nil {
+	// userName = strings.TrimSpace(userName) + "\r"
+	if err != nil && err.Error() != "EOF" {
 		return "", errors.Wrap(errors.WithStack(err), "read username failed")
 	}
 	if strings.Contains(userName, "@") {
