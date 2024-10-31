@@ -17,9 +17,11 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	crypto "crypto/rand"
 	"fmt"
+	"golang.org/x/term"
 	"math"
 	"math/big"
 	"math/rand"
@@ -297,4 +299,15 @@ func ValidateUserName(username string) error {
 		}
 	}
 	return nil
+}
+
+func GetBufIOReaderOfTerminalInput() (*bufio.Reader, error) {
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		return bufio.NewReader(os.Stdin), nil
+	}
+	tty, err := os.OpenFile("/dev/tty", os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	return bufio.NewReader(tty), nil
 }
