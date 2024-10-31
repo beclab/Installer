@@ -1,8 +1,9 @@
 package terminus
 
 import (
-	"bufio"
+	"bytetrade.io/web3os/installer/pkg/utils"
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strings"
@@ -21,7 +22,6 @@ type GetNATGatewayIP struct {
 func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 	var prompt string
 	var input string
-	var err error
 	var systemInfo = runtime.GetSystemInfo()
 	var hostIP = s.KubeConf.Arg.HostIP
 
@@ -40,7 +40,10 @@ func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 	}
 
 	if prompt != "" {
-		reader := bufio.NewReader(os.Stdin)
+		reader, err := utils.GetBufIOReaderOfTerminalInput()
+		if err != nil {
+			return errors.Wrap(err, "failed to get terminal input reader")
+		}
 	LOOP:
 		fmt.Printf(prompt)
 		input, err = reader.ReadString('\n')

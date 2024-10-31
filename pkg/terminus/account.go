@@ -1,7 +1,6 @@
 package terminus
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"net/mail"
@@ -68,9 +67,10 @@ func (s *GetUserInfo) getDomainName() (string, error) {
 		return domainName, nil
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-
-	var err error
+	reader, err := utils.GetBufIOReaderOfTerminalInput()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get terminal input reader")
+	}
 LOOP:
 	fmt.Printf("\nEnter the domain name ( myterminus.com by default ): ")
 	domainName, err = reader.ReadString('\n')
@@ -101,9 +101,10 @@ func (s *GetUserInfo) getUserName() (string, error) {
 		}
 		return userName, nil
 	}
-
-	reader := bufio.NewReader(os.Stdin)
-	var err error
+	reader, err := utils.GetBufIOReaderOfTerminalInput()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get terminal input reader")
+	}
 LOOP:
 	fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
 	userName, err = reader.ReadString('\n')
