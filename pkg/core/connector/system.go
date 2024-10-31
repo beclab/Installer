@@ -197,7 +197,7 @@ func (s *SystemInfo) String() string {
 }
 
 func (s *SystemInfo) IsDarwin() bool {
-	return s.HostInfo.OsPlatform == common.Darwin
+	return s.HostInfo.OsType == common.Darwin
 }
 
 func (s *SystemInfo) IsPve() bool {
@@ -213,7 +213,7 @@ func (s *SystemInfo) IsRaspbian() bool {
 }
 
 func (s *SystemInfo) IsLinux() bool {
-	return s.HostInfo.OsPlatform == common.Linux
+	return s.HostInfo.OsType == common.Linux
 }
 
 func (s *SystemInfo) IsUbuntu() bool {
