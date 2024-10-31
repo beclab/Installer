@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"os"
 	"os/exec"
@@ -291,7 +292,12 @@ func GetSystemInfo() *SystemInfo {
 	si.DiskInfo = getDisk()
 	si.MemoryInfo = getMem()
 	si.FsInfo = getFs()
-	si.LocalIp = util.GetLocalIP()
+
+	localIP, err := util.GetLocalIP()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to get local ip"))
+	}
+	si.LocalIp = localIP.String()
 
 	if si.IsLinux() {
 		si.CgroupInfo = getCGroups()
