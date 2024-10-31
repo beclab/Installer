@@ -133,9 +133,9 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 				loadCmd = "ctr" // not implement
 			case "containerd":
 				if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
-					loadCmd = fmt.Sprintf("env PATH=$PATH gunzip -c %s | ctr -n k8s.io images import %s -", imageFileName, loadParm)
+					loadCmd = fmt.Sprintf("gunzip -c %s | ctr -n k8s.io images import %s -", imageFileName, loadParm)
 				} else {
-					loadCmd = fmt.Sprintf("env PATH=$PATH ctr -n k8s.io images import %s %s", imageFileName, loadParm)
+					loadCmd = fmt.Sprintf("ctr -n k8s.io images import %s %s", imageFileName, loadParm)
 				}
 			case "isula":
 				loadCmd = "isula" // not implement
