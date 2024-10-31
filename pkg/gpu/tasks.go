@@ -79,10 +79,6 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "Failed to apt-get update")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install cuda-12-1", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install cuda-12-1")
-	}
-
 	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-kernel-open-545", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-kernel-open-545")
 	}
@@ -90,6 +86,10 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-driver-545", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-driver-545")
 	}
+
+	// if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install cuda-12-1", false, true); err != nil {
+	// 	return errors.Wrap(errors.WithStack(err), "Failed to apt-get install cuda-12-1")
+	// }
 
 	return nil
 }
