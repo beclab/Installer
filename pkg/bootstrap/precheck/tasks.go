@@ -61,7 +61,7 @@ func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 	hostname := strings.ToLower(hostName)
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, false); err != nil {
 		return err
 	}
 	runtime.GetSystemInfo().SetHostname(hostname)

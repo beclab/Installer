@@ -18,7 +18,6 @@ package util
 
 import (
 	"encoding/binary"
-	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -159,10 +158,11 @@ func IsValidIPv4Addr(ip net.IP) bool {
 // to check if it is an actually bindable address
 // by valid it means the address is a non-loopback IPv4 address
 // the explicitly specified env var takes precedence than the hostname
-func GetLocalIP() string {
+// if a valid IP is not found in both cases, a default IP is selected as a fallback
+func GetLocalIP() (net.IP, error) {
 	ifAddrs, err := net.InterfaceAddrs()
 	if err != nil {
-		panic(errors.Wrap(err, "failed to get local interface IP addresses"))
+		return nil, errors.Wrap(err, "failed to get local interface IP addresses")
 	}
 	var validIfIPs []net.IP
 	for _, ifAddr := range ifAddrs {
@@ -171,33 +171,39 @@ func GetLocalIP() string {
 		}
 	}
 	if len(validIfIPs) == 0 {
-		panic("no valid IP can be found from local network interfaces")
+		return nil, errors.New("no valid IP can be found from local network interfaces")
 	}
 
 	if envIPStr := os.Getenv("OS_LOCALIP"); envIPStr != "" {
 		envIP := net.ParseIP(envIPStr)
 		for _, validIP := range validIfIPs {
 			if validIP.Equal(envIP) {
-				return validIP.String()
+				return validIP, nil
 			}
 		}
-		panic(fmt.Sprintf("invalid local IP address set in env: %s", envIPStr))
 	}
 
 	localHostname, err := os.Hostname()
 	if err != nil {
-		panic(errors.Wrap(err, "failed to get local hostname"))
+		return nil, errors.Wrap(err, "failed to get local hostname")
 	}
 	hostIPs, err := net.LookupIP(localHostname)
-	if err != nil || len(hostIPs) == 0 {
-		panic(errors.Wrap(err, "failed to resolve local hostname"))
+
+	// if the hostname can not be looked up
+	// it means the user has not set the /etc/hosts
+	// in this case we just choose a default IP
+	// otherwise it's an operation error we should return
+	// because we don't want to select a different IP than what the user specifies
+	if err != nil && !strings.Contains(err.Error(), "no such host") {
+		return nil, errors.Wrap(err, "failed to resolve local hostname")
 	}
 	for _, hostIP := range hostIPs {
 		for _, validIP := range validIfIPs {
 			if validIP.Equal(hostIP) {
-				return validIP.String()
+				return validIP, nil
 			}
 		}
 	}
-	panic(fmt.Sprintf("resolved address(es) of local hostname: %v can not match with valid local interface address(es): %v", hostIPs, validIfIPs))
+
+	return validIfIPs[0], nil
 }

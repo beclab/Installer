@@ -56,14 +56,6 @@ func (t *EnableRedisService) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	cmd = fmt.Sprintf("awk '/requirepass/{print \\$NF}' %s", RedisConfigFile)
-	rpwd, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
-	if rpwd == "" {
-		return fmt.Errorf("get redis password failed")
-	}
-
-	t.PipelineCache.Set(common.CacheHostRedisPassword, rpwd)
-
 	return nil
 }
 
