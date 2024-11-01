@@ -28,6 +28,7 @@ var (
 		dedent.Dedent(`[Unit]
 Description=etcd
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 User=root

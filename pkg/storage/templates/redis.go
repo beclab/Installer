@@ -39,6 +39,7 @@ Documentation=https://redis.io/
 Wants=network-online.target
 After=network-online.target
 AssertFileIsExecutable={{ .RedisBinPath }}
+StartLimitIntervalSec=0
 
 [Service]
 WorkingDirectory={{ .RootPath }}

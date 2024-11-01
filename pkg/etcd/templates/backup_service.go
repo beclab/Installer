@@ -38,6 +38,7 @@ ExecStart={{ .ScriptPath }}
 	BackupETCDTimer = template.Must(template.New("backup-etcd.timer").Parse(
 		dedent.Dedent(`[Unit]
 Description=Timer to backup ETCD
+StartLimitIntervalSec=0
 [Timer]
 {{- if .OnCalendarStr }}
 OnCalendar={{ .OnCalendarStr }}

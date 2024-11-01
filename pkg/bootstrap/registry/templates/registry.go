@@ -25,6 +25,7 @@ var (
 		dedent.Dedent(`[Unit]
 Description=v2 Registry server for Container
 After=network.target
+StartLimitIntervalSec=0
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/registry serve /etc/kubekey/registry/config.yaml

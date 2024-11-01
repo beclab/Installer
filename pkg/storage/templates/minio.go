@@ -13,6 +13,7 @@ Documentation=https://min.io/docs/minio/linux/index.html
 Wants=network-online.target
 After=network-online.target
 AssertFileIsExecutable={{ .MinioCommand }}
+StartLimitIntervalSec=0
 
 [Service]
 WorkingDirectory=/usr/local

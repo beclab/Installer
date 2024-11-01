@@ -29,6 +29,7 @@ Documentation=https://docs.docker.com
 # After=network-online.target firewalld.service containerd.service
 # Wants=network-online.target
 # Requires=docker.socket containerd.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=notify

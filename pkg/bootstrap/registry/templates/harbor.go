@@ -26,6 +26,7 @@ var (
 Description=Harbor
 After=docker.service systemd-networkd.service systemd-resolved.service
 Requires=docker.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple

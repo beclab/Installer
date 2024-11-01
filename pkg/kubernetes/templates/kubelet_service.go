@@ -30,6 +30,7 @@ Documentation=http://kubernetes.io/docs/
 {{ if .JuiceFSPreCheckEnabled }}
 After={{ .JuiceFSServiceUnit }}
 {{ end }}
+StartLimitIntervalSec=0
 
 [Service]
 CPUAccounting=true

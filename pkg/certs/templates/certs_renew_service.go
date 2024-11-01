@@ -27,6 +27,7 @@ var (
 	K8sCertsRenewService = template.Must(template.New("k8s-certs-renew.service").Parse(
 		dedent.Dedent(`[Unit]
 Description=Renew K8S control plane certificates
+StartLimitIntervalSec=0
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/kube-scripts/k8s-certs-renew.sh

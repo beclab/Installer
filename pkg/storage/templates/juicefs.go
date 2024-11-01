@@ -13,6 +13,7 @@ Documentation=https://juicefs.com/docs/zh/community/introduction/
 Wants=redis-online.target
 After=redis-online.target
 AssertFileIsExecutable={{ .JuiceFsBinPath }}
+StartLimitIntervalSec=0
 
 [Service]
 WorkingDirectory=/usr/local
