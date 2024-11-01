@@ -30,6 +30,7 @@ Description=Lightweight Kubernetes
 Documentation=https://k3s.io
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
 {{ if .JuiceFSPreCheckEnabled }}
 After={{ .JuiceFSServiceUnit }}
 {{ end }}

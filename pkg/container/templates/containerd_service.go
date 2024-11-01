@@ -27,6 +27,7 @@ var ContainerdService = template.Must(template.New("containerd.service").Parse(
 Description=containerd container runtime
 Documentation=https://containerd.io
 After=network.target local-fs.target
+StartLimitIntervalSec=0
 
 [Service]
 ExecStartPre=-/sbin/modprobe overlay
