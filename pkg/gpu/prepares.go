@@ -26,5 +26,5 @@ type GPUSharePrepare struct {
 }
 
 func (p *GPUSharePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
-	return p.KubeConf.Arg.GPU.Share, nil
+	return p.KubeConf.Arg.GPU.Share || runtime.GetSystemInfo().IsWsl(), nil
 }
