@@ -219,7 +219,7 @@ type RestartContainerd struct {
 }
 
 func (t *RestartContainerd) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("nvidia-ctk runtime configure --runtime=containerd --set-as-default", false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("nvidia-ctk runtime configure --runtime=containerd --set-as-default --config-source=command", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to nvidia-ctk runtime configure")
 	}
 
