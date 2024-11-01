@@ -166,9 +166,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	}
 
 	if runtime.GetSystemInfo().IsWsl() {
-		if _, err := runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, true); err != nil {
-			return errors.Wrap(err, "failed to change attributes of /etc/hosts and /etc/resolv.conf")
-		}
+		_, _ = runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, false)
 	}
 
 	return nil

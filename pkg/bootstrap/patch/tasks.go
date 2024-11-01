@@ -79,6 +79,9 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		}
 
 		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc bison flex tree unzip"
+		if runtime.GetSystemInfo().IsUbuntuVersionEqual(connector.Ubuntu24) {
+			cmd = cmd + " pciutils"
+		}
 		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, pkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err

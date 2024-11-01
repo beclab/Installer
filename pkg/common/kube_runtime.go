@@ -101,12 +101,12 @@ type Argument struct {
 
 	Request any `json:"-"`
 
-	IsCloudInstance bool   `json:"is_cloud_instance"`
-	MinikubeProfile string `json:"minikube_profile"`
-
-	BaseDir  string `json:"base_dir"`
-	Manifest string `json:"manifest"`
-	HostIP   string `json:"host_ip"`
+	IsCloudInstance bool     `json:"is_cloud_instance"`
+	MinikubeProfile string   `json:"minikube_profile"`
+	Environment     []string `json:"environment"`
+	BaseDir         string   `json:"base_dir"`
+	Manifest        string   `json:"manifest"`
+	HostIP          string   `json:"host_ip"`
 }
 
 type PublicNetworkInfo struct {
@@ -172,11 +172,35 @@ func NewArgument() *Argument {
 		Frp:                    &Frp{},
 		User:                   &User{},
 		PublicNetworkInfo:      &PublicNetworkInfo{},
+		RegistryMirrors:        os.Getenv(ENV_REGISTRY_MIRRORS),
 		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
 		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
 		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
 		HostIP:                 os.Getenv(ENV_HOST_IP),
+		Environment:            os.Environ(),
 	}
+}
+
+func (a *Argument) GetWslUserPath() string {
+	if a.Environment == nil || len(a.Environment) == 0 {
+		return ""
+	}
+
+	var res string
+	var wslSuffix = "/AppData/Local/Microsoft/WindowsApps"
+	for _, v := range a.Environment {
+		if strings.HasPrefix(v, "PATH=") {
+			p := strings.ReplaceAll(v, "PATH=", "")
+			s := strings.Split(p, ":")
+			for _, s1 := range s {
+				if strings.Contains(s1, wslSuffix) {
+					res = strings.ReplaceAll(s1, wslSuffix, "")
+					break
+				}
+			}
+		}
+	}
+	return res
 }
 
 func (a *Argument) SetTokenMaxAge() {

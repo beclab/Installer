@@ -33,6 +33,16 @@ func (d *PackageDownload) Execute(runtime connector.Runtime) error {
 		return errors.New("manifest path is empty")
 	}
 
+	var baseDir = d.BaseDir
+	var systemInfo = runtime.GetSystemInfo()
+
+	if systemInfo.IsWsl() {
+		var wslPackageDir = d.KubeConf.Arg.GetWslUserPath()
+		if wslPackageDir != "" {
+			baseDir = fmt.Sprintf("%s/.terminus", wslPackageDir)
+		}
+	}
+
 	if data, err := os.ReadFile(d.Manifest); err != nil {
 		logger.Fatal("unable to read manifest, ", err)
 	} else {
@@ -46,8 +56,8 @@ func (d *PackageDownload) Execute(runtime connector.Runtime) error {
 
 			item := must(manifest.ReadItem(line))
 
-			if !must(isRealExists(runtime, item, d.BaseDir)) {
-				err := d.downloadItem(runtime, item, d.BaseDir)
+			if !must(isRealExists(runtime, item, baseDir)) {
+				err := d.downloadItem(runtime, item, baseDir)
 				if err != nil {
 					logger.Fatal(err)
 				}

@@ -1,8 +1,10 @@
 package system
 
 import (
-	"bytetrade.io/web3os/installer/pkg/daemon"
+	"fmt"
 	"strings"
+
+	"bytetrade.io/web3os/installer/pkg/daemon"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os"
 	"bytetrade.io/web3os/installer/pkg/bootstrap/patch"
@@ -22,6 +24,7 @@ var _ phaseBuilder = &linuxPhaseBuilder{}
 type wslPhaseBuilder struct {
 	runtime     *common.KubeRuntime
 	manifestMap manifest.InstallationManifest
+	baseDir     string
 }
 
 func (l *wslPhaseBuilder) base() phase {
@@ -29,13 +32,13 @@ func (l *wslPhaseBuilder) base() phase {
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
+				BaseDir:  l.baseDir,
 			},
 		},
 		&patch.InstallDepsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
+				BaseDir:  l.baseDir,
 			},
 		},
 		&os.ConfigSystemModule{},
@@ -49,7 +52,7 @@ func (l *wslPhaseBuilder) installContainerModule() []module.Module {
 			&k3s.InstallContainerModule{
 				ManifestModule: manifest.ManifestModule{
 					Manifest: l.manifestMap,
-					BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
+					BaseDir:  l.baseDir,
 				},
 			},
 		}
@@ -58,7 +61,7 @@ func (l *wslPhaseBuilder) installContainerModule() []module.Module {
 			&container.InstallContainerModule{
 				ManifestModule: manifest.ManifestModule{
 					Manifest: l.manifestMap,
-					BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
+					BaseDir:  l.baseDir,
 				},
 				NoneCluster: true,
 			}, //
@@ -67,13 +70,25 @@ func (l *wslPhaseBuilder) installContainerModule() []module.Module {
 }
 
 func (l *wslPhaseBuilder) build() []module.Module {
+	var baseDir = l.runtime.GetBaseDir()
+	var systemInfo = l.runtime.GetSystemInfo()
+
+	if systemInfo.IsWsl() {
+		var wslPackageDir = l.runtime.Arg.GetWslUserPath()
+		if wslPackageDir != "" {
+			baseDir = fmt.Sprintf("%s/.terminus", wslPackageDir)
+		}
+	}
+
+	l.baseDir = baseDir
+
 	(&gpu.CheckWslGPU{}).Execute(l.runtime)
 	return l.base().
 		addModule(l.installContainerModule()...).
 		addModule(&images.PreloadImagesModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
+				BaseDir:  l.baseDir,
 			},
 		}).
 		addModule(gpuModuleBuilder(func() []module.Module {
@@ -81,7 +96,7 @@ func (l *wslPhaseBuilder) build() []module.Module {
 				&gpu.InstallDepsModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.GetBaseDir(), //l.runtime.Arg.BaseDir,
+						BaseDir:  l.baseDir,
 					},
 				},
 				&gpu.RestartContainerdModule{},
@@ -93,7 +108,7 @@ func (l *wslPhaseBuilder) build() []module.Module {
 				&daemon.InstallTerminusdBinaryModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
+						BaseDir:  l.baseDir,
 					},
 				},
 			}

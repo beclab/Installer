@@ -165,14 +165,16 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 	}
 
 	if _, err = cmd.Run(); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
+		logger.Debugf("set portproxy listenport 80 failed, maybe it's already exist %v", err)
+		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{fmt.Sprintf("netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=443 connectaddress=%s", ip)},
 	}
 	if _, err = cmd.Run(); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
+		logger.Debugf("set portproxy listenport 443 failed, maybe it's already exist %v", err)
+		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
@@ -180,7 +182,8 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 	}
 
 	if _, err = cmd.Run(); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
+		logger.Debugf("set portproxy listenport 30180 failed, maybe it's already exist %v", err)
+		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	return nil
@@ -192,6 +195,11 @@ type ConfigWSLHostsAndDns struct {
 
 func (c *ConfigWSLHostsAndDns) Execute(runtime connector.Runtime) error {
 	var cmd = &utils.DefaultCommandExecutor{
+		Commands: []string{"wsl", "-d", distro, "-u", "root", "bash", "-c", "chattr -i /etc/hosts /etc/resolv.conf && "},
+	}
+	_, _ = cmd.Run()
+
+	cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{"wsl", "-d", distro, "-u", "root", "bash", "-c", "echo -e '127.0.0.1 localhost\\n$(ip -4 addr show eth0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}') $(hostname)' > /etc/hosts && echo -e 'nameserver 1.1.1.1\\nnameserver 1.0.0.1' > /etc/resolv.conf"},
 	}
 
@@ -208,6 +216,7 @@ type InstallTerminus struct {
 
 func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 	var systemInfo = runtime.GetSystemInfo()
+	// var windowsUserPath = convertPath(systemInfo.GetHomeDir())
 
 	var envs = []string{
 		fmt.Sprintf("export %s=%s", common.ENV_KUBE_TYPE, i.KubeConf.Arg.Kubetype),
@@ -221,6 +230,7 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		fmt.Sprintf("export %s=%s", common.ENV_FRP_AUTH_METHOD, i.KubeConf.Arg.Frp.AuthMethod),
 		fmt.Sprintf("export %s=%s", common.ENV_FRP_AUTH_TOKEN, i.KubeConf.Arg.Frp.AuthToken),
 		fmt.Sprintf("export %s=%d", common.ENV_TOKEN_MAX_AGE, i.KubeConf.Arg.TokenMaxAge),
+		fmt.Sprintf("export %s=%s", common.ENV_PREINSTALL, os.Getenv(common.ENV_PREINSTALL)),
 		fmt.Sprintf("export %s=%s", common.ENV_MARKET_PROVIDER, i.KubeConf.Arg.MarketProvider),
 		fmt.Sprintf("export %s=%s", common.ENV_TERMINUS_CERT_SERVICE_API, i.KubeConf.Arg.TerminusCertServiceAPI),
 		fmt.Sprintf("export %s=%s", common.ENV_TERMINUS_DNS_SERVICE_API, i.KubeConf.Arg.TerminusDNSServiceAPI),
@@ -246,4 +256,14 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install terminus %s failed", distro))
 	}
 	return nil
+}
+
+func convertPath(windowsPath string) string {
+	linuxPath := strings.ReplaceAll(windowsPath, `\`, `/`)
+	if len(linuxPath) > 1 && linuxPath[1] == ':' {
+		drive := strings.ToLower(string(linuxPath[0]))
+		linuxPath = "/mnt/" + drive + linuxPath[2:]
+	}
+
+	return linuxPath
 }
