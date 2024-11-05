@@ -703,28 +703,28 @@ spec:
     - name: k8s.rules
       rules:
         - expr: |
-            sum((container_cpu_usage_seconds_total{job="kubelet", image!="", container!=""} * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"} - container_cpu_usage_seconds_total{job="kubelet", image!="", container!=""} offset 90s * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"}) / 90) by (namespace, workspace)
+            sum by (namespace, workspace) (irate(container_cpu_usage_seconds_total{job="kubelet", image!=""}[5m])) * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"}
             or on(namespace, workspace) max by(namespace, workspace) (kube_namespace_labels * 0)
           record: namespace:container_cpu_usage_seconds_total:sum_rate
         - expr: |
-            sum(container_memory_usage_bytes{job="kubelet", image!="", container!=""} * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, workspace)
+            sum(container_memory_usage_bytes{job="kubelet", image!=""} * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, workspace)
             or on(namespace, workspace) max by(namespace, workspace) (kube_namespace_labels * 0)
           record: namespace:container_memory_usage_bytes:sum
         - expr: |
-            sum(container_memory_working_set_bytes{job="kubelet", image!="", container!=""} * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, workspace)
+            sum(container_memory_working_set_bytes{job="kubelet", image!=""} * on(namespace) group_left(workspace) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, workspace)
             or on(namespace, workspace) max by(namespace, workspace) (kube_namespace_labels * 0)
           record: namespace:container_memory_usage_bytes_wo_cache:sum
 
         - expr: |
-            sum (irate(container_cpu_usage_seconds_total{job="kubelet", image!="", container!=""}[5m]) * on(namespace, cluster) group_left(user) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, user, cluster)
+            sum (irate(container_cpu_usage_seconds_total{job="kubelet", image!=""}[5m]) * on(namespace, cluster) group_left(user) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, user, cluster)
             or on(namespace, user, cluster) max by(namespace, user, cluster) (kube_namespace_labels * 0)
           record: user:container_cpu_usage_seconds_total:sum_rate
         - expr: |
-            sum(container_memory_usage_bytes{job="kubelet", image!="", container!=""} * on(namespace, cluster) group_left(user) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, user, cluster)
+            sum(container_memory_usage_bytes{job="kubelet", image!=""} * on(namespace, cluster) group_left(user) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, user, cluster)
             or on(namespace, user, cluster) max by(namespace, user, cluster) (kube_namespace_labels * 0)
           record: user:container_memory_usage_bytes:sum
         - expr: |
-            sum(container_memory_working_set_bytes{job="kubelet", image!="", container!=""} * on(namespace, cluster) group_left(user) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, user, cluster)
+            sum(container_memory_working_set_bytes{job="kubelet", image!=""} * on(namespace, cluster) group_left(user) kube_namespace_labels{job="kube-state-metrics"}) by (namespace, user, cluster)
             or on(namespace, user, cluster) max by(namespace, user, cluster) (kube_namespace_labels * 0)
           record: user:container_memory_usage_bytes_wo_cache:sum
 
