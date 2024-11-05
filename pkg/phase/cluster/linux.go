@@ -17,7 +17,7 @@ type linuxInstallPhaseBuilder struct {
 func (l *linuxInstallPhaseBuilder) base() phase {
 	m := []module.Module{
 		&plugins.CopyEmbed{},
-		&terminus.CheckPreparedModule{BaseDir: l.runtime.GetBaseDir(), Force: true},
+		&terminus.CheckPreparedModule{Force: true},
 		&terminus.TerminusUninstallScriptModule{},
 	}
 
@@ -56,5 +56,6 @@ func (l *linuxInstallPhaseBuilder) build() []module.Module {
 		addModule(l.installCluster()...).
 		addModule(l.installGpuPlugin()...).
 		addModule(l.installTerminus()...).
-		addModule(&terminus.WelcomeModule{})
+		addModule(&terminus.WelcomeModule{}).
+		addModule(&terminus.InstalledModule{})
 }

@@ -21,6 +21,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	var arg = common.NewArgument()
 	arg.SetTerminusVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
+	arg.SetConsoleLogFileName("uninstall.log")
 	arg.SetKubeVersion(kubeType)
 	arg.SetDeleteCRI(opt.All || (opt.Phase == cluster.PhasePrepare.String() || opt.Phase == cluster.PhaseDownload.String()))
 	arg.SetStorage(&common.Storage{

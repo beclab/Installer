@@ -52,7 +52,7 @@ type BaseRuntime struct {
 	k8sClient       *kubernetes.Clientset
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, systemInfo Systems) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, consoleLogFileName string, systemInfo Systems) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -75,7 +75,7 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		fmt.Printf("[ERRO]: Failed to create work dir: %s\n", err)
 		os.Exit(1)
 	}
-	if err := base.InitLogger(); err != nil {
+	if err := base.InitLogger(consoleLogFileName); err != nil {
 		fmt.Printf("[ERRO]: Failed to init log entry: %s\n", err)
 		os.Exit(1)
 	}
@@ -229,10 +229,13 @@ func (b *BaseRuntime) HostIsDeprecated(host Host) bool {
 	return false
 }
 
-func (b *BaseRuntime) InitLogger() error {
+func (b *BaseRuntime) InitLogger(consoleLogFileName string) error {
+	if consoleLogFileName == "" {
+		consoleLogFileName = "install.log"
+	}
 	// the JSON-structured logs under .terminus/logs/yyyy-mm-dd_hh-mm-ss.log
 	// and the console formatted logs under .terminus/versions/v{version}/install.log (for backward compatibility)
-	logger.InitLog(path.Join(b.baseDir, "logs"), path.Join(b.installerDir, "logs"))
+	logger.InitLog(path.Join(b.baseDir, "logs"), path.Join(b.installerDir, "logs", consoleLogFileName))
 	return nil
 }
 

@@ -70,7 +70,7 @@ func (g *GetKubeType) Execute() (kubeType string) {
 	}
 
 	if util.IsExist("/etc/systemd/system/k3s.service") || util.IsExist("/usr/local/bin/k3s-uninstall.sh") {
-		return
+		kubeType = common.K3s
 	} else {
 		kubeType = common.K8s
 	}
@@ -86,10 +86,13 @@ func (g *GetKubeVersion) Execute() (string, string, error) {
 		return "", "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get nodes -l node-role.kubernetes.io/master -o jsonpath='{.items[*].status.nodeInfo.kubeletVersion}'", kubectlpath))
+	// the kubectl command may continue running after the context has timed out
+	// causing the cmd.Wait() to block for a long time
+	cmd.WaitDelay = 3 * time.Second
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", "", errors.Wrap(errors.WithStack(err), "get kube version failed")

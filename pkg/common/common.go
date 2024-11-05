@@ -60,8 +60,9 @@ const (
 	KubeScriptDir                = "/usr/local/bin/kube-scripts"
 	KubeletFlexvolumesPluginsDir = "/usr/libexec/kubernetes/kubelet-plugins/volume/exec"
 	K3sImageDir                  = "/var/lib/images"
-	MinikubeDefaultProfileName   = "terminus-0"
+	MinikubeDefaultProfile       = "terminus-0"
 	MinikubeEtcdCertDir          = "/var/lib/minikube/certs/etcd"
+	WSLDefaultDistribution       = "Ubuntu"
 	RunLockDir                   = "/var/run/lock"
 
 	InstallerScriptsDir = "scripts"
@@ -174,7 +175,9 @@ const (
 )
 
 const (
-	ManifestImageList = "images.mf"
+	ManifestImageList          = "images.mf"
+	TerminusStateFilePrepared  = ".prepared"
+	TerminusStateFileInstalled = ".installed"
 )
 
 const (
@@ -220,6 +223,7 @@ const (
 
 	CacheHostRedisPassword = "hostredis_password"
 	CachePreparedState     = "prepare_state"
+	CacheInstalledState    = "install_state"
 
 	CacheJuiceFsPath     = "juicefs_binary_path"
 	CacheJuiceFsFileName = "juicefs_binary_filename"

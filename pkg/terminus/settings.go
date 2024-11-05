@@ -48,8 +48,8 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 	var data = util.Data{
 		"UserName":           p.KubeConf.Arg.User.UserName,
 		"S3SessionToken":     s3SessionToken,
-		"S3AccessKeyId":      s3AccessKey,
-		"S3SecretAccessKey":  s3SecretKey,
+		"S3AccessKey":        s3AccessKey,
+		"S3SecretKey":        s3SecretKey,
 		"ClusterID":          p.KubeConf.Arg.Storage.StorageClusterId,
 		"TerminusdInstalled": terminusdInstalled,
 	}

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -53,15 +54,55 @@ func (t *EnableMinio) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type GetOrSetMinIOPassword struct {
+	common.KubeAction
+}
+
+func (t *GetOrSetMinIOPassword) Execute(runtime connector.Runtime) (err error) {
+	var minioPassword string
+	defer func() {
+		if err == nil {
+			t.PipelineCache.Set(common.CacheMinioPassword, minioPassword)
+		}
+	}()
+	if !util.IsExist(MinioConfigFile) {
+		minioPassword, _ = utils.GeneratePassword(16)
+		return
+	}
+	minioPassword, err = getMinioPwdFromConfigFile()
+	if err != nil {
+		return
+	}
+	if minioPassword != "" {
+		logger.Debugf("using existing minio password: %s found in %s", minioPassword, MinioConfigFile)
+		return
+	}
+	logger.Warnf("found MinIO config file %s but password is not set, generating a new one", MinioConfigFile)
+	minioPassword, _ = utils.GeneratePassword(16)
+	return
+}
+
+func getMinioPwdFromConfigFile() (string, error) {
+	var cmd = fmt.Sprintf("cat %s 2>&1 |grep 'MINIO_ROOT_PASSWORD=' |cut -d'=' -f2 |tr -d '\n'", MinioConfigFile)
+	if res, _, err := util.Exec(context.Background(), cmd, false, false); err != nil {
+		return "", errors.Wrap(err, "failed to get minio password")
+	} else {
+		return res, nil
+	}
+}
+
 type ConfigMinio struct {
 	common.KubeAction
 }
 
 func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 	// write file
+	minioPassword, ok := t.PipelineCache.GetMustString(common.CacheMinioPassword)
 	var systemInfo = runtime.GetSystemInfo()
 	var localIp = systemInfo.GetLocalIp()
-	var minioPassword, _ = utils.GeneratePassword(16)
+	if !ok || minioPassword == "" {
+		return errors.New("no minio password is set")
+	}
 	var data = util.Data{
 		"MinioCommand": MinioFile,
 	}
@@ -87,8 +128,6 @@ func (t *ConfigMinio) Execute(runtime connector.Runtime) error {
 	if err := util.WriteFile(MinioConfigFile, []byte(minioEnvStr), cc.FileMode0644); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write minio env %s failed", MinioConfigFile))
 	}
-
-	t.PipelineCache.Set(common.CacheMinioPassword, minioPassword)
 
 	return nil
 }
@@ -167,6 +206,12 @@ func (m *InstallMinioModule) Init() {
 		Retry:    1,
 	}
 
+	getOrSetMinIOPassword := &task.LocalTask{
+		Name:   "GetOrSetMinIOPassword",
+		Action: new(GetOrSetMinIOPassword),
+		Retry:  1,
+	}
+
 	configMinio := &task.RemoteTask{
 		Name:     "ConfigMinio",
 		Hosts:    m.Runtime.GetAllHosts(),
@@ -194,6 +239,7 @@ func (m *InstallMinioModule) Init() {
 
 	m.Tasks = []task.Interface{
 		installMinio,
+		getOrSetMinIOPassword,
 		configMinio,
 		enableMinio,
 		checkMinioState,

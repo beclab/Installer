@@ -1,11 +1,17 @@
 package terminus
 
 import (
+	bootstraptpl "bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
+	"bytetrade.io/web3os/installer/pkg/core/action"
+	"bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"context"
 	"fmt"
+	"io/fs"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -157,7 +163,7 @@ type PrepareFinished struct {
 }
 
 func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
-	var preparedFile = filepath.Join(runtime.GetBaseDir(), ".prepared")
+	var preparedFile = filepath.Join(runtime.GetBaseDir(), common.TerminusStateFilePrepared)
 	return util.WriteFile(preparedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
 	// if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", preparedFile), false, true); err != nil {
 	// 	return err
@@ -165,19 +171,35 @@ func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
 	// return nil
 }
 
-type CheckPepared struct {
+type CheckPrepared struct {
 	common.KubeAction
-	BaseDir string
-	Force   bool
+	Force bool
 }
 
-func (t *CheckPepared) Execute(runtime connector.Runtime) error {
-	var preparedPath = filepath.Join(t.BaseDir, ".prepared")
+func (t *CheckPrepared) Execute(runtime connector.Runtime) error {
+	var preparedPath = filepath.Join(runtime.GetBaseDir(), common.TerminusStateFilePrepared)
 
 	if utils.IsExist(preparedPath) {
-		t.PipelineCache.Set(common.CachePreparedState, "true") // TODO not used
+		t.PipelineCache.Set(common.CachePreparedState, true)
 	} else if t.Force {
 		return errors.New("terminus is not prepared well, cannot continue actions")
+	}
+
+	return nil
+}
+
+type CheckInstalled struct {
+	common.KubeAction
+	Force bool
+}
+
+func (t *CheckInstalled) Execute(runtime connector.Runtime) error {
+	var installedPath = filepath.Join(runtime.GetBaseDir(), common.TerminusStateFileInstalled)
+
+	if utils.IsExist(installedPath) {
+		t.PipelineCache.Set(common.CacheInstalledState, true)
+	} else if t.Force {
+		return errors.New("terminus is not installed, refuse to continue")
 	}
 
 	return nil
@@ -222,7 +244,7 @@ type InstallFinished struct {
 
 func (t *InstallFinished) Execute(runtime connector.Runtime) error {
 	var content = fmt.Sprintf("%s %s", t.KubeConf.Arg.TerminusVersion, t.KubeConf.Arg.Kubetype)
-	var phaseState = path.Join(runtime.GetBaseDir(), ".installed")
+	var phaseState = path.Join(runtime.GetBaseDir(), common.TerminusStateFileInstalled)
 	if err := util.WriteFile(phaseState, []byte(content), cc.FileMode0644); err != nil {
 		return err
 	}
@@ -244,5 +266,193 @@ func (d *DeleteWizardFiles) Execute(runtime connector.Runtime) error {
 			runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", dir), false, true)
 		}
 	}
+	return nil
+}
+
+type SystemctlCommand struct {
+	common.KubeAction
+	UnitNames           []string
+	Command             string
+	DaemonReloadPreExec bool
+}
+
+func (a *SystemctlCommand) Execute(runtime connector.Runtime) error {
+	if a.DaemonReloadPreExec {
+		if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, true); err != nil {
+			return errors.Wrap(errors.WithStack(err), "systemctl reload failed")
+		}
+	}
+	for _, unitName := range a.UnitNames {
+		cmd := fmt.Sprintf("systemctl %s %s", a.Command, unitName)
+		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+			return errors.Wrapf(err, "failed to execute command: %s", cmd)
+		}
+	}
+
+	return nil
+}
+
+// PrepareFilesForETCDIPChange simply copies the current CA cert and key
+// to the work directory of Installer,
+// so that after the regeneration is done,
+// all other certs and keys is replaced with a new one
+// but issued by the same CA
+type PrepareFilesForETCDIPChange struct {
+	common.KubeAction
+}
+
+func (a *PrepareFilesForETCDIPChange) Execute(runtime connector.Runtime) error {
+	srcCertsDir := "/etc/ssl/etcd/ssl"
+	dstCertsDir := filepath.Join(runtime.GetWorkDir(), "/pki/etcd")
+	if err := util.RemoveDir(dstCertsDir); err != nil {
+		return errors.Wrap(err, "failed to clear work directory for etcd certs")
+	}
+	if err := util.Mkdir(dstCertsDir); err != nil {
+		return errors.Wrap(err, "failed to create work directory for etcd certs")
+	}
+	return filepath.WalkDir(srcCertsDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasPrefix(filepath.Base(path), "ca") {
+			if err := util.CopyFile(path, dstCertsDir); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+type PrepareFilesForK8sIPChange struct {
+	common.KubeAction
+}
+
+func (a *PrepareFilesForK8sIPChange) Execute(runtime connector.Runtime) error {
+	k8sConfDir := "/etc/kubernetes"
+	return filepath.WalkDir(k8sConfDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) == ".conf" {
+			logger.Debugf("removing %s", path)
+			return util.RemoveFile(path)
+		}
+		if filepath.Base(path) == "kubeadm-config.yaml" {
+			logger.Debugf("removing %s", path)
+			return util.RemoveFile(path)
+		}
+		if strings.Contains(path, "pki") && !strings.HasPrefix(filepath.Base(path), "ca") {
+			logger.Debugf("removing %s", path)
+			return util.RemoveFile(path)
+		}
+		return nil
+	})
+}
+
+type RegenerateFilesForK8sIPChange struct {
+	common.KubeAction
+}
+
+func (a *RegenerateFilesForK8sIPChange) Execute(runtime connector.Runtime) error {
+	initCmd := "/usr/local/bin/kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml --skip-phases=preflight,mark-control-plane,bootstrap-token,addon"
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(initCmd, false, false); err != nil {
+		return err
+	}
+	return nil
+}
+
+type DeleteAllPods struct {
+	common.KubeAction
+}
+
+func (a *DeleteAllPods) Execute(runtime connector.Runtime) error {
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
+	var cmd = fmt.Sprintf("%s delete pod --all --all-namespaces", kubectlpath)
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type UpdateKubeKeyHosts struct {
+	common.KubeAction
+}
+
+func (a *UpdateKubeKeyHosts) Execute(runtime connector.Runtime) error {
+
+	scriptPath := filepath.Join(runtime.GetWorkDir(), "change-ip-scripts", "update-kubekey-hosts.sh")
+	tplAction := &action.Template{
+		Name:     "GenerateHostsUpdateScript",
+		Template: templates.UpdateKKHostsScriptTmpl,
+		Dst:      scriptPath,
+		Data: util.Data{
+			"Hosts": bootstraptpl.GenerateHosts(runtime, a.KubeConf),
+		},
+	}
+	if err := tplAction.Execute(runtime); err != nil {
+		return errors.Wrapf(err, fmt.Sprintf("failed to generate update hosts script: %s", scriptPath))
+	}
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("chmod +x %s", scriptPath), false, false); err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to chmod +x update hosts script")
+	}
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(scriptPath, false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to run update hosts script")
+	}
+	return nil
+}
+
+type CheckTerminusStateInHost struct {
+	common.KubeAction
+}
+
+func (a *CheckTerminusStateInHost) Execute(runtime connector.Runtime) error {
+	si := runtime.GetSystemInfo()
+	var kubectlCMD string
+	var kubectlCMDDefaultArgs []string
+	var err error
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if si.IsDarwin() {
+		minikube, err := util.GetCommand(common.CommandMinikube)
+		if err != nil {
+			return errors.Wrap(err, "failed to get minikube command")
+		}
+		_, _, err = util.Exec(ctx, fmt.Sprintf("%s update-context -p %s", minikube, a.KubeConf.Arg.MinikubeProfile), false, true)
+		if err != nil {
+			fmt.Printf("failed to update minikube context to %s, is it up and running?", a.KubeConf.Arg.MinikubeProfile)
+			os.Exit(1)
+		}
+		kubectlCMD, err = util.GetCommand(common.CommandKubectl)
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), "kubectl not found")
+		}
+	} else if si.IsWindows() {
+		kubectlCMD = "cmd"
+		kubectlCMDDefaultArgs = []string{"/C", "wsl", "-d", a.KubeConf.Arg.WSLDistribution, "-u", "root", common.CommandKubectl}
+	}
+
+	getTerminusArgs := []string{"get", "terminus"}
+
+	getTerminusCMD := exec.CommandContext(ctx, kubectlCMD, append(kubectlCMDDefaultArgs, getTerminusArgs...)...)
+	getTerminusCMD.WaitDelay = 3 * time.Second
+	output, err := getTerminusCMD.CombinedOutput()
+	if err != nil {
+		logger.Debugf("failed to run command %v, ouput: %s, err: %s", getTerminusCMD, output, err)
+		fmt.Println("failed to check the existence of terminus, is it installed and running?")
+		os.Exit(1)
+	}
+
 	return nil
 }

@@ -18,6 +18,7 @@ package os
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -348,15 +349,115 @@ func (r *RemoveNodeFiles) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type RemoveFiles struct {
+type RemoveClusterFiles struct {
 	common.KubeAction
 }
 
-func (r *RemoveFiles) Execute(runtime connector.Runtime) error {
+func (r *RemoveClusterFiles) Execute(runtime connector.Runtime) error {
 	for _, file := range clusterFiles {
 		_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", file), false, false)
 	}
 	return nil
+}
+
+type BackupDirBase struct {
+	BackupDir string
+}
+
+func (b *BackupDirBase) InitPath(runtime connector.Runtime) error {
+	b.BackupDir = path.Clean(b.BackupDir)
+	if b.BackupDir == "." {
+		return errors.New("backup dir is empty")
+	}
+	if !strings.HasSuffix(b.BackupDir, runtime.GetWorkDir()) {
+		logger.Warnf("backup dir does not in workdir %s, prepending the path prefix for safety", runtime.GetWorkDir())
+		b.BackupDir = path.Join(runtime.GetWorkDir(), b.BackupDir)
+	}
+	if err := util.CreateDir(b.BackupDir); err != nil {
+		return errors.Wrapf(err, "failed to create backup dir %s", b.BackupDir)
+	}
+	return nil
+}
+
+type BackupFilesToDir struct {
+	common.KubeAction
+	*BackupDirBase
+	Files []string
+}
+
+func (a *BackupFilesToDir) Execute(runtime connector.Runtime) error {
+	if err := a.InitPath(runtime); err != nil {
+		return err
+	}
+	for _, file := range a.Files {
+		if file == "" {
+			continue
+		}
+		if !util.IsExist(file) {
+			logger.Warnf("backup target file does not exist: %s", file)
+			continue
+		}
+		if !filepath.IsAbs(file) {
+			var err error
+			file, err = filepath.Abs(file)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get absolute path of %s", file)
+			}
+		}
+		if err := util.CreateDir(path.Join(a.BackupDir, path.Dir(file))); err != nil {
+			return errors.Wrapf(err, "failed to create backup dir %s for file %s", path.Dir(file), path.Base(file))
+		}
+		logger.Debugf("copying file %s to backup dir %s", file, a.BackupDir)
+		if err := util.CopyFile(file, path.Join(a.BackupDir, path.Dir(file))); err != nil {
+			return errors.Wrapf(err, "failed to copy file %s to backup dir", file)
+		}
+	}
+	return nil
+}
+
+type ClearBackUpDir struct {
+	common.KubeAction
+	*BackupDirBase
+}
+
+func (a *ClearBackUpDir) Execute(runtime connector.Runtime) error {
+	if err := a.InitPath(runtime); err != nil {
+		return err
+	}
+	if err := util.RemoveDir(a.BackupDir); err != nil {
+		return errors.Wrapf(err, "failed to remove backup dir %s", a.BackupDir)
+	}
+	return nil
+}
+
+type RestoreBackedUpFiles struct {
+	common.KubeAction
+	*BackupDirBase
+}
+
+func (a *RestoreBackedUpFiles) Execute(runtime connector.Runtime) error {
+	if err := a.InitPath(runtime); err != nil {
+		return err
+	}
+	return filepath.WalkDir(a.BackupDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		originalPath, err := filepath.Rel(a.BackupDir, path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get original path of backed up file %s", path)
+		}
+		if err := util.CreateDir(filepath.Dir(originalPath)); err != nil {
+			return errors.Wrapf(err, "failed to create original dir of backed up file %s", originalPath)
+		}
+		if err := util.CopyFile(path, originalPath); err != nil {
+			return errors.Wrapf(err, "failed to restore backed up file %s", originalPath)
+		}
+		return nil
+	})
 }
 
 type DaemonReload struct {
