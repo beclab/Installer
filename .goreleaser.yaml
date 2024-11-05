@@ -22,8 +22,8 @@ builds:
       - goos: windows
         goarch: arm
     ldflags:
-      - s
-      - w
+      - -s
+      - -w
       - -X bytetrade.io/web3os/installer/version.VERSION={{ .Version }}
 dist: ./output
 archives:
