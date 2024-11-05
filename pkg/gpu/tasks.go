@@ -170,45 +170,42 @@ type PatchK3sDriver struct { // patch k3s on wsl
 }
 
 func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
-	if runtime.GetSystemInfo().IsWsl() {
-		var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
-		driverPath, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
-		if err != nil {
-			return err
-		}
+	var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
+	driverPath, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+	if err != nil {
+		return err
+	}
 
-		if driverPath == "" {
-			logger.Infof("cuda driver not found")
-			return nil
-		} else {
-			logger.Infof("cuda driver found: %s", driverPath)
-		}
+	if driverPath == "" {
+		logger.Infof("cuda driver not found")
+		return nil
+	} else {
+		logger.Infof("cuda driver found: %s", driverPath)
+	}
 
-		templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)
-		if err != nil {
-			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", k3sGpuTemplates.K3sCudaFixValues.Name()))
-		}
+	templateStr, err := util.Render(k3sGpuTemplates.K3sCudaFixValues, nil)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", k3sGpuTemplates.K3sCudaFixValues.Name()))
+	}
 
-		var fixName = "cuda_lib_fix.sh"
-		// var fixPath = path.Join(runtime.GetHomeDir(), cc.TerminusKey, cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
-		var fixPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
-		if err := util.WriteFile(fixPath, []byte(templateStr), cc.FileMode0755); err != nil {
-			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fixPath))
-		}
+	var fixName = "cuda_lib_fix.sh"
+	var fixPath = path.Join(runtime.GetBaseDir(), cc.PackageCacheDir, "gpu", "cuda_lib_fix.sh")
+	if err := util.WriteFile(fixPath, []byte(templateStr), cc.FileMode0755); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fixPath))
+	}
 
-		var dstName = path.Join(common.BinDir, fixName)
-		if err := runtime.GetRunner().Host.SudoScp(fixPath, dstName); err != nil {
-			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fixPath, dstName))
-		}
+	var dstName = path.Join(common.BinDir, fixName)
+	if err := runtime.GetRunner().Host.SudoScp(fixPath, dstName); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fixPath, dstName))
+	}
 
-		cmd = fmt.Sprintf("echo 'ExecStartPre=-/usr/local/bin/%s' >> /etc/systemd/system/k3s.service", fixName)
-		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
-			return err
-		}
+	cmd = fmt.Sprintf("echo 'ExecStartPre=-/usr/local/bin/%s' >> /etc/systemd/system/k3s.service", fixName)
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		return err
+	}
 
-		if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
-			return err
-		}
+	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
+		return err
 	}
 
 	return nil
