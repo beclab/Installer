@@ -44,7 +44,6 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	runtime.Arg.SetManifest(manifest)
 
-	// var p = cluster.CreateTerminus(runtime)
 	var p = cluster.InstallSystemPhase(runtime)
 	logger.InfoInstallationProgress("Start to Install Terminus ...")
 	if err := p.Start(); err != nil {

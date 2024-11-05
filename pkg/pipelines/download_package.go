@@ -1,11 +1,12 @@
 package pipelines
 
 import (
+	"path"
+
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/phase/download"
-	"path"
 )
 
 func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {

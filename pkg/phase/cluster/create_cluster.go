@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"path"
+
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 
 	"bytetrade.io/web3os/installer/pkg/addons"
@@ -51,6 +53,12 @@ func NewDarwinClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 }
 
 func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.InstallationManifest) []module.Module {
+	systemInfo := runtime.GetSystemInfo()
+	baseDir := runtime.GetBaseDir()
+	if systemInfo.IsWsl() {
+		baseDir = path.Join(runtime.Arg.GetWslUserPath(), ".terminus")
+	}
+
 	skipLocalStorage := true
 	if runtime.Arg.DeployLocalStorage != nil {
 		skipLocalStorage = !*runtime.Arg.DeployLocalStorage
@@ -65,7 +73,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.GetBaseDir(),
+				BaseDir:  baseDir,
 				Manifest: manifestMap,
 			},
 			Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
@@ -73,7 +81,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 		&etcd.BackupModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&k3s.InstallKubeBinariesModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.GetBaseDir(),
+				BaseDir:  baseDir,
 				Manifest: manifestMap,
 			},
 		},
@@ -105,8 +113,12 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 }
 
 func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.InstallationManifest) []module.Module {
-	// noArtifact := runtime.Arg.Artifact == ""
-	// skipPushImages := runtime.Arg.SKipPushImages || noArtifact || (!noArtifact && runtime.Cluster.Registry.PrivateRegistry == "")
+	systemInfo := runtime.GetSystemInfo()
+	baseDir := runtime.GetBaseDir()
+	if systemInfo.IsWsl() {
+		baseDir = path.Join(runtime.Arg.GetWslUserPath(), ".terminus")
+	}
+
 	skipLocalStorage := true
 	if runtime.Arg.DeployLocalStorage != nil {
 		skipLocalStorage = !*runtime.Arg.DeployLocalStorage
@@ -123,7 +135,7 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.GetBaseDir(),
+				BaseDir:  baseDir,
 				Manifest: manifestMap,
 			},
 			Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey,
@@ -132,7 +144,7 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 		&etcd.BackupModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&kubernetes.InstallKubeBinariesModule{
 			ManifestModule: manifest.ManifestModule{
-				BaseDir:  runtime.GetBaseDir(),
+				BaseDir:  baseDir,
 				Manifest: manifestMap,
 			},
 		},
