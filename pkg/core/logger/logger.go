@@ -15,8 +15,8 @@ var logger *zap.SugaredLogger
 
 var FatalMessagePrefix = "[FATAL] "
 
-func InitLog(jsonLogDir, consoleLogDir string) {
-	for _, logDir := range []string{jsonLogDir, consoleLogDir} {
+func InitLog(jsonLogDir, consoleLogFilePath string) {
+	for _, logDir := range []string{jsonLogDir, path.Dir(consoleLogFilePath)} {
 		found, err := isDirExist(logDir)
 		if err != nil {
 			fmt.Println("log dir found error", err)
@@ -37,8 +37,7 @@ func InitLog(jsonLogDir, consoleLogDir string) {
 	if err != nil {
 		panic(err)
 	}
-	consoleLogFileName := path.Join(consoleLogDir, "install.log")
-	consoleLogFile, err := os.OpenFile(consoleLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
+	consoleLogFile, err := os.OpenFile(consoleLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
 	if err != nil {
 		panic(err)
 	}

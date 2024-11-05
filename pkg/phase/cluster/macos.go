@@ -16,7 +16,7 @@ type macosInstallPhaseBuilder struct {
 func (m *macosInstallPhaseBuilder) base() phase {
 	mo := []module.Module{
 		&plugins.CopyEmbed{},
-		&terminus.CheckPreparedModule{BaseDir: m.runtime.GetBaseDir(), Force: true},
+		&terminus.CheckPreparedModule{Force: true},
 		&terminus.TerminusUninstallScriptModule{},
 	}
 
@@ -42,5 +42,6 @@ func (m *macosInstallPhaseBuilder) build() []module.Module {
 	return m.base().
 		addModule(m.installCluster()...).
 		addModule(m.installTerminus()...).
-		addModule(&terminus.WelcomeModule{})
+		addModule(&terminus.WelcomeModule{}).
+		addModule(&terminus.InstalledModule{})
 }

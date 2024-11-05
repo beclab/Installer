@@ -85,8 +85,8 @@ func (t *UninstallMinikube) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	var phaseStats = []string{".installed", ".prepared"}
-	for _, ps := range phaseStats {
+	var phaseStateFiles = []string{common.TerminusStateFileInstalled, common.TerminusStateFilePrepared}
+	for _, ps := range phaseStateFiles {
 		if util.IsExist(path.Join(runtime.GetBaseDir(), ps)) {
 			util.RemoveFile(path.Join(runtime.GetBaseDir(), ps))
 		}

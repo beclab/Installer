@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -59,14 +61,54 @@ func (t *EnableRedisService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type GetOrSetRedisPassword struct {
+	common.KubeAction
+}
+
+func (t *GetOrSetRedisPassword) Execute(runtime connector.Runtime) (err error) {
+	var redisPassword string
+	defer func() {
+		if err == nil {
+			t.PipelineCache.Set(common.CacheHostRedisPassword, redisPassword)
+		}
+	}()
+	if !util.IsExist(RedisConfigFile) {
+		redisPassword, _ = utils.GeneratePassword(16)
+		return
+	}
+	redisPassword, err = getRedisPwdFromConfigFile()
+	if err != nil {
+		return
+	}
+	if redisPassword != "" {
+		logger.Debugf("using existing Redis password: %s found in %s", redisPassword, RedisConfigFile)
+		return
+	}
+	logger.Warnf("found Redis config file %s but password is not set, generating a new one", RedisConfigFile)
+	redisPassword, _ = utils.GeneratePassword(16)
+	return
+}
+
+func getRedisPwdFromConfigFile() (string, error) {
+	var cmd = fmt.Sprintf("cat %s 2>&1 |grep requirepass |cut -d' ' -f2 |tr -d '\n'", RedisConfigFile)
+	if res, _, err := util.Exec(context.Background(), cmd, false, false); err != nil {
+		return "", errors.Wrap(err, "failed to get redis password")
+	} else {
+		return res, nil
+	}
+}
+
 type ConfigRedis struct {
 	common.KubeAction
 }
 
 func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
+	redisPassword, ok := t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
+	if !ok || redisPassword == "" {
+		return errors.New("redis password not set")
+	}
 	var systemInfo = runtime.GetSystemInfo()
 	var localIp = systemInfo.GetLocalIp()
-	var redisPassword, _ = utils.GeneratePassword(16) // todo
 	if !utils.IsExist(RedisRootDir) {
 		utils.Mkdir(RedisConfigDir)
 		utils.Mkdir(RedisDataDir)
@@ -99,8 +141,6 @@ func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
 	if err := util.WriteFile(RedisServiceFile, []byte(redisServiceStr), cc.FileMode0644); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write redis service %s failed", RedisServiceFile))
 	}
-
-	t.PipelineCache.Set(common.CacheHostRedisPassword, redisPassword)
 
 	return nil
 }
@@ -184,6 +224,12 @@ func (m *InstallRedisModule) Init() {
 		Retry:    0,
 	}
 
+	getOrSetRedisPassword := &task.LocalTask{
+		Name:   "GetOrSetRedisPassword",
+		Action: new(GetOrSetRedisPassword),
+		Retry:  1,
+	}
+
 	configRedis := &task.RemoteTask{
 		Name:     "Config",
 		Hosts:    m.Runtime.GetAllHosts(),
@@ -211,6 +257,7 @@ func (m *InstallRedisModule) Init() {
 
 	m.Tasks = []task.Interface{
 		installRedis,
+		getOrSetRedisPassword,
 		configRedis,
 		enableRedisService,
 		checkRedisServiceState,

@@ -160,20 +160,8 @@ func Mkdir(dirName string) error {
 }
 
 func CopyFile(src, dst string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
+	cmd := exec.Command("cp", src, dst)
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil

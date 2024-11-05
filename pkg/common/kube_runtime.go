@@ -18,6 +18,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -101,12 +102,14 @@ type Argument struct {
 
 	Request any `json:"-"`
 
-	IsCloudInstance bool     `json:"is_cloud_instance"`
-	MinikubeProfile string   `json:"minikube_profile"`
-	Environment     []string `json:"environment"`
-	BaseDir         string   `json:"base_dir"`
-	Manifest        string   `json:"manifest"`
-	HostIP          string   `json:"host_ip"`
+	IsCloudInstance    bool     `json:"is_cloud_instance"`
+	MinikubeProfile    string   `json:"minikube_profile"`
+	WSLDistribution    string   `json:"wsl_distribution"`
+	Environment        []string `json:"environment"`
+	BaseDir            string   `json:"base_dir"`
+	Manifest           string   `json:"manifest"`
+	ConsoleLogFileName string   `json:"console_log_file_name"`
+	HostIP             string   `json:"host_ip"`
 }
 
 type PublicNetworkInfo struct {
@@ -249,6 +252,20 @@ func (a *Argument) SetStorage(storage *Storage) {
 
 func (a *Argument) SetMinikubeProfile(profile string) {
 	a.MinikubeProfile = profile
+	if profile == "" && a.SystemInfo.IsDarwin() {
+		fmt.Printf("\nNote: Minikube profile is not set, will try to use the default profile: \"%s\"\n", MinikubeDefaultProfile)
+		fmt.Println("if this is not expected, please specify it explicitly by setting the --profile/-p option\n")
+		a.MinikubeProfile = MinikubeDefaultProfile
+	}
+}
+
+func (a *Argument) SetWSLDistribution(distribution string) {
+	a.WSLDistribution = distribution
+	if distribution == "" && a.SystemInfo.IsWindows() {
+		fmt.Printf("\nNote: WSL distribution is not set, will try to use the default distribution: \"%s\"\n", WSLDefaultDistribution)
+		fmt.Println("if this is not expected, please specify it explicitly by setting the --distribution/-d option\n")
+		a.WSLDistribution = WSLDefaultDistribution
+	}
 }
 
 func (a *Argument) SetReverseProxy() {
@@ -303,6 +320,10 @@ func (a *Argument) SetManifest(manifest string) {
 	a.Manifest = manifest
 }
 
+func (a *Argument) SetConsoleLogFileName(consoleLogFileName string) {
+	a.ConsoleLogFileName = consoleLogFileName
+}
+
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	loader := NewLoader(flag, arg)
 	cluster, err := loader.Load()
@@ -315,7 +336,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
-		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.SystemInfo)
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.ConsoleLogFileName, arg.SystemInfo)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.SystemInfo.IsDarwin())

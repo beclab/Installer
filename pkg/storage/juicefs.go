@@ -45,6 +45,14 @@ func (m *InstallJuiceFsModule) Init() {
 		Retry:    1,
 	}
 
+	configJuiceFsMetaDB := &task.RemoteTask{
+		Name:     "ConfigJuiceFSMetaDB",
+		Hosts:    m.Runtime.GetAllHosts(),
+		Action:   new(ConfigJuiceFsMetaDB),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	enableJuiceFsService := &task.RemoteTask{
 		Name:     "EnableJuiceFsService",
 		Hosts:    m.Runtime.GetAllHosts(),
@@ -64,6 +72,7 @@ func (m *InstallJuiceFsModule) Init() {
 
 	m.Tasks = []task.Interface{
 		installJuiceFs,
+		configJuiceFsMetaDB,
 		enableJuiceFsService,
 		checkJuiceFsState,
 	}
@@ -113,33 +122,9 @@ type EnableJuiceFsService struct {
 }
 
 func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
-	var systemInfo = runtime.GetSystemInfo()
-	var localIp = systemInfo.GetLocalIp()
+	localIP := runtime.GetSystemInfo().GetLocalIp()
 	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
-	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, localIp)
-	// todo redis password fetch
-	// var redisPassword, err = getRedisPwd(runtime)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// minioPassword, err := getMinioPwd(runtime)
-	// if err != nil {
-	// 	return err
-	// }
-
-	if redisPassword == "" {
-		return fmt.Errorf("redis password not found")
-	}
-
-	var storageStr = getStorageTypeStr(t.PipelineCache, t.KubeConf.Arg.Storage, localIp)
-	var cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
-	cmd = cmd + storageStr
-
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
-		return err
-	}
-
+	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, localIP)
 	var data = util.Data{
 		"JuiceFsBinPath":    JuiceFsFile,
 		"JuiceFsCachePath":  JuiceFsCacheDir,
@@ -153,10 +138,6 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 	}
 	if err := util.WriteFile(JuiceFsServiceFile, []byte(juiceFsServiceStr), corecommon.FileMode0644); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write juicefs service %s failed", JuiceFsServiceFile))
-	}
-
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "run juicefs failed")
 	}
 
 	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
@@ -174,26 +155,27 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func getRedisPwd(runtime connector.Runtime) (string, error) {
-	var cmd = fmt.Sprintf("cat /terminus/data/redis/etc/redis.conf 2>&1 |grep requirepass |cut -d' ' -f2 |tr -d '\n'")
-	if res, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
-		return "", errors.Wrap(errors.WithStack(err), "get redis password error")
-	} else if res == "" {
-		return "", fmt.Errorf("redis password not found")
-	} else {
-		return res, nil
-	}
+type ConfigJuiceFsMetaDB struct {
+	common.KubeAction
 }
 
-func getMinioPwd(runtime connector.Runtime) (string, error) {
-	var cmd = fmt.Sprintf("cat /etc/default/minio 2>&1 |grep 'MINIO_ROOT_PASSWORD=' |cut -d'=' -f2 |tr -d '\n'")
-	if res, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
-		return "", errors.Wrap(errors.WithStack(err), "get minio password error")
-	} else if res == "" {
-		return "", fmt.Errorf("minio password not found")
-	} else {
-		return res, nil
+func (t *ConfigJuiceFsMetaDB) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
+	var localIp = systemInfo.GetLocalIp()
+	var redisPassword, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
+	var redisService = fmt.Sprintf("redis://:%s@%s:6379/1", redisPassword, localIp)
+	if redisPassword == "" {
+		return fmt.Errorf("redis password not found")
 	}
+
+	var storageStr = getStorageTypeStr(t.PipelineCache, t.KubeConf.Arg.Storage, localIp)
+	var cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
+	cmd = cmd + storageStr
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		return err
+	}
+	return nil
 }
 
 type CheckJuiceFsState struct {
@@ -205,7 +187,7 @@ func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("JuiceFs Pending")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("test -d %s/.trash", JuiceFsMountPointDir), false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s summary %s", JuiceFsFile, JuiceFsMountPointDir), false, false); err != nil {
 		return err
 	}
 
@@ -254,7 +236,4 @@ func getMinioStr(pc *cache.Cache, localIp string) string {
 	var minioPassword, _ = pc.GetMustString(common.CacheMinioPassword)
 	return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
 		localIp, cc.TerminusDir, MinioRootUser, minioPassword)
-
-	// return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
-	// 	constants.LocalIp, cc.TerminusDir, MinioRootUser, minioPassword)
 }

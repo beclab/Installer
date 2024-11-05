@@ -101,7 +101,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&storage.DeleteUserDataModule{},
 			&terminus.DeleteWizardFilesModule{},
 			&storage.DeletePhaseFlagModule{
-				PhaseFile: ".installed",
+				PhaseFile: common.TerminusStateFileInstalled,
 				BaseDir:   p.runtime.GetBaseDir(),
 			},
 		)
@@ -117,7 +117,7 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 			&container.UninstallContainerModule{Skip: p.runtime.Arg.IsCloudInstance},
 			&storage.DeleteTerminusDataModule{},
 			&storage.DeletePhaseFlagModule{
-				PhaseFile: ".prepared",
+				PhaseFile: common.TerminusStateFilePrepared,
 				BaseDir:   p.runtime.GetBaseDir(),
 			},
 		)

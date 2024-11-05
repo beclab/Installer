@@ -198,10 +198,10 @@ func (c *ClearOSEnvironmentModule) Init() {
 	}
 
 	removeFiles := &task.RemoteTask{
-		Name:     "RemoveFiles",
+		Name:     "RemoveClusterFiles",
 		Desc:     "Remove cluster files",
 		Hosts:    c.Runtime.GetHostsByRole(common.K8s),
-		Action:   new(RemoveFiles),
+		Action:   new(RemoveClusterFiles),
 		Parallel: true,
 	}
 
