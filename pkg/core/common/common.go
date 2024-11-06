@@ -24,6 +24,8 @@ const (
 	BuildFilesCacheDir = "files"
 	BuildDir           = "build"
 	GpuDir             = "gpu"
+	LogsDir            = "logs"
+	InstallLogFile     = "install.log"
 
 	// KubeKey = "kubekey"
 	Cli           = "cli"
