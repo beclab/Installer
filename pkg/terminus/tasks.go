@@ -35,10 +35,11 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
 	}
 
-	var ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", fmt.Sprintf("%s get terminus -o jsonpath='{.items[*].spec.version}'", kubectlpath))
+	cmd.WaitDelay = 3 * time.Second
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", errors.Wrap(errors.WithStack(err), "get terminus version failed")
@@ -256,14 +257,15 @@ type DeleteWizardFiles struct {
 }
 
 func (d *DeleteWizardFiles) Execute(runtime connector.Runtime) error {
-	var dirs = []string{
-		path.Join(runtime.GetInstallerDir(), "files"),
-		path.Join(runtime.GetInstallerDir(), "cli"),
+	var locations = []string{
+		path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir),
+		runtime.GetWorkDir(),
+		path.Join(runtime.GetInstallerDir(), cc.LogsDir, cc.InstallLogFile),
 	}
 
-	for _, dir := range dirs {
-		if util.IsExist(dir) {
-			runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", dir), false, true)
+	for _, location := range locations {
+		if util.IsExist(location) {
+			runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", location), false, true)
 		}
 	}
 	return nil
