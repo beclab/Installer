@@ -70,6 +70,7 @@ func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
 			"MarketProvider":         g.KubeConf.Arg.MarketProvider,
 			"TerminusCertServiceAPI": g.KubeConf.Arg.TerminusCertServiceAPI,
 			"TerminusDNSServiceAPI":  g.KubeConf.Arg.TerminusDNSServiceAPI,
+			"TerminusGlobalEnvs":     common.TerminusGlobalEnvs,
 		},
 		PrintContent: true,
 	}
