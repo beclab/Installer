@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -314,6 +315,12 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 
 func (a *Argument) SetBaseDir(dir string) {
 	a.BaseDir = dir
+	if !filepath.IsAbs(dir) {
+		dir, _ = filepath.Abs(dir)
+		if dir != "" {
+			a.BaseDir = dir
+		}
+	}
 }
 
 func (a *Argument) SetManifest(manifest string) {

@@ -274,3 +274,30 @@ const (
 	ENV_PREINSTALL                  = "PREINSTALL"
 	ENV_DISABLE_HOST_IP_PROMPT      = "DISABLE_HOST_IP_PROMPT"
 )
+
+// TerminusGlobalEnvs holds a group of general environment variables
+// which are used for many components
+// along with their default values
+// if they are set in the execution environment
+// the default values are override
+// note that we declare the key type as interface{} on purpose
+// to avoid Helm bug when merging values
+var TerminusGlobalEnvs = map[string]interface{}{
+	"DID_GATE_URL":               "https://did-gate-v3.bttcdn.com/",
+	"OLARES_SPACE_URL":           "https://cloud-api.bttcdn.com/",
+	"FIREBASE_PUSH_URL":          "https://firebase-push-test.bttcdn.com/v1/api/push",
+	"FRP_LIST_URL":               "https://terminus-frp.snowinning.com",
+	"TAILSCALE_CONTROLPLANE_URL": "https://controlplane.snowinning.com",
+}
+
+const (
+	HelmValuesKeyTerminusGlobalEnvs = "terminusGlobalEnvs"
+)
+
+func init() {
+	for envKey, _ := range TerminusGlobalEnvs {
+		if val := os.Getenv(envKey); val != "" {
+			TerminusGlobalEnvs[envKey] = val
+		}
+	}
+}

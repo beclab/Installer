@@ -68,9 +68,10 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 			"is_cloud_version": cloudValue(t.KubeConf.Arg.IsCloudInstance),
 			"sync_secret":      t.KubeConf.Arg.Storage.StorageSyncSecret,
 		},
-		"gpu":       getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share),
-		"s3_bucket": t.KubeConf.Arg.Storage.StorageBucket,
-		"fs_type":   getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin()),
+		"gpu":                                  getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share),
+		"s3_bucket":                            t.KubeConf.Arg.Storage.StorageBucket,
+		"fs_type":                              getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin()),
+		common.HelmValuesKeyTerminusGlobalEnvs: common.TerminusGlobalEnvs,
 	}
 
 	if !runtime.GetSystemInfo().IsDarwin() {
