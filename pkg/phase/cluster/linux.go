@@ -54,7 +54,9 @@ func (l *linuxInstallPhaseBuilder) installTerminus() phase {
 func (l *linuxInstallPhaseBuilder) build() []module.Module {
 	return l.base().
 		addModule(l.installCluster()...).
-		addModule(l.installGpuPlugin()...).
+		addModule(gpuModuleBuilder(func() []module.Module {
+			return l.installGpuPlugin()
+		}).withGPU()...).
 		addModule(l.installTerminus()...).
 		addModule(&terminus.WelcomeModule{}).
 		addModule(&terminus.InstalledModule{})

@@ -20,12 +20,20 @@ import (
 type CheckWslGPU struct {
 }
 
+func (t *CheckWslGPU) CheckNvidiaSmiFileExists() bool {
+	var nvidiaSmiFile = "/usr/lib/wsl/lib/nvidia-smi"
+	if !util.IsExist(nvidiaSmiFile) {
+		return false
+	}
+	return true
+}
+
 func (t *CheckWslGPU) Execute(runtime *common.KubeRuntime) {
 	if !runtime.GetSystemInfo().IsWsl() {
 		return
 	}
-	var nvidiaSmiFile = "/usr/lib/wsl/lib/nvidia-smi"
-	if !util.IsExist(nvidiaSmiFile) {
+	exists := t.CheckNvidiaSmiFileExists()
+	if !exists {
 		return
 	}
 
