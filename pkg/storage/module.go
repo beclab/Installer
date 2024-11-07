@@ -73,6 +73,19 @@ func (m *RemoveMountModule) Init() {
 		Retry:    1,
 	}
 
+	unMountCOS := &task.RemoteTask{
+		Name:  "UnMountCOS",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CheckStorageType{
+				StorageType: common.COS,
+			},
+		},
+		Action:   new(UnMountCOS),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	unMountS3 := &task.RemoteTask{
 		Name:  "UnMountS3",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
@@ -89,6 +102,7 @@ func (m *RemoveMountModule) Init() {
 	m.Tasks = []task.Interface{
 		downloadStorageCli,
 		unMountOSS,
+		unMountCOS,
 		unMountS3,
 	}
 }

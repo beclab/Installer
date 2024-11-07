@@ -202,7 +202,7 @@ func getStorageTypeStr(pc *cache.Cache, storage *common.Storage, localIp string)
 	switch storageType {
 	case common.Minio:
 		formatStr = getMinioStr(pc, localIp)
-	case common.OSS, common.S3:
+	case common.OSS, common.COS, common.S3:
 		formatStr = getCloudStr(storage)
 	}
 

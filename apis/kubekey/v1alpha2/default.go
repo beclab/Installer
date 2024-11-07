@@ -63,6 +63,7 @@ const (
 	DefaultFlexVersion             = "2.6.4"
 	DefaultConntrackVersion        = "1.4.1"
 	DefaultOssUtilVersion          = "v1.7.18"
+	DefaultCosUtilVersion          = "v1.0.2"
 	DefaultMinioVersion            = "RELEASE.2023-05-04T21-44-30Z"
 	DefaultMinioOperatorVersion    = "0.0.1"
 	DefaultRedisVersion            = "5.0.14"

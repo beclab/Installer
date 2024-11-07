@@ -79,7 +79,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			p.modules = append(p.modules, &precheck.RemoveChattrModule{})
 		}
 
-		if p.runtime.Arg.Storage.StorageType == common.S3 || p.runtime.Arg.Storage.StorageType == common.OSS {
+		if p.runtime.Arg.Storage.StorageType == common.S3 || p.runtime.Arg.Storage.StorageType == common.OSS || p.runtime.Arg.Storage.StorageType == common.COS {
 			p.modules = append(p.modules,
 				&precheck.GetStorageKeyModule{},
 				&storage.RemoveMountModule{},

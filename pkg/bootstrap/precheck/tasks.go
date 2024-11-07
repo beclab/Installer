@@ -544,7 +544,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 
 	logger.Infof("storage: cloud: %v, type: %s, bucket: %s, ak: %s, sk: %s, tk: %s, id: %s",
 		t.KubeConf.Arg.IsCloudInstance, t.KubeConf.Arg.Storage.StorageType, t.KubeConf.Arg.Storage.StorageBucket,
-		t.KubeConf.Arg.Storage.StorageAccessKey, t.KubeConf.Arg.Storage.StorageSecretKey, t.KubeConf.Arg.Storage.StorageToken, t.KubeConf.Arg.Storage.StorageClusterId)
+		storageAccessKey, storageSecretKey, storageToken, storageClusterId)
 
 	return nil
 }

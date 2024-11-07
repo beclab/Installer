@@ -46,7 +46,7 @@ type CheckStorageVendor struct {
 func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 	var storageType = p.KubeConf.Arg.Storage.StorageType
 	var storageBucket = p.KubeConf.Arg.Storage.StorageBucket
-	if storageType != common.OSS && storageType != common.S3 {
+	if storageType != common.OSS && storageType != common.COS && storageType != common.S3 {
 		return false, nil
 	}
 

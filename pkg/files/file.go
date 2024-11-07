@@ -65,6 +65,7 @@ const (
 	velero        = "velero"
 	awscli        = "awscli"
 	ossutil       = "ossutil"
+	cosutil       = "cosutil"
 	minio         = "minio"
 	terminus      = "terminus-cli"
 	miniooperator = "minio-operator"
@@ -249,6 +250,12 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.Url = fmt.Sprintf(OSSUtilUrl, version, component.FileName)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
+	case cosutil: // 1.0.2
+		component.Type = COMPONENT
+		component.FileName = fmt.Sprintf("cosutil-%s-%s", version, arch)
+		component.Url = fmt.Sprintf(COSUtilUrl, version, version, arch)
+		component.CheckSum = false
+		component.BaseDir = filepath.Join(prePath, component.Type)
 	case terminus:
 		component.Type = COMPONENT
 		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, osType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
@@ -426,6 +433,9 @@ func (b *KubeBinary) GetTarCmd() string {
 	case ossutil:
 		cmd = fmt.Sprintf("cd %s && unzip -q %s && mv ./ossutil-v%s-%s-%s/* /usr/local/sbin/",
 			b.BaseDir, b.FileName, b.Version, b.Os, b.Arch)
+	case cosutil:
+		cmd = fmt.Sprintf("cd %s && cp %s /usr/local/bin/cosutil && chmod +x /usr/local/bin/cosutil",
+			b.BaseDir, b.FileName)
 	}
 
 	return cmd
