@@ -108,6 +108,7 @@ func CountDirFiles(dirName string) int {
 // FileMD5 count file md5
 func FileMD5(path string) (string, error) {
 	file, err := os.Open(path)
+	defer file.Close()
 	if err != nil {
 		return "", err
 	}
@@ -123,10 +124,10 @@ func FileMD5(path string) (string, error) {
 
 func Sha256sum(path string) (string, error) {
 	file, err := os.Open(path)
+	defer file.Close()
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
 
 	data, err := ioutil.ReadAll(file)
 	if err != nil {

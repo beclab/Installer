@@ -65,8 +65,7 @@ var (
 	MinioUrl         = "https://dl.min.io/server/minio/release/linux-%s/archive/minio.%s"
 	MinioOperatorUrl = "https://github.com/beclab/minio-operator/releases/download/v%s/minio-operator-v%s-linux-%s.tar.gz"
 
-	// RedisUrl = "https://download.redis.io/releases/redis-%s.tar.gz"
-	RedisUrl = "https://dc3p1870nn3cj.cloudfront.net/%s"
+	RedisUrl = "%s/%s"
 
 	JuiceFsUrl = "https://github.com/beclab/juicefs-ext/releases/download/%s/juicefs-%s-linux-%s.tar.gz"
 
@@ -86,11 +85,11 @@ var (
 	CudaKeyringUbuntu20Arm64Url = "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.0-1_all.deb"
 
 	CudaKeyringUrl    = "https://developer.download.nvidia.com/compute/cuda/repos/%s/%s/cuda-keyring_%s-1_all.deb" // arm64  x86_64
-	CudaKeyringCNDUrl = "https://dc3p1870nn3cj.cloudfront.net/%s"
+	CudaKeyringCNDUrl = "%s/%s"
 	CudaGpgKeyUrl     = "https://nvidia.github.io/libnvidia-container/gpgkey"
-	CudaGpgKeyCDNUrl  = "https://dc3p1870nn3cj.cloudfront.net/%s"
 	CudaLibNvidiaUrl  = "https://nvidia.github.io/libnvidia-container/%s%s/libnvidia-container.list"
-	WslImageUrl       = "https://wslstorestorage.blob.core.windows.net/wslblob/Ubuntu2204-221101.AppxBundle"
+	// "https://wslstorestorage.blob.core.windows.net/wslblob/Ubuntu2204-221101.AppxBundle"
+	WslImageUrl = "%s/%s"
 )
 
 func getGpuCDNPrefix(arch string, fileHash string) string {

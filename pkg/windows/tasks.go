@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -39,19 +40,21 @@ func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 
-	if utils.IsExist(fmt.Sprintf("%s\\%s", windowsAppsPath, ubuntuexe)) {
-		ubuntuTool = ubuntuexe
-		distro = "Ubuntu"
-		return nil
-	}
-
-	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s", systemInfo.GetHomeDir(), ".terminus"))
+	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), ".terminus", "pkg", "components"))
 
 	if err := appx.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", appx.FileName)
 	}
 
 	var exists = util.IsExist(appx.Path())
+	if exists {
+		p := appx.Path()
+		output := util.LocalMd5Sum(p)
+		if output != appx.Md5sum {
+			util.RemoveFile(p)
+		}
+	}
+
 	if !exists {
 		if err := appx.Download(); err != nil {
 			return fmt.Errorf("Failed to download %s binary: %s error: %w ", appx.ID, appx.Url, err)
@@ -59,7 +62,7 @@ func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 	}
 
 	var ps = &utils.PowerShellCommandExecutor{
-		Commands: []string{fmt.Sprintf("Add-AppxPackage %s", appx.Path())},
+		Commands: []string{fmt.Sprintf("Add-AppxPackage %s -ForceUpdateFromAnyVersion", appx.Path())},
 	}
 
 	if _, err := ps.Run(); err != nil {
@@ -246,8 +249,8 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 	var installScript = "curl -fsSL https://terminus.sh | bash -"
 	if i.KubeConf.Arg.TerminusVersion != "" {
 		var installFile = fmt.Sprintf("install-wizard-v%s.tar.gz", i.KubeConf.Arg.TerminusVersion)
-		installScript = fmt.Sprintf("curl -fsSLO https://dc3p1870nn3cj.cloudfront.net/%s && tar -xf %s -C ./ ./install.sh && rm -rf %s && bash ./install.sh",
-			installFile, installFile, installFile)
+		installScript = fmt.Sprintf("curl -fsSLO %s/%s && tar -xf %s -C ./ ./install.sh && rm -rf %s && bash ./install.sh",
+			cc.DownloadUrl, installFile, installFile, installFile)
 	}
 
 	var params = strings.Join(envs, " && ")

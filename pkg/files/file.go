@@ -278,7 +278,7 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.Type = COMPONENT
 		component.FileName = fmt.Sprintf("redis-%s.tar.gz", version)
 		component.FileNameHash = utils.MD5(component.FileName)
-		component.Url = fmt.Sprintf(RedisUrl, component.FileNameHash)
+		component.Url = fmt.Sprintf(RedisUrl, common.DownloadUrl, component.FileNameHash)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case juicefs:
@@ -330,7 +330,7 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 	case installwizard:
 		component.Type = WIZARD
 		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
-		component.Url = fmt.Sprintf("https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.tar.gz", version)
+		component.Url = fmt.Sprintf("%s/install-wizard-v%s.tar.gz", common.DownloadUrl, version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, fmt.Sprintf("v%s", version))
 	case cudakeyring: // + gpu
@@ -340,28 +340,28 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.Type = GPU
 		component.FileName = fmt.Sprintf("%s_%s_cuda-keyring_%s-1_all.deb", osPlatformFamily, osVersion, version)
 		component.FileNameHash = utils.MD5(component.FileName)
-		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash)) //getCudaKeyringUrl(arch, constants.OsVersion, version)
+		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, common.DownloadUrl, getGpuCDNPrefix(arch, component.FileNameHash)) //getCudaKeyringUrl(arch, constants.OsVersion, version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case gpgkey:
 		component.Type = GPU
 		component.FileName = "gpgkey"
 		component.FileNameHash = utils.MD5(component.FileName)
-		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
+		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, common.DownloadUrl, getGpuCDNPrefix(arch, component.FileNameHash))
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case libnvidia:
 		component.Type = GPU
 		component.FileName = fmt.Sprintf("%s_%s_libnvidia-container.list", osPlatformFamily, osVersion)
 		component.FileNameHash = utils.MD5(component.FileName)
-		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, getGpuCDNPrefix(arch, component.FileNameHash))
+		component.Url = fmt.Sprintf(CudaKeyringCNDUrl, common.DownloadUrl, getGpuCDNPrefix(arch, component.FileNameHash))
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
 	case wsl: // + wsl
 		component.Type = common.WSL
 		component.FileName = fmt.Sprintf("Ubuntu%s.appx", version)
-		component.Url = WslImageUrl
-		component.CheckSum = false
+		component.Md5sum = FileSha256[wsl][arch][version]
+		component.Url = fmt.Sprintf(WslImageUrl, common.DownloadUrl, component.Md5sum)
 		component.BaseDir = filepath.Join(prePath)
 	default:
 		logger.Fatalf("unsupported kube binaries %s", name)
@@ -1051,6 +1051,14 @@ var (
 			amd64: {
 				"v2.4.1": "cfd799c150b59353aefb34835f3a2e859763cb2e91966cd3ffeb1b6ceaa19841",
 				"v2.5.3": "c536eaf5dcb35a1f2a5b1c4278380bde254a288700aa2ba59c1fd464bf2fcbf1",
+			},
+		},
+		wsl: {
+			amd64: {
+				"2204": "2d4f98ae9e7f1921722da620ef72b643",
+			},
+			arm64: {
+				"2204": "2d4f98ae9e7f1921722da620ef72b643",
 			},
 		},
 	}

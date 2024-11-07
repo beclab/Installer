@@ -1,9 +1,6 @@
 package terminus
 
 import (
-	bootstraptpl "bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
-	"bytetrade.io/web3os/installer/pkg/core/action"
-	"bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"context"
 	"fmt"
 	"io/fs"
@@ -13,6 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	bootstraptpl "bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
+	"bytetrade.io/web3os/installer/pkg/core/action"
+	"bytetrade.io/web3os/installer/pkg/terminus/templates"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
@@ -98,7 +99,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		return errors.New("unknown version to download")
 	}
 
-	var fetchMd5 = fmt.Sprintf("curl -sSfL https://dc3p1870nn3cj.cloudfront.net/install-wizard-v%s.md5sum.txt |awk '{print $1}'", t.Version)
+	var fetchMd5 = fmt.Sprintf("curl -sSfL %s/install-wizard-v%s.md5sum.txt |awk '{print $1}'", cc.DownloadUrl, t.Version)
 	md5sum, err := runtime.GetRunner().Host.Cmd(fetchMd5, false, false)
 	if err != nil {
 		return errors.New("get md5sum failed")
