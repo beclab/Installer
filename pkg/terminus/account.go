@@ -72,14 +72,14 @@ func (s *GetUserInfo) getDomainName() (string, error) {
 		return "", errors.Wrap(err, "failed to get terminal input reader")
 	}
 LOOP:
-	fmt.Printf("\nEnter the domain name ( myterminus.com by default ): ")
+	fmt.Printf("\nEnter the domain name ( %s by default ): ", cc.DefaultDomainName)
 	domainName, err = reader.ReadString('\n')
 	if err != nil && err.Error() != "EOF" {
 		return domainName, errors.Wrap(errors.WithStack(err), "read domain name failed")
 	}
 	domainName = strings.TrimSpace(domainName)
 	if domainName == "" {
-		return "myterminus.com", nil
+		return cc.DefaultDomainName, nil
 	}
 
 	if !utils.IsValidDomain(domainName) {
@@ -106,9 +106,8 @@ func (s *GetUserInfo) getUserName() (string, error) {
 		return "", errors.Wrap(err, "failed to get terminal input reader")
 	}
 LOOP:
-	fmt.Printf("\nEnter the Terminus Name ( registered from TermiPass app ): ")
+	fmt.Printf("\nEnter the Olares ID (which you registered in the LarePass app): ")
 	userName, err = reader.ReadString('\n')
-	// userName = strings.TrimSpace(userName) + "\r"
 	if err != nil && err.Error() != "EOF" {
 		return "", errors.Wrap(errors.WithStack(err), "read username failed")
 	}
