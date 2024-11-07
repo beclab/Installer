@@ -64,6 +64,8 @@ func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 		binary = files.NewKubeBinary("awscli", arch, osType, osVersion, osPlatformFamily, "", prePath)
 	case "oss":
 		binary = files.NewKubeBinary("ossutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
+	case "cos":
+		binary = files.NewKubeBinary("cosutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultCosUtilVersion, prePath)
 	default:
 		return nil
 	}
@@ -176,6 +178,43 @@ func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
 
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount oss bucket %s: %v", storageBucket, err)
+	}
+
+	return nil
+}
+
+type UnMountCOS struct {
+	common.KubeAction
+}
+
+func (t *UnMountCOS) Execute(runtime connector.Runtime) error {
+	storageBucket := t.KubeConf.Arg.Storage.StorageBucket
+	storageAccessKey, _ := t.PipelineCache.GetMustString(common.CacheAccessKey)
+	storageSecretKey, _ := t.PipelineCache.GetMustString(common.CacheSecretKey)
+	storageToken, _ := t.PipelineCache.GetMustString(common.CacheToken)
+	storageClusterId, _ := t.PipelineCache.GetMustString(common.CacheClusterId)
+
+	if storageAccessKey == "" || storageSecretKey == "" {
+		return nil
+	}
+
+	_, a, f := strings.Cut(storageBucket, "://")
+	if !f {
+		logger.Errorf("get cos bucket failed %s", storageBucket)
+		return nil
+	}
+
+	s := strings.Split(a, ".")
+	if len(s) != 5 {
+		logger.Errorf("get cos bucket failed %s", storageBucket)
+		return nil
+	}
+	cosName := fmt.Sprintf("cos://%s", s[0])
+	cosEndpoint := fmt.Sprintf("%s.%s.%s.%s", s[1], s[2], s[3], s[4])
+	var cmd = fmt.Sprintf("/usr/local/bin/cosutil rm %s/%s/ --endpoint %s --secret-id %s --secret-key %s --token %s --init-skip -r -f", cosName, storageClusterId, cosEndpoint, storageAccessKey, storageSecretKey, storageToken)
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		logger.Errorf("failed to unmount cos bucket %s: %v", storageBucket, err)
 	}
 
 	return nil

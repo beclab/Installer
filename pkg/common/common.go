@@ -155,6 +155,7 @@ const (
 
 const (
 	OSS   = "oss"
+	COS   = "cos"
 	S3    = "s3"
 	Minio = "minio"
 )

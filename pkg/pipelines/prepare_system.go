@@ -52,7 +52,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 func getStorageValueFromEnv() *common.Storage {
 	storageType := os.Getenv("STORAGE")
 	switch storageType {
-	case common.S3, common.OSS:
+	case common.S3, common.OSS, common.COS:
 	default:
 		storageType = common.Minio
 	}

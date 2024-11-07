@@ -59,6 +59,7 @@ var (
 
 	AWSCliUrl  = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
 	OSSUtilUrl = "https://github.com/aliyun/ossutil/releases/download/%s/%s"
+	COSUtilUrl = "https://github.com/tencentyun/coscli/releases/download/%s/coscli-%s-%s"
 
 	TerminusUrl      = "https://github.com/beclab/Installer/releases/download/%s/terminus-cli-v%s_%s_%s.tar.gz"
 	MinioUrl         = "https://dl.min.io/server/minio/release/linux-%s/archive/minio.%s"
