@@ -39,7 +39,7 @@ const (
 	DeployDir     = "deploy"
 	TerminusDir   = "terminus"
 
-	DefaultDomainName = "myterminus.com"
+	DefaultDomainName = "olares.com"
 
 	ManifestImage     = "images.mf"
 	ManifestImageNode = "images.node.mf"
