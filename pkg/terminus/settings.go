@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -39,6 +38,14 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 		s3SecretKey = p.KubeConf.Arg.Storage.StorageSecretKey
 	}
 
+	selfhosted := true
+	if p.KubeConf.Arg.IsCloudInstance {
+		selfhosted = false
+	}
+	if strings.Contains(p.KubeConf.Arg.PublicNetworkInfo.Hostname, common.CloudVendorAWS) && !strings.Contains(p.KubeConf.Arg.PublicNetworkInfo.PublicIp, "Not Found") {
+		selfhosted = false
+	}
+
 	terminusdInstalled := "0"
 	if !runtime.GetSystemInfo().IsDarwin() {
 		terminusdInstalled = "1"
@@ -51,6 +58,8 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 		"S3AccessKey":        s3AccessKey,
 		"S3SecretKey":        s3SecretKey,
 		"ClusterID":          p.KubeConf.Arg.Storage.StorageClusterId,
+		"DomainName":         p.KubeConf.Arg.User.DomainName,
+		"SelfHosted":         selfhosted,
 		"TerminusdInstalled": terminusdInstalled,
 	}
 
@@ -63,32 +72,6 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write settings %s failed", settingsFile))
 	}
 
-	return nil
-}
-
-type MutateTerminusCRFile struct {
-	common.KubeAction
-}
-
-func (p *MutateTerminusCRFile) Execute(runtime connector.Runtime) error {
-	terminusCRFile := path.Join(runtime.GetInstallerDir(), "wizard/config/settings/templates/terminus_cr.yaml")
-	byteContent, err := os.ReadFile(terminusCRFile)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "read terminus cr file failed")
-	}
-	content := string(byteContent)
-	content = strings.ReplaceAll(content, "#__DOMAIN_NAME__", p.KubeConf.Arg.User.DomainName)
-	selfhosted := "true"
-	if p.KubeConf.Arg.IsCloudInstance {
-		selfhosted = "false"
-	}
-	if strings.Contains(p.KubeConf.Arg.PublicNetworkInfo.Hostname, common.CloudVendorAWS) && !strings.Contains(p.KubeConf.Arg.PublicNetworkInfo.PublicIp, "Not Found") {
-		selfhosted = "false"
-	}
-	content = strings.ReplaceAll(content, "#__SELFHOSTED__", selfhosted)
-	if err := util.WriteFile(terminusCRFile, []byte(content), cc.FileMode0644); err != nil {
-		return errors.Wrap(errors.WithStack(err), "write terminus cr file failed")
-	}
 	return nil
 }
 
@@ -136,13 +119,6 @@ func (m *InstallSettingsModule) Init() {
 		Retry:  1,
 	}
 
-	mutateTerminusCRFile := &task.LocalTask{
-		Name:    "MutateTerminusCRFile",
-		Prepare: new(CheckPublicNetworkInfo),
-		Action:  new(MutateTerminusCRFile),
-		Retry:   1,
-	}
-
 	installSettings := &task.LocalTask{
 		Name:   "InstallSettings",
 		Action: new(InstallSettings),
@@ -151,7 +127,6 @@ func (m *InstallSettingsModule) Init() {
 
 	m.Tasks = []task.Interface{
 		setSettingsValues,
-		mutateTerminusCRFile,
 		installSettings,
 	}
 }

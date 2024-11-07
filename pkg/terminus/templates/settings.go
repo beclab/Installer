@@ -15,6 +15,8 @@ cluster_id: {{ .ClusterID }}
 s3_sts: {{ .S3SessionToken }}
 s3_ak: {{ .S3AccessKey }}
 s3_sk: {{ .S3SecretKey }}
+domainName: '{{ .DomainName }}'
+selfHosted: '{{ .SelfHosted }}'
 terminusd: '{{ .TerminusdInstalled }}'
 
 user:
