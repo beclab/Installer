@@ -239,6 +239,10 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		fmt.Sprintf("export %s=%s", common.ENV_DISABLE_HOST_IP_PROMPT, os.Getenv(common.ENV_DISABLE_HOST_IP_PROMPT)),
 	}
 
+	for key, val := range common.TerminusGlobalEnvs {
+		envs = append(envs, fmt.Sprintf("export %s=%s", key, val))
+	}
+
 	var installScript = "curl -fsSL https://terminus.sh | bash -"
 	if i.KubeConf.Arg.TerminusVersion != "" {
 		var installFile = fmt.Sprintf("install-wizard-v%s.tar.gz", i.KubeConf.Arg.TerminusVersion)
