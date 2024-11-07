@@ -3,6 +3,7 @@ package windows
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -255,6 +256,9 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 	if _, err := cmd.Exec(); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install terminus %s failed", distro))
 	}
+
+	exec.Command("cmd", "/C", "wsl", "-d", distro, "--exec", "dbus-launch", "true").Run()
+
 	return nil
 }
 
