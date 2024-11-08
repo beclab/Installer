@@ -35,8 +35,8 @@ func (l *linuxInstallPhaseBuilder) installCluster() phase {
 
 func (l *linuxInstallPhaseBuilder) installGpuPlugin() phase {
 	return []module.Module{
-		&gpu.RestartK3sServiceModule{Skip: !(l.runtime.Arg.Kubetype == common.K3s && l.runtime.GetSystemInfo().IsWsl())},
-		&gpu.InstallPluginModule{Skip: !(l.runtime.Arg.GPU.Enable || l.runtime.GetSystemInfo().IsWsl())},
+		&gpu.RestartK3sServiceModule{Skip: !(l.runtime.Arg.Kubetype == common.K3s)},
+		&gpu.InstallPluginModule{Skip: !l.runtime.Arg.GPU.Enable},
 	}
 }
 
@@ -56,7 +56,7 @@ func (l *linuxInstallPhaseBuilder) build() []module.Module {
 		addModule(l.installCluster()...).
 		addModule(gpuModuleBuilder(func() []module.Module {
 			return l.installGpuPlugin()
-		}).withGPU()...).
+		}).withGPU(l.runtime)...).
 		addModule(l.installTerminus()...).
 		addModule(&terminus.WelcomeModule{}).
 		addModule(&terminus.InstalledModule{})
