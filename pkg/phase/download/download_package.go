@@ -13,7 +13,7 @@ func NewDownloadPackage(mainifest string, runtime *common.KubeRuntime) *pipeline
 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
-		&terminus.TerminusUninstallScriptModule{},
+		&terminus.OlaresUninstallScriptModule{},
 		&download.PackageDownloadModule{Manifest: mainifest, BaseDir: runtime.GetBaseDir()},
 	}
 

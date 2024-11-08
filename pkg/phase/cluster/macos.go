@@ -17,7 +17,7 @@ func (m *macosInstallPhaseBuilder) base() phase {
 	mo := []module.Module{
 		&plugins.CopyEmbed{},
 		&terminus.CheckPreparedModule{Force: true},
-		&terminus.TerminusUninstallScriptModule{},
+		&terminus.OlaresUninstallScriptModule{},
 	}
 
 	return mo

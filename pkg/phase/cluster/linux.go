@@ -18,7 +18,7 @@ func (l *linuxInstallPhaseBuilder) base() phase {
 	m := []module.Module{
 		&plugins.CopyEmbed{},
 		&terminus.CheckPreparedModule{Force: true},
-		&terminus.TerminusUninstallScriptModule{},
+		&terminus.OlaresUninstallScriptModule{},
 	}
 
 	return m

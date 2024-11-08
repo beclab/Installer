@@ -67,7 +67,6 @@ const (
 	ossutil       = "ossutil"
 	cosutil       = "cosutil"
 	minio         = "minio"
-	terminus      = "terminus-cli"
 	miniooperator = "minio-operator"
 	redis         = "redis"
 	juicefs       = "juicefs"
@@ -256,12 +255,6 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.Url = fmt.Sprintf(COSUtilUrl, version, version, arch)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, component.Type)
-	case terminus:
-		component.Type = COMPONENT
-		component.FileName = fmt.Sprintf("terminus-cli-v%s_%s_%s.tar.gz", version, osType, arch) // terminus-cli-v${CLI_VERSION}_linux_${ARCH}.tar.gz
-		component.Url = fmt.Sprintf(TerminusUrl, version, version, osType, arch)
-		component.CheckSum = false
-		component.BaseDir = filepath.Join(prePath)
 	case minio:
 		component.Type = COMPONENT
 		component.FileName = fmt.Sprintf("minio.%s", version) // "minio"

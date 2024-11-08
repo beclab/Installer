@@ -207,20 +207,20 @@ func (t *CheckInstalled) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type GenerateTerminusUninstallScript struct {
+type GenerateOlaresUninstallScript struct {
 	common.KubeAction
 }
 
-func (t *GenerateTerminusUninstallScript) Execute(runtime connector.Runtime) error {
-	filePath := path.Join(runtime.GetBaseDir(), uninstalltemplate.TerminusUninstallScriptValues.Name())
-	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.TerminusUninstallScriptValues.Name())
+func (t *GenerateOlaresUninstallScript) Execute(runtime connector.Runtime) error {
+	filePath := path.Join(runtime.GetBaseDir(), uninstalltemplate.OlaresUninstallScriptValues.Name())
+	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.OlaresUninstallScriptValues.Name())
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
 		"Phase":   "install",
 		"Version": t.KubeConf.Arg.TerminusVersion,
 	}
 
-	uninstallScriptStr, err := util.Render(uninstalltemplate.TerminusUninstallScriptValues, data)
+	uninstallScriptStr, err := util.Render(uninstalltemplate.OlaresUninstallScriptValues, data)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "render uninstall template failed")
 	}
