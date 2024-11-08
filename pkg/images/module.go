@@ -18,7 +18,6 @@ package images
 
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
@@ -36,7 +35,6 @@ func (p *PreloadImagesModule) IsSkip() bool {
 }
 
 func (p *PreloadImagesModule) Init() {
-	logger.InfoInstallationProgress("preloading terminus container images ...")
 	p.Name = "PreloadImages"
 
 	preload := &task.RemoteTask{

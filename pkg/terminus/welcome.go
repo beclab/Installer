@@ -50,7 +50,7 @@ func (t *WelcomeMessage) Execute(runtime connector.Runtime) error {
 	logger.InfoInstallationProgress("Installation wizard is complete")
 
 	fmt.Printf("\n\n------------------------------------------------\n")
-	logger.Info("Terminus is running at")
+	logger.Info("Olares is running at")
 	logger.Infof("http://%s:%d", ip, port)
 	logger.Info("Open your browser and visit the above address")
 	logger.Infof("Username: %s", t.KubeConf.Arg.User.UserName)
@@ -67,7 +67,7 @@ type WelcomeModule struct {
 }
 
 func (m *WelcomeModule) Init() {
-	logger.InfoInstallationProgress("Starting Terminus ...")
+	logger.InfoInstallationProgress("Starting Olares ...")
 	m.Name = "Welcome"
 
 	waitServicesReady := &task.LocalTask{

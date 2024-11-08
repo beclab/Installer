@@ -68,7 +68,7 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 	}
 
 	if systemInfo.IsWindows() {
-		baseDir = fmt.Sprintf("%s\\.terminus", baseDir)
+		baseDir = fmt.Sprintf("%s\\%s", baseDir, common.DefaultBaseDir)
 	}
 	if err := base.GenerateBaseDir(baseDir); err != nil {
 		fmt.Printf("[ERRO]: Failed to create base dir: %s\n", err)
@@ -132,7 +132,7 @@ func (b *BaseRuntime) GenerateBaseDir(baseDir string) error {
 
 	b.baseDir = baseDir
 	if baseDir == "" {
-		b.baseDir = path.Join(homeDir, ".terminus")
+		b.baseDir = path.Join(homeDir, common.DefaultBaseDir)
 	}
 
 	return nil

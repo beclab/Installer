@@ -15,7 +15,7 @@ func NewCheckDownload(mainifest string, runtime *common.KubeRuntime) *pipeline.P
 	}
 
 	return &pipeline.Pipeline{
-		Name:    "Check Downloaded Terminus Installation Package",
+		Name:    "Check Downloaded Olares Installation Package",
 		Modules: m,
 		Runtime: runtime,
 	}

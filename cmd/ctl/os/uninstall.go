@@ -20,7 +20,7 @@ func NewCmdUninstallOs() *cobra.Command {
 	o := NewUninstallOsOptions()
 	cmd := &cobra.Command{
 		Use:   "uninstall",
-		Short: "Uninstall Terminus",
+		Short: "Uninstall Olares",
 		Run: func(cmd *cobra.Command, args []string) {
 			pipelines.UninstallTerminusPipeline(o.UninstallOptions)
 		},

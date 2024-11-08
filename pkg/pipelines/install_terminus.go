@@ -18,7 +18,7 @@ import (
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
-		fmt.Printf("Terminus is already installed, please uninstall it first.")
+		fmt.Printf("Olares is already installed, please uninstall it first.")
 		return nil
 	}
 
@@ -45,9 +45,9 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	runtime.Arg.SetManifest(manifest)
 
 	var p = cluster.InstallSystemPhase(runtime)
-	logger.InfoInstallationProgress("Start to Install Terminus ...")
+	logger.InfoInstallationProgress("Start to Install Olares ...")
 	if err := p.Start(); err != nil {
-		return fmt.Errorf("create terminus error %v", err)
+		return err
 	}
 
 	if !runtime.GetSystemInfo().IsWindows() {

@@ -1,6 +1,7 @@
 package options
 
 import (
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"github.com/spf13/cobra"
 )
 
@@ -15,8 +16,8 @@ func NewCliDownloadWizardOptions() *CliDownloadWizardOptions {
 }
 
 func (o *CliDownloadWizardOptions) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
-	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set download package base dir , default value $HOME/.terminus")
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 	cmd.Flags().StringVar(&o.KubeType, "kube", "k3s", "Set kube type, e.g., k3s or k8s")
 }
 
@@ -32,8 +33,8 @@ func NewCliDownloadOptions() *CliDownloadOptions {
 }
 
 func (o *CliDownloadOptions) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set install-wizard version, e.g., 1.7.0, 1.7.0-rc.1, 1.8.0-20240813")
-	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set download package base dir , default value $HOME/.terminus")
-	cmd.Flags().StringVar(&o.Manifest, "manifest", "", "Set download package manifest file , default value {base-dir}/versions/v{version}/installation.manifest")
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir , defaults to $HOME/"+cc.DefaultBaseDir)
+	cmd.Flags().StringVar(&o.Manifest, "manifest", "", "Set package manifest file , defaults to {base-dir}/versions/v{version}/installation.manifest")
 	cmd.Flags().StringVar(&o.KubeType, "kube", "k3s", "Set kube type, e.g., k3s or k8s")
 }

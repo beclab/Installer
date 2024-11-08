@@ -25,14 +25,14 @@ type MkStorageDir struct {
 
 func (t *MkStorageDir) Execute(runtime connector.Runtime) error {
 	if utils.IsExist(StorageDataDir) {
-		if utils.IsExist(cc.TerminusDir) {
-			_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", cc.TerminusDir), false, false)
+		if utils.IsExist(cc.OlaresDir) {
+			_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", cc.OlaresDir), false, false)
 		}
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", StorageDataTerminusDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", StorageDataOlaresDir), false, false); err != nil {
 			return err
 		}
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("ln -s %s %s", StorageDataTerminusDir, cc.TerminusDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("ln -s %s %s", StorageDataOlaresDir, cc.OlaresDir), false, false); err != nil {
 			return err
 		}
 	}
@@ -227,11 +227,11 @@ type StopJuiceFS struct {
 func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
 	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop juicefs; systemctl disable juicefs", false, false)
 
-	_, _ = runtime.GetRunner().Host.SudoCmd("rm -rf /var/jfsCache /terminus/jfscache", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf /var/jfsCache %s", JuiceFsCacheDir), false, false)
 
-	_, _ = runtime.GetRunner().Host.SudoCmd("umount /terminus/rootfs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("umount %s", OlaresJuiceFSRootDir), false, false)
 
-	_, _ = runtime.GetRunner().Host.SudoCmd("rm -rf /terminus/rootfs", false, false)
+	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", OlaresJuiceFSRootDir), false, false)
 
 	return nil
 }
@@ -359,10 +359,9 @@ type DeleteTerminusUserData struct {
 }
 
 func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
-	var baseDir = "/terminus/rootfs"
 	var userdata []string
-	filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-		if path != baseDir {
+	filepath.WalkDir(OlaresJuiceFSRootDir, func(path string, d fs.DirEntry, err error) error {
+		if path != OlaresJuiceFSRootDir {
 			if d.IsDir() && d.Name() != ".trash" {
 				userdata = append(userdata, path)
 				return filepath.SkipDir
@@ -374,7 +373,7 @@ func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
 	)
 
 	userdata = append(userdata, []string{
-		"/terminus/userdata",
+		OlaresJuiceFSUserDataDir,
 	}...)
 
 	for _, d := range userdata {
@@ -394,16 +393,14 @@ type DeleteTerminusData struct {
 
 func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
 	var dirs []string
-	var terminusDir = "/terminus"
-	var sharePrefix = fmt.Sprintf("%s/share", terminusDir)
 	var shareExists bool
-	filepath.WalkDir(terminusDir, func(path string, d fs.DirEntry, err error) error {
-		if path != terminusDir {
+	filepath.WalkDir(OlaresRootDir, func(path string, d fs.DirEntry, err error) error {
+		if path != OlaresRootDir {
 			if !d.IsDir() {
 				return nil
 			}
 
-			if d.Name() == "share" || strings.HasPrefix(path, sharePrefix) {
+			if strings.HasPrefix(path, OlaresSharedLibDir) {
 				shareExists = true
 			} else {
 				dirs = append(dirs, path)
@@ -422,15 +419,15 @@ func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
 	}
 
 	if !shareExists {
-		if err := util.RemoveDir(terminusDir); err != nil {
-			logger.Errorf("remove %s failed %v", terminusDir, err)
+		if err := util.RemoveDir(OlaresRootDir); err != nil {
+			logger.Errorf("remove %s failed %v", OlaresRootDir, err)
 		}
 	}
 
-	if util.IsExist("/osdata") {
-		runtime.GetRunner().Host.SudoCmd("umount /osdata", false, true)
-		if err := util.RemoveDir("/osdata"); err != nil {
-			logger.Errorf("remove %s failed %v", "/osdata", err)
+	if util.IsExist(StorageDataDir) {
+		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("umount %s", StorageDataDir), false, true)
+		if err := util.RemoveDir(StorageDataDir); err != nil {
+			logger.Errorf("remove %s failed %v", StorageDataDir, err)
 		}
 	}
 

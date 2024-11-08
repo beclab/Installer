@@ -24,7 +24,7 @@ func NewCmdInstallOs() *cobra.Command {
 		Short: "Install Terminus",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := pipelines.CliInstallTerminusPipeline(o.InstallOptions); err != nil {
-				logger.Fatalf("install terminus error: %v", err)
+				logger.Fatalf("install Olares error: %v", err)
 			}
 		},
 	}

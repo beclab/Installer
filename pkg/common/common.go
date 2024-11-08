@@ -60,7 +60,7 @@ const (
 	KubeScriptDir                = "/usr/local/bin/kube-scripts"
 	KubeletFlexvolumesPluginsDir = "/usr/libexec/kubernetes/kubelet-plugins/volume/exec"
 	K3sImageDir                  = "/var/lib/images"
-	MinikubeDefaultProfile       = "terminus-0"
+	MinikubeDefaultProfile       = "olares-0"
 	MinikubeEtcdCertDir          = "/var/lib/minikube/certs/etcd"
 	WSLDefaultDistribution       = "Ubuntu"
 	RunLockDir                   = "/var/run/lock"
@@ -248,7 +248,6 @@ const (
 const (
 	ENV_TERMINUS_IS_CLOUD_VERSION   = "TERMINUS_IS_CLOUD_VERSION"
 	ENV_KUBE_TYPE                   = "KUBE_TYPE"
-	ENV_TERMINUS_BOX                = "TERMINUS_BOX"
 	ENV_REGISTRY_MIRRORS            = "REGISTRY_MIRRORS"
 	ENV_STORAGE                     = "STORAGE"
 	ENV_S3_BUCKET                   = "S3_BUCKET"
@@ -293,6 +292,7 @@ var TerminusGlobalEnvs = map[string]interface{}{
 
 const (
 	HelmValuesKeyTerminusGlobalEnvs = "terminusGlobalEnvs"
+	HelmValuesKeyOlaresRootFSPath   = "rootPath"
 )
 
 func init() {

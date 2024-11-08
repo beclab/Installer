@@ -10,7 +10,7 @@ import (
 func NewCmdRootDownload() *cobra.Command {
 	rootDownloadCmd := &cobra.Command{
 		Use:   "download",
-		Short: "Download the packages and components needed to install Terminus",
+		Short: "Download the packages and components needed to install Olares",
 	}
 
 	rootDownloadCmd.AddCommand(NewCmdCheckDownload())
@@ -24,11 +24,11 @@ func NewCmdDownload() *cobra.Command {
 	o := options.NewCliDownloadOptions()
 	cmd := &cobra.Command{
 		Use:   "component",
-		Short: "Download the packages and components needed to install Terminus",
+		Short: "Download the packages and components needed to install Olares",
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.DownloadInstallationPackage(o); err != nil {
-				logger.Fatalf("download terminus installation package error: %v", err)
+				logger.Fatalf("download installation package error: %v", err)
 			}
 		},
 	}
@@ -41,11 +41,11 @@ func NewCmdDownloadWizard() *cobra.Command {
 	o := options.NewCliDownloadWizardOptions()
 	cmd := &cobra.Command{
 		Use:   "wizard",
-		Short: "Download the Terminus installation wizard",
+		Short: "Download the Olares installation wizard",
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.DownloadInstallationWizard(o); err != nil {
-				logger.Fatalf("download terminus installation wizard error: %v", err)
+				logger.Fatalf("download installation wizard error: %v", err)
 			}
 		},
 	}
@@ -58,7 +58,7 @@ func NewCmdCheckDownload() *cobra.Command {
 	o := options.NewCliDownloadOptions()
 	cmd := &cobra.Command{
 		Use:   "check",
-		Short: "Check Downloaded Terminus Installation Package",
+		Short: "Check Downloaded Olares Installation Package",
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.CheckDownloadInstallationPackage(o); err != nil {

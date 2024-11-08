@@ -17,7 +17,6 @@
 package common
 
 const (
-	// TerminusKey        = ".terminus"
 	ManifestDir        = "manifest"
 	ImageCacheDir      = "images"
 	PackageCacheDir    = "pkg"
@@ -37,8 +36,9 @@ const (
 	WizardDir     = "wizard"
 	ComponentsDir = "components"
 	DeployDir     = "deploy"
-	TerminusDir   = "terminus"
+	OlaresDir     = "olares"
 
+	DefaultBaseDir    = ".olares"
 	DefaultDomainName = "olares.com"
 
 	ManifestImage     = "images.mf"

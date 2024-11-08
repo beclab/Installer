@@ -10,9 +10,9 @@ func PrintTerminusInfo() {
 	var cli = &terminus.GetTerminusVersion{}
 	terminusVersion, err := cli.Execute()
 	if err != nil {
-		fmt.Printf("Terminus: not installed\n")
+		fmt.Printf("Olares: not installed\n")
 		return
 	}
 
-	fmt.Printf("Terminus: %s\n", terminusVersion)
+	fmt.Printf("Olares: %s\n", terminusVersion)
 }

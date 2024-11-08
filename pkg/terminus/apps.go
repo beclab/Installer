@@ -2,6 +2,7 @@ package terminus
 
 import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"context"
 	"fmt"
 	"os"
@@ -133,6 +134,7 @@ func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
 			"redis_password": redisPassword,
 		},
 		common.HelmValuesKeyTerminusGlobalEnvs: common.TerminusGlobalEnvs,
+		common.HelmValuesKeyOlaresRootFSPath:   storage.OlaresRootDir,
 	}
 
 	u.ModuleCache.Set(common.CacheAppValues, values)

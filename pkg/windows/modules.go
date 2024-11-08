@@ -80,10 +80,10 @@ type InstallTerminusModule struct {
 }
 
 func (i *InstallTerminusModule) Init() {
-	i.Name = "InstallTerminus"
+	i.Name = "InstallOlares"
 	i.Tasks = []task.Interface{
 		&task.LocalTask{
-			Name:   "InstallTerminus",
+			Name:   "InstallOlares",
 			Action: &InstallTerminus{},
 		},
 	}

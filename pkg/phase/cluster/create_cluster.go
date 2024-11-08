@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"path"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -56,7 +57,7 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 	systemInfo := runtime.GetSystemInfo()
 	baseDir := runtime.GetBaseDir()
 	if systemInfo.IsWsl() {
-		baseDir = path.Join(runtime.Arg.GetWslUserPath(), ".terminus")
+		baseDir = path.Join(runtime.Arg.GetWslUserPath(), cc.DefaultBaseDir)
 	}
 
 	skipLocalStorage := true
@@ -116,7 +117,7 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 	systemInfo := runtime.GetSystemInfo()
 	baseDir := runtime.GetBaseDir()
 	if systemInfo.IsWsl() {
-		baseDir = path.Join(runtime.Arg.GetWslUserPath(), ".terminus")
+		baseDir = path.Join(runtime.Arg.GetWslUserPath(), cc.DefaultBaseDir)
 	}
 
 	skipLocalStorage := true

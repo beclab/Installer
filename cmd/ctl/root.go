@@ -9,8 +9,8 @@ import (
 
 func NewDefaultCommand() *cobra.Command {
 	cmds := &cobra.Command{
-		Use:               "Terminus Cli",
-		Short:             "Terminus Installer",
+		Use:               "Olares Cli",
+		Short:             "Olares Installer",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 		Version:           version.VERSION,
 	}

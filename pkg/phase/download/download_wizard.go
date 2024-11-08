@@ -16,7 +16,7 @@ func NewDownloadWizard(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	}
 
 	return &pipeline.Pipeline{
-		Name:    "Download Terminus Installation Wizard",
+		Name:    "Download Installation Wizard",
 		Modules: m,
 		Runtime: runtime,
 	}

@@ -56,26 +56,3 @@ func (p *CheckStorageVendor) PreCheck(runtime connector.Runtime) (bool, error) {
 
 	return true, nil
 }
-
-// type CreateJuiceFsDataPath struct {
-// 	common.KubePrepare
-// }
-
-// func (p *CreateJuiceFsDataPath) PreCheck(runtime connector.Runtime) (bool, error) {
-// 	var juiceFsDataPath = path.Join(corecommon.TerminusDir, "data", "juicefs")
-// 	if !utils.IsExist(juiceFsDataPath) {
-// 		utils.Mkdir(juiceFsDataPath)
-// 	}
-
-// 	var juiceFsMountPoint = path.Join(corecommon.TerminusDir, "rootfs")
-// 	if !utils.IsExist(juiceFsMountPoint) {
-// 		utils.Mkdir(juiceFsMountPoint)
-// 	}
-
-// 	var juiceFsCacheDir = path.Join(corecommon.TerminusDir, "jfscache")
-// 	if !utils.IsExist(juiceFsCacheDir) {
-// 		utils.Mkdir(juiceFsCacheDir)
-// 	}
-
-// 	return true, nil
-// }

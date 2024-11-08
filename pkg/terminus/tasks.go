@@ -33,7 +33,7 @@ type GetTerminusVersion struct {
 func (t *GetTerminusVersion) Execute() (string, error) {
 	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
 	if err != nil {
-		return "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
+		return "", fmt.Errorf("kubectl not found, Olares might not be installed.")
 	}
 
 	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
@@ -43,11 +43,11 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 	cmd.WaitDelay = 3 * time.Second
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Wrap(errors.WithStack(err), "get terminus version failed")
+		return "", errors.Wrap(errors.WithStack(err), "get Olares version failed")
 	}
 
 	if version := string(output); version == "" {
-		return "", fmt.Errorf("Terminus might not be installed.")
+		return "", fmt.Errorf("Olares might not be installed.")
 	} else {
 		return version, nil
 	}
@@ -184,7 +184,7 @@ func (t *CheckPrepared) Execute(runtime connector.Runtime) error {
 	if utils.IsExist(preparedPath) {
 		t.PipelineCache.Set(common.CachePreparedState, true)
 	} else if t.Force {
-		return errors.New("terminus is not prepared well, cannot continue actions")
+		return errors.New("Olares dependencies is not prepared, refuse to continue")
 	}
 
 	return nil
@@ -201,7 +201,7 @@ func (t *CheckInstalled) Execute(runtime connector.Runtime) error {
 	if utils.IsExist(installedPath) {
 		t.PipelineCache.Set(common.CacheInstalledState, true)
 	} else if t.Force {
-		return errors.New("terminus is not installed, refuse to continue")
+		return errors.New("Olares is not installed, refuse to continue")
 	}
 
 	return nil

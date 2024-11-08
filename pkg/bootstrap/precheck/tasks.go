@@ -203,7 +203,7 @@ type GreetingsTask struct {
 }
 
 func (h *GreetingsTask) Execute(runtime connector.Runtime) error {
-	_, err := runtime.GetRunner().Host.Cmd("echo 'Greetings, Terminus'", false, true)
+	_, err := runtime.GetRunner().Host.Cmd("echo 'Greetings, Olares'", false, true)
 	if err != nil {
 		return err
 	}

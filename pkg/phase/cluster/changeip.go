@@ -14,7 +14,7 @@ func ChangeIP(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	if si.IsDarwin() || si.IsWindows() {
 		modules = []module.Module{&terminus.ChangeHostIPModule{}}
 	} else {
-		logger.Infof("changing the terminus OS IP to %s ...", si.GetLocalIp())
+		logger.Infof("changing the Olares OS IP to %s ...", si.GetLocalIp())
 		modules = []module.Module{
 			&terminus.CheckPreparedModule{},
 			&terminus.CheckInstalledModule{},
@@ -23,7 +23,7 @@ func ChangeIP(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	}
 
 	return &pipeline.Pipeline{
-		Name:    "Change the local IP address of Terminus OS components",
+		Name:    "Change the local IP address of Olares OS components",
 		Modules: modules,
 		Runtime: runtime,
 	}

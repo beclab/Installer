@@ -159,7 +159,7 @@ func (m *RemoveStorageModule) Init() {
 	}
 
 	removeTerminusFiles := &task.RemoteTask{
-		Name:  "RemoveTerminusFiles",
+		Name:  "RemoveOlaresFiles",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
@@ -248,10 +248,10 @@ type DeleteTerminusDataModule struct {
 }
 
 func (m *DeleteTerminusDataModule) Init() {
-	m.Name = "DeleteTerminusData"
+	m.Name = "DeleteOlaresData"
 
 	deleteTerminusData := &task.RemoteTask{
-		Name:     "DeleteTerminusData",
+		Name:     "DeleteOlaresData",
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
 		Action:   new(DeleteTerminusData),
 		Parallel: false,

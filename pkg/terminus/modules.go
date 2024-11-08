@@ -201,7 +201,7 @@ func (m *ChangeIPModule) Init() {
 
 	prepared, _ := m.PipelineCache.GetMustBool(common.CachePreparedState)
 	if !prepared {
-		logger.Info("the Terminus OS is not prepared, will only try to update /etc/hosts")
+		logger.Info("the Olares OS is not prepared, will only try to update /etc/hosts")
 	}
 	m.Tasks = []task.Interface{
 		&task.LocalTask{
@@ -212,7 +212,7 @@ func (m *ChangeIPModule) Init() {
 
 	installed, _ := m.PipelineCache.GetMustBool(common.CacheInstalledState)
 	if !installed && prepared {
-		logger.Info("the Terminus OS is not installed, will only try to update prepared base components")
+		logger.Info("the Olares OS is not installed, will only try to update prepared base components")
 	}
 
 	if installed {
@@ -428,7 +428,7 @@ func (m *ChangeHostIPModule) Init() {
 
 	m.Tasks = append(m.Tasks,
 		&task.LocalTask{
-			Name:   "CheckTerminusStateInHost",
+			Name:   "CheckOlaresStateInHost",
 			Action: new(CheckTerminusStateInHost),
 		},
 		&task.LocalTask{

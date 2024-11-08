@@ -46,7 +46,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 
 	var p = cluster.UninstallTerminus(phaseName, arg, runtime)
 	if err := p.Start(); err != nil {
-		logger.Errorf("uninstall terminus failed: %v", err)
+		logger.Errorf("uninstall Olares failed: %v", err)
 		return err
 	}
 
