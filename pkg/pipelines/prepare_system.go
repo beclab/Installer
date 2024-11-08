@@ -15,7 +15,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
-		fmt.Printf("Terminus is already installed, please uninstall it first.")
+		fmt.Printf("Olares is already installed, please uninstall it first.")
 		return nil
 	}
 

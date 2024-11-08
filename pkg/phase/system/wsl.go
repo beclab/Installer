@@ -1,7 +1,8 @@
 package system
 
 import (
-	"fmt"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
+	"path"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/daemon"
@@ -76,7 +77,7 @@ func (l *wslPhaseBuilder) build() []module.Module {
 	if systemInfo.IsWsl() {
 		var wslPackageDir = l.runtime.Arg.GetWslUserPath()
 		if wslPackageDir != "" {
-			baseDir = fmt.Sprintf("%s/.terminus", wslPackageDir)
+			baseDir = path.Join(wslPackageDir, cc.DefaultBaseDir)
 		}
 	}
 

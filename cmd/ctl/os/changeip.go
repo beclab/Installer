@@ -11,7 +11,7 @@ func NewCmdChangeIP() *cobra.Command {
 	o := options.NewChangeIPOptions()
 	cmd := &cobra.Command{
 		Use:   "change-ip",
-		Short: "change The IP address of Terminus OS",
+		Short: "change The IP address of Olares OS",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := pipelines.ChangeIPPipeline(o); err != nil {
 				log.Fatalf("error: %v", err)

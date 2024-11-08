@@ -177,7 +177,7 @@ func UninstallTerminus(phase string, args *common.Argument, runtime *common.Kube
 	}
 
 	return pipeline.Pipeline{
-		Name:    "Uninstall Terminus",
+		Name:    "Uninstall Olares",
 		Runtime: builder.runtime,
 		Modules: builder.modules,
 	}

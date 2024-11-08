@@ -9,7 +9,7 @@ import (
 func NewCmdOs() *cobra.Command {
 	rootOsCmd := &cobra.Command{
 		Use:   "terminus",
-		Short: "Operations such as installing and uninstalling Terminus can be performed using the --phase parameter, which allows for actions like downloading installation packages, downloading dependencies, and installing Terminus.",
+		Short: "Operations such as installing and uninstalling Olares can be performed using the --phase parameter, which allows for actions like downloading installation packages, downloading dependencies, and installing Olares.",
 	}
 
 	_ = exec.Command("/bin/bash", "-c", "ulimit -u 65535").Run()

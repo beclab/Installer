@@ -83,7 +83,7 @@ type GetKubeVersion struct{}
 func (g *GetKubeVersion) Execute() (string, string, error) {
 	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
 	if err != nil {
-		return "", "", fmt.Errorf("kubectl not found, Terminus might not be installed.")
+		return "", "", fmt.Errorf("kubectl not found, Olares might not be installed.")
 	}
 
 	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
@@ -233,7 +233,7 @@ func (t *GenerateKubeletService) Execute(runtime connector.Runtime) error {
 			"JuiceFSPreCheckEnabled": !runtime.GetSystemInfo().IsWsl(),
 			"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
 			"JuiceFSBinPath":         storage.JuiceFsFile,
-			"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
+			"JuiceFSMountPoint":      storage.OlaresJuiceFSRootDir,
 		},
 	}
 	return tplActions.Execute(runtime)

@@ -2,6 +2,7 @@ package terminus
 
 import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"context"
 	"fmt"
 	"path"
@@ -30,10 +31,9 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "kubectl not found")
 	}
 
-	var sharedLib = "/terminus/share"
 	if !runtime.GetSystemInfo().IsDarwin() {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", sharedLib, sharedLib), false, false); err != nil {
-			return errors.Wrap(errors.WithStack(err), "create /terminus/share failed")
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", storage.OlaresSharedLibDir, storage.OlaresSharedLibDir), false, false); err != nil {
+			return errors.Wrap(errors.WithStack(err), "failed to create shared lib dir")
 		}
 	}
 
@@ -72,10 +72,11 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 		"s3_bucket":                            t.KubeConf.Arg.Storage.StorageBucket,
 		"fs_type":                              getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin()),
 		common.HelmValuesKeyTerminusGlobalEnvs: common.TerminusGlobalEnvs,
+		common.HelmValuesKeyOlaresRootFSPath:   storage.OlaresRootDir,
 	}
 
 	if !runtime.GetSystemInfo().IsDarwin() {
-		vals["sharedlib"] = sharedLib
+		vals["sharedlib"] = storage.OlaresSharedLibDir
 	}
 
 	if err := utils.UpgradeCharts(ctx, actionConfig, settings, common.ChartNameSystem, systemPath, "", common.NamespaceOsSystem, vals, false); err != nil {

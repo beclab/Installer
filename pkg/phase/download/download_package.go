@@ -18,7 +18,7 @@ func NewDownloadPackage(mainifest string, runtime *common.KubeRuntime) *pipeline
 	}
 
 	return &pipeline.Pipeline{
-		Name:    "Download Terminus Installation Package",
+		Name:    "Download Installation Package",
 		Modules: m,
 		Runtime: runtime,
 	}

@@ -40,7 +40,7 @@ func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 	// 	return nil
 	// }
 
-	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), ".terminus", "pkg", "components"))
+	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"))
 
 	if err := appx.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", appx.FileName)
@@ -261,7 +261,7 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 	}
 
 	if _, err := cmd.Exec(); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install terminus %s failed", distro))
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install Olares %s failed", distro))
 	}
 
 	exec.Command("cmd", "/C", "wsl", "-d", distro, "--exec", "dbus-launch", "true").Run()

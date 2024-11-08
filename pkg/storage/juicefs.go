@@ -129,7 +129,7 @@ func (t *EnableJuiceFsService) Execute(runtime connector.Runtime) error {
 		"JuiceFsBinPath":    JuiceFsFile,
 		"JuiceFsCachePath":  JuiceFsCacheDir,
 		"JuiceFsMetaDb":     redisService,
-		"JuiceFsMountPoint": JuiceFsMountPointDir,
+		"JuiceFsMountPoint": OlaresJuiceFSRootDir,
 	}
 
 	juiceFsServiceStr, err := util.Render(juicefsTemplates.JuicefsService, data)
@@ -187,7 +187,7 @@ func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("JuiceFs Pending")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s summary %s", JuiceFsFile, JuiceFsMountPointDir), false, false); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s summary %s", JuiceFsFile, OlaresJuiceFSRootDir), false, false); err != nil {
 		return err
 	}
 
@@ -235,5 +235,5 @@ func getCloudStr(storage *common.Storage) string {
 func getMinioStr(pc *cache.Cache, localIp string) string {
 	var minioPassword, _ = pc.GetMustString(common.CacheMinioPassword)
 	return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
-		localIp, cc.TerminusDir, MinioRootUser, minioPassword)
+		localIp, cc.OlaresDir, MinioRootUser, minioPassword)
 }

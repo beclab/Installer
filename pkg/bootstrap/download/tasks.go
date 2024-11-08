@@ -3,9 +3,11 @@ package download
 import (
 	"bufio"
 	"bytes"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -39,7 +41,7 @@ func (d *PackageDownload) Execute(runtime connector.Runtime) error {
 	if systemInfo.IsWsl() {
 		var wslPackageDir = d.KubeConf.Arg.GetWslUserPath()
 		if wslPackageDir != "" {
-			baseDir = fmt.Sprintf("%s/.terminus", wslPackageDir)
+			baseDir = path.Join(wslPackageDir, cc.DefaultBaseDir)
 		}
 	}
 

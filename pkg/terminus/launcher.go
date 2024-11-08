@@ -4,6 +4,7 @@ import (
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"context"
 	"fmt"
@@ -75,6 +76,7 @@ func (t *InstallBFL) Execute(runtime connector.Runtime) error {
 		"appKey":                 key,
 		"appSecret":              secret,
 	}
+	vals[common.HelmValuesKeyOlaresRootFSPath] = storage.OlaresRootDir
 
 	if err := utils.UpgradeCharts(ctx, actionConfig, settings, launchName, launchPath, "", ns, vals, false); err != nil {
 		return err

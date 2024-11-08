@@ -234,7 +234,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"JuiceFSPreCheckEnabled": !runtime.GetSystemInfo().IsWsl(),
 		"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
 		"JuiceFSBinPath":         storage.JuiceFsFile,
-		"JuiceFSMountPoint":      storage.JuiceFsMountPointDir,
+		"JuiceFSMountPoint":      storage.OlaresJuiceFSRootDir,
 	}
 
 	templateAction := action.Template{

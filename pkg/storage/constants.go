@@ -5,15 +5,16 @@ import (
 	"path"
 
 	"bytetrade.io/web3os/installer/pkg/core/common"
-	cc "bytetrade.io/web3os/installer/pkg/core/common"
 )
 
 var (
-	Root                   = path.Join("/")
-	StorageDataDir         = path.Join(Root, "osdata")
-	StorageDataTerminusDir = path.Join(StorageDataDir, common.TerminusDir)
+	Root                 = path.Join("/")
+	StorageDataDir       = path.Join(Root, "osdata")
+	StorageDataOlaresDir = path.Join(StorageDataDir, common.OlaresDir)
+	OlaresRootDir        = path.Join(Root, common.OlaresDir)
+	OlaresSharedLibDir   = path.Join(OlaresRootDir, "share")
 
-	RedisRootDir             = path.Join(Root, cc.TerminusDir, "data", "redis")
+	RedisRootDir             = path.Join(OlaresRootDir, "data", "redis")
 	RedisConfigDir           = path.Join(RedisRootDir, "etc")
 	RedisDataDir             = path.Join(RedisRootDir, "data")
 	RedisLogDir              = path.Join(RedisRootDir, "log")
@@ -25,14 +26,15 @@ var (
 	RedisServerInstalledFile = path.Join(Root, "usr", "local", "bin", "redis-server")
 	RedisCliInstalledFile    = path.Join(Root, "usr", "local", "bin", "redis-cli")
 
-	JuiceFsFile          = path.Join(Root, "usr", "local", "bin", "juicefs")
-	JuiceFsDataDir       = path.Join(Root, cc.TerminusDir, "data", "juicefs")
-	JuiceFsCacheDir      = path.Join(Root, cc.TerminusDir, "jfscache")
-	JuiceFsMountPointDir = path.Join(Root, cc.TerminusDir, "rootfs")
-	JuiceFsServiceFile   = path.Join(Root, "etc", "systemd", "system", templates.JuicefsService.Name())
+	JuiceFsFile              = path.Join(Root, "usr", "local", "bin", "juicefs")
+	JuiceFsDataDir           = path.Join(OlaresRootDir, "data", "juicefs")
+	JuiceFsCacheDir          = path.Join(OlaresRootDir, "jfscache")
+	OlaresJuiceFSRootDir     = path.Join(OlaresRootDir, "rootfs")
+	OlaresJuiceFSUserDataDir = path.Join(OlaresJuiceFSRootDir, "userdata")
+	JuiceFsServiceFile       = path.Join(Root, "etc", "systemd", "system", templates.JuicefsService.Name())
 
 	MinioRootUser    = "minioadmin"
-	MinioDataDir     = path.Join(Root, cc.TerminusDir, "data", "minio", "vol1")
+	MinioDataDir     = path.Join(OlaresRootDir, "data", "minio", "vol1")
 	MinioFile        = path.Join(Root, "usr", "local", "bin", "minio")
 	MinioServiceFile = path.Join(Root, "etc", "systemd", "system", "minio.service")
 	MinioConfigFile  = path.Join(Root, "etc", "default", "minio")
