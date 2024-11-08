@@ -1,8 +1,8 @@
-project_name: terminus-cli
+project_name: olares-cli
 builds:
   - env:
       - CGO_ENABLED=0
-    binary: terminus-cli
+    binary: olares-cli
     main: ./cmd/main.go
     goos:
       - linux
@@ -27,7 +27,7 @@ builds:
       - -X bytetrade.io/web3os/installer/version.VERSION={{ .Version }}
 dist: ./output
 archives:
-  - id: terminus-cli
+  - id: olares-cli
     name_template: "{{ .ProjectName }}-v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     replacements:
       linux: linux
