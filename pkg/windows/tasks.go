@@ -19,8 +19,8 @@ import (
 
 const (
 	windowsAppPath = "AppData\\Local\\Microsoft\\WindowsApps"
-	ubuntu22exe    = "ubuntu2204.exe"
-	ubuntuexe      = "ubuntu.exe"
+	// ubuntu22exe    = "ubuntu2204.exe"
+	ubuntuexe = "ubuntu.exe"
 )
 
 var ubuntuTool string
@@ -32,13 +32,13 @@ type AddAppxPackage struct {
 
 func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 	var systemInfo = runtime.GetSystemInfo()
-	var windowsAppsPath = fmt.Sprintf("%s\\%s", runtime.GetSystemInfo().GetHomeDir(), windowsAppPath)
+	// var windowsAppsPath = fmt.Sprintf("%s\\%s", runtime.GetSystemInfo().GetHomeDir(), windowsAppPath)
 
-	if utils.IsExist(fmt.Sprintf("%s\\%s", windowsAppsPath, ubuntu22exe)) {
-		ubuntuTool = ubuntu22exe
-		distro = "Ubuntu-22.04"
-		return nil
-	}
+	// if utils.IsExist(fmt.Sprintf("%s\\%s", windowsAppsPath, ubuntu22exe)) {
+	// 	ubuntuTool = ubuntu22exe
+	// 	distro = "Ubuntu-22.04"
+	// 	return nil
+	// }
 
 	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), ".terminus", "pkg", "components"))
 
@@ -246,7 +246,7 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		envs = append(envs, fmt.Sprintf("export %s=%s", key, val))
 	}
 
-	var installScript = "curl -fsSL https://terminus.sh | bash -"
+	var installScript = fmt.Sprintf("curl -fsSL https://olares.sh | bash -")
 	if i.KubeConf.Arg.TerminusVersion != "" {
 		var installFile = fmt.Sprintf("install-wizard-v%s.tar.gz", i.KubeConf.Arg.TerminusVersion)
 		installScript = fmt.Sprintf("curl -fsSLO %s/%s && tar -xf %s -C ./ ./install.sh && rm -rf %s && bash ./install.sh",
