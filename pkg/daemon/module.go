@@ -11,12 +11,12 @@ type UninstallTerminusdModule struct {
 }
 
 func (u *UninstallTerminusdModule) Init() {
-	u.Name = "UninstallTerminusdModule"
-	u.Desc = "Uninstall terminusd"
+	u.Name = "UninstallOlaresdModule"
+	u.Desc = "Uninstall olaresd"
 
 	disableService := &task.RemoteTask{
-		Name:     "DisableTerminusdService",
-		Desc:     "disable terminus service",
+		Name:     "DisableOlaresdService",
+		Desc:     "disable olaresd service",
 		Hosts:    u.Runtime.GetHostsByRole(common.K8s),
 		Action:   new(DisableTerminusdService),
 		Parallel: false,
@@ -24,8 +24,8 @@ func (u *UninstallTerminusdModule) Init() {
 	}
 
 	uninstall := &task.RemoteTask{
-		Name:     "UninstallTerminusd",
-		Desc:     "Uninstall terminusd",
+		Name:     "UninstallOlaresd",
+		Desc:     "Uninstall olaresd",
 		Hosts:    u.Runtime.GetHostsByRole(common.K8s),
 		Action:   &UninstallTerminusd{},
 		Parallel: false,
@@ -44,12 +44,12 @@ type InstallTerminusdBinaryModule struct {
 }
 
 func (i *InstallTerminusdBinaryModule) Init() {
-	i.Name = "InstallTerminusdBinaryModule"
-	i.Desc = "Install terminusd"
+	i.Name = "InstallOlaresdBinaryModule"
+	i.Desc = "Install olaresd"
 
 	install := &task.RemoteTask{
-		Name:  "InstallTerminusdBinary",
-		Desc:  "Install terminusd using binary",
+		Name:  "InstallOlaresdBinary",
+		Desc:  "Install olaresd using binary",
 		Hosts: i.Runtime.GetHostsByRole(common.K8s),
 		Action: &InstallTerminusdBinary{
 			ManifestAction: manifest.ManifestAction{
@@ -62,8 +62,8 @@ func (i *InstallTerminusdBinaryModule) Init() {
 	}
 
 	generateEnv := &task.RemoteTask{
-		Name:     "GenerateTerminusdEnv",
-		Desc:     "Generate terminus service env",
+		Name:     "GenerateOlaresdEnv",
+		Desc:     "Generate olaresd service env",
 		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
 		Action:   new(GenerateTerminusdServiceEnv),
 		Parallel: false,
@@ -71,8 +71,8 @@ func (i *InstallTerminusdBinaryModule) Init() {
 	}
 
 	generateService := &task.RemoteTask{
-		Name:     "GenerateTerminusdService",
-		Desc:     "Generate terminus service",
+		Name:     "GenerateOlaresdService",
+		Desc:     "Generate olaresd service",
 		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
 		Action:   new(GenerateTerminusdService),
 		Parallel: false,
@@ -80,8 +80,8 @@ func (i *InstallTerminusdBinaryModule) Init() {
 	}
 
 	enableService := &task.RemoteTask{
-		Name:     "EnableTerminusdService",
-		Desc:     "enable terminus service",
+		Name:     "EnableOlaresdService",
+		Desc:     "enable olaresd service",
 		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
 		Action:   new(EnableTerminusdService),
 		Parallel: false,

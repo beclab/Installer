@@ -8,16 +8,16 @@ import (
 
 var (
 	// TerminusdService defines the template of terminusd's service for systemd.
-	TerminusdService = template.Must(template.New("terminusd.service").Parse(
+	TerminusdService = template.Must(template.New("olaresd.service").Parse(
 		dedent.Dedent(`[Unit]
-Description=terminusd
+Description=olaresd
 After=network.target
 StartLimitIntervalSec=0
 
 [Service]
 User=root
-EnvironmentFile=/etc/systemd/system/terminusd.service.env
-ExecStart=/usr/local/bin/terminusd
+EnvironmentFile=/etc/systemd/system/olaresd.service.env
+ExecStart=/usr/local/bin/olaresd
 RestartSec=10s
 LimitNOFILE=40000
 Restart=always
