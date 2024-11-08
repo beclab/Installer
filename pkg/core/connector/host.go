@@ -251,10 +251,6 @@ func (b *BaseHost) SudoScp(local, remote string) error {
 		util.Mkdir(remoteDir)
 	}
 
-	if b.GetOs() == common.Darwin {
-		return nil
-	}
-
 	if _, err := b.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
 		return err
 	}

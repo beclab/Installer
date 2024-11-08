@@ -78,11 +78,11 @@ type AddInstallerConfig struct {
 func (a *AddInstallerConfig) Execute(runtime connector.Runtime) error {
 	var ksFilename string
 
-	if runtime.GetSystemInfo().IsDarwin() {
-		ksFilename = path.Join(common.TmpDir, "/etc/kubernetes/addons/kubesphere.yaml")
-	} else {
-		ksFilename = "/etc/kubernetes/addons/kubesphere.yaml"
-	}
+	// if runtime.GetSystemInfo().IsDarwin() {
+	// ksFilename = path.Join(common.TmpDir, "/etc/kubernetes/addons/kubesphere.yaml")
+	// } else {
+	ksFilename = "/etc/kubernetes/addons/kubesphere.yaml"
+	// }
 	configurationBase64 := base64.StdEncoding.EncodeToString([]byte(a.KubeConf.Cluster.KubeSphere.Configurations))
 	if _, err := runtime.GetRunner().Host.SudoCmd(
 		fmt.Sprintf("echo %s | base64 -d >> %s", configurationBase64, ksFilename),
@@ -160,9 +160,11 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 			}
 		}
 	case kubekeyapiv1alpha2.MiniKube:
-		var etcdPath = path.Join(common.TmpDir, common.KubeEtcdCertDir)
+		var etcdPath = common.KubeEtcdCertDir // path.Join(common.TmpDir, common.KubeEtcdCertDir)
 		if !util.IsExist(etcdPath) {
-			util.Mkdir(etcdPath)
+			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", etcdPath), false, false); err != nil {
+				return err
+			}
 		}
 		var certfiles = []string{
 			"ca.crt",
@@ -195,7 +197,9 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		}
-		filePath = path.Join(common.TmpDir, filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name()))
+
+		//path.Join(common.TmpDir, filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name()))
+		filePath = path.Join(filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name()))
 	case kubekeyapiv1alpha2.Kubeadm:
 		for _, host := range runtime.GetHostsByRole(common.Master) {
 			addrList = append(addrList, host.GetInternalAddress())
@@ -334,9 +338,9 @@ func (a *Apply) Execute(runtime connector.Runtime) error {
 	}
 
 	filePath := filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name())
-	if runtime.GetSystemInfo().IsDarwin() {
-		filePath = path.Join(common.TmpDir, filePath)
-	}
+	// if runtime.GetSystemInfo().IsDarwin() {
+	// 	filePath = path.Join(common.TmpDir, filePath)
+	// }
 
 	deployKubesphereCmd := fmt.Sprintf("%s apply -f %s --force", kubectlpath, filePath)
 	if _, err := runtime.GetRunner().Host.CmdExt(deployKubesphereCmd, false, true); err != nil {
