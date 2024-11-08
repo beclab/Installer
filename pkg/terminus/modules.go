@@ -89,16 +89,16 @@ func (m *CheckInstalledModule) Init() {
 	}
 }
 
-type TerminusUninstallScriptModule struct {
+type OlaresUninstallScriptModule struct {
 	common.KubeModule
 }
 
-func (m *TerminusUninstallScriptModule) Init() {
-	m.Name = "GenerateTerminusUninstallScript"
+func (m *OlaresUninstallScriptModule) Init() {
+	m.Name = "GenerateOlaresUninstallScript"
 
 	uninstallScript := &task.LocalTask{
-		Name:   "GenerateTerminusUninstallScript",
-		Action: &GenerateTerminusUninstallScript{},
+		Name:   "GenerateOlaresUninstallScript",
+		Action: &GenerateOlaresUninstallScript{},
 	}
 
 	m.Tasks = []task.Interface{

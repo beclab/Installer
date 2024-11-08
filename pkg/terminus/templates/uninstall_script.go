@@ -6,7 +6,7 @@ import (
 	"github.com/lithammer/dedent"
 )
 
-var TerminusUninstallScriptValues = template.Must(template.New("terminus-uninstall.sh").Parse(
+var OlaresUninstallScriptValues = template.Must(template.New("olares-uninstall.sh").Parse(
 	dedent.Dedent(`#!/bin/bash
 set +x
 os_type=$(uname -s)
@@ -26,6 +26,6 @@ else
   args+=" --phase install"
 fi
 
-sudo -E /bin/bash -c "terminus-cli terminus uninstall --version $version --base-dir $base_dir $args | tee $base_dir/versions/v$version/logs/uninstall.log"
+sudo -E /bin/bash -c "olares-cli terminus uninstall --version $version --base-dir $base_dir $args"
 
 `)))
