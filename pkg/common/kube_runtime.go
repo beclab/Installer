@@ -26,6 +26,7 @@ import (
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
+	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
@@ -209,7 +210,11 @@ func (a *Argument) GetWslUserPath() string {
 }
 
 func (a *Argument) SetDownloadCdnUrl(downloadCdnUrl string) {
-	a.DownloadCdnUrl = strings.TrimSuffix(downloadCdnUrl, "/")
+	u := strings.TrimSuffix(downloadCdnUrl, "/")
+	if u == "" {
+		u = common.DownloadUrl
+	}
+	a.DownloadCdnUrl = u
 }
 
 func (a *Argument) SetTokenMaxAge() {
