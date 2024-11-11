@@ -115,7 +115,7 @@ type KubeBinary struct {
 	CheckMd5Sum         bool
 }
 
-func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, prePath string) *KubeBinary {
+func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, prePath, downloadMirrors string) *KubeBinary {
 	component := new(KubeBinary)
 	component.ID = name
 	component.Os = osType
@@ -323,7 +323,7 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 	case installwizard:
 		component.Type = WIZARD
 		component.FileName = fmt.Sprintf("install-wizard-v%s.tar.gz", version)
-		component.Url = fmt.Sprintf("%s/install-wizard-v%s.tar.gz", common.DownloadUrl, version)
+		component.Url = fmt.Sprintf("%s/install-wizard-v%s.tar.gz", component.getDownloadMirrors(downloadMirrors), version)
 		component.CheckSum = false
 		component.BaseDir = filepath.Join(prePath, fmt.Sprintf("v%s", version))
 	case cudakeyring: // + gpu
@@ -365,6 +365,13 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 	}
 
 	return component
+}
+
+func (b *KubeBinary) getDownloadMirrors(downloadMirrors string) string {
+	if downloadMirrors == "" {
+		return common.DownloadUrl
+	}
+	return downloadMirrors
 }
 
 func (b *KubeBinary) CreateBaseDir() error {
@@ -497,9 +504,7 @@ func (b *KubeBinary) Download() error {
 
 	for i := 5; i > 0; i-- {
 		totalSize, err := b.GetFileSize()
-		if err != nil {
-			logger.Warnf("get file %s %s size failed", b.FileName, b.Version)
-		} else if totalSize > 0 {
+		if totalSize > 0 {
 			logger.Infof("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
 		}
 

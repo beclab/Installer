@@ -74,6 +74,7 @@ type Argument struct {
 	// Extra args
 	ExtraAddon      string `json:"extra_addon"` // addon yaml config
 	RegistryMirrors string `json:"registry_mirrors"`
+	DownloadCdnUrl  string `json:"download_cdn_url"`
 
 	// master node ssh config
 	MasterHost              string `json:"master_host"`
@@ -205,6 +206,10 @@ func (a *Argument) GetWslUserPath() string {
 		}
 	}
 	return res
+}
+
+func (a *Argument) SetDownloadCdnUrl(downloadCdnUrl string) {
+	a.DownloadCdnUrl = strings.TrimSuffix(downloadCdnUrl, "/")
 }
 
 func (a *Argument) SetTokenMaxAge() {

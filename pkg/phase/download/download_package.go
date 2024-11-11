@@ -14,7 +14,7 @@ func NewDownloadPackage(mainifest string, runtime *common.KubeRuntime) *pipeline
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&terminus.OlaresUninstallScriptModule{},
-		&download.PackageDownloadModule{Manifest: mainifest, BaseDir: runtime.GetBaseDir()},
+		&download.PackageDownloadModule{Manifest: mainifest, BaseDir: runtime.GetBaseDir(), DownloadCdnUrl: runtime.Arg.DownloadCdnUrl},
 	}
 
 	return &pipeline.Pipeline{

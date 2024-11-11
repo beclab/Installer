@@ -32,7 +32,7 @@ func (t *InstallMinioOperator) Execute(runtime connector.Runtime) error {
 	var osVersion = systemInfo.GetOsVersion()
 	var osPlatformFamily = systemInfo.GetOsPlatformFamily()
 	var localIp = systemInfo.GetLocalIp()
-	binary := files.NewKubeBinary("minio-operator", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, runtime.GetWorkDir())
+	binary := files.NewKubeBinary("minio-operator", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultMinioOperatorVersion, runtime.GetWorkDir(), "")
 
 	if err := binary.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", binary.FileName)

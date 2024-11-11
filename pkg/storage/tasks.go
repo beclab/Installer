@@ -61,11 +61,11 @@ func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	var binary *files.KubeBinary
 	switch storageType {
 	case "s3":
-		binary = files.NewKubeBinary("awscli", arch, osType, osVersion, osPlatformFamily, "", prePath)
+		binary = files.NewKubeBinary("awscli", arch, osType, osVersion, osPlatformFamily, "", prePath, "")
 	case "oss":
-		binary = files.NewKubeBinary("ossutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath)
+		binary = files.NewKubeBinary("ossutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultOssUtilVersion, prePath, "")
 	case "cos":
-		binary = files.NewKubeBinary("cosutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultCosUtilVersion, prePath)
+		binary = files.NewKubeBinary("cosutil", arch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultCosUtilVersion, prePath, "")
 	default:
 		return nil
 	}

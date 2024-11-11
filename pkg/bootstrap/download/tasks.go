@@ -3,12 +3,13 @@ package download
 import (
 	"bufio"
 	"bytes"
-	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"errors"
 	"fmt"
 	"os"
 	"path"
 	"strings"
+
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -20,8 +21,9 @@ import (
 
 type PackageDownload struct {
 	common.KubeAction
-	Manifest string
-	BaseDir  string
+	Manifest       string
+	BaseDir        string
+	DownloadCdnUrl string
 }
 
 type CheckDownload struct {
@@ -59,7 +61,7 @@ func (d *PackageDownload) Execute(runtime connector.Runtime) error {
 			item := must(manifest.ReadItem(line))
 
 			if !must(isRealExists(runtime, item, baseDir)) {
-				err := d.downloadItem(runtime, item, baseDir)
+				err := d.downloadItem(runtime, item, baseDir, d.DownloadCdnUrl)
 				if err != nil {
 					logger.Fatal(err)
 				}
@@ -121,7 +123,7 @@ func isRealExists(runtime connector.Runtime, item *manifest.ManifestItem, baseDi
 	return checksum == item.GetItemUrlForHost(arch).Checksum, nil
 }
 
-func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest.ManifestItem, baseDir string) error {
+func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest.ManifestItem, baseDir string, downloadCdnUrl string) error {
 	arch := runtime.GetSystemInfo().GetOsArch()
 	url := item.GetItemUrlForHost(arch)
 
@@ -129,7 +131,7 @@ func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest
 	component.ID = item.Filename
 	component.Arch = runtime.GetSystemInfo().GetOsArch()
 	component.BaseDir = getDownloadTargetBasePath(item, baseDir)
-	component.Url = url.Url
+	component.Url = fmt.Sprintf("%s/%s", downloadCdnUrl, strings.TrimPrefix(url.Url, "/"))
 	component.FileName = item.Filename
 	component.CheckMd5Sum = true
 	component.Md5sum = url.Checksum

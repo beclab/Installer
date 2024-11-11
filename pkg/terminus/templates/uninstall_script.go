@@ -26,6 +26,6 @@ else
   args+=" --phase install"
 fi
 
-sudo -E /bin/bash -c "olares-cli terminus uninstall --version $version --base-dir $base_dir $args"
+sudo -E /bin/bash -c "olares-cli olares uninstall --version $version --base-dir $base_dir $args"
 
 `)))

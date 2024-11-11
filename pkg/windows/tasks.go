@@ -40,7 +40,7 @@ func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 	// 	return nil
 	// }
 
-	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"))
+	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"), cc.DownloadUrl)
 
 	if err := appx.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", appx.FileName)
