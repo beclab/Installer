@@ -16,7 +16,11 @@ type gpuModuleBuilder func() []module.Module
 
 func (m gpuModuleBuilder) withGPU(runtime *common.KubeRuntime) []module.Module {
 	systemInfo := runtime.GetSystemInfo()
-	if systemInfo.IsLinux() || (systemInfo.IsWsl() && (&gpu.CheckWslGPU{}).CheckNvidiaSmiFileExists()) {
+	if systemInfo.IsWsl() {
+		if (&gpu.CheckWslGPU{}).CheckNvidiaSmiFileExists() {
+			return m()
+		}
+	} else {
 		return m()
 	}
 	return nil
