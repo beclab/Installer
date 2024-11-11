@@ -23,7 +23,7 @@ func DownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 		return err
 	}
 
-	if ok := utils.CheckUrl(opts.DownloadCdnUrl); !ok {
+	if ok := utils.CheckUrl(arg.DownloadCdnUrl); !ok {
 		return fmt.Errorf("--download-cdn-url invalid")
 	}
 
