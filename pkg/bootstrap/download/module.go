@@ -7,8 +7,9 @@ import (
 
 type PackageDownloadModule struct {
 	common.KubeModule
-	Manifest string
-	BaseDir  string
+	Manifest       string
+	BaseDir        string
+	DownloadCdnUrl string
 }
 
 func (i *PackageDownloadModule) Init() {
@@ -17,7 +18,7 @@ func (i *PackageDownloadModule) Init() {
 	download := &task.LocalTask{
 		Name:   i.Name,
 		Desc:   i.Desc,
-		Action: &PackageDownload{Manifest: i.Manifest, BaseDir: i.BaseDir},
+		Action: &PackageDownload{Manifest: i.Manifest, BaseDir: i.BaseDir, DownloadCdnUrl: i.DownloadCdnUrl},
 	}
 
 	i.Tasks = []task.Interface{

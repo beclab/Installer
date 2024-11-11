@@ -1,6 +1,8 @@
 package terminus
 
 import (
+	"time"
+
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -13,12 +15,12 @@ import (
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/storage"
-	"time"
 )
 
 type InstallWizardDownloadModule struct {
 	common.KubeModule
-	Version string
+	Version        string
+	DownloadCdnUrl string
 }
 
 func (m *InstallWizardDownloadModule) Init() {
@@ -26,7 +28,8 @@ func (m *InstallWizardDownloadModule) Init() {
 	download := &task.LocalTask{
 		Name: "DownloadInstallWizard",
 		Action: &Download{
-			Version: m.Version,
+			Version:        m.Version,
+			DownloadCdnUrl: m.DownloadCdnUrl,
 		},
 		Retry: 1,
 	}

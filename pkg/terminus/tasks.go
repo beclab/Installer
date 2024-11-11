@@ -90,8 +90,9 @@ func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
 
 type Download struct {
 	common.KubeAction
-	Version string
-	BaseDir string
+	Version        string
+	BaseDir        string
+	DownloadCdnUrl string
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
@@ -99,7 +100,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 		return errors.New("unknown version to download")
 	}
 
-	var fetchMd5 = fmt.Sprintf("curl -sSfL %s/install-wizard-v%s.md5sum.txt |awk '{print $1}'", cc.DownloadUrl, t.Version)
+	var fetchMd5 = fmt.Sprintf("curl -sSfL %s/install-wizard-v%s.md5sum.txt |awk '{print $1}'", t.DownloadCdnUrl, t.Version)
 	md5sum, err := runtime.GetRunner().Host.Cmd(fetchMd5, false, false)
 	if err != nil {
 		return errors.New("get md5sum failed")
@@ -111,7 +112,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 	var osPlatformFamily = runtime.GetSystemInfo().GetOsPlatformFamily()
 	var baseDir = runtime.GetBaseDir()
 	var prePath = path.Join(baseDir, "versions")
-	var wizard = files.NewKubeBinary("install-wizard", osArch, osType, osVersion, osPlatformFamily, t.Version, prePath)
+	var wizard = files.NewKubeBinary("install-wizard", osArch, osType, osVersion, osPlatformFamily, t.Version, prePath, t.DownloadCdnUrl)
 	wizard.CheckMd5Sum = true
 	wizard.Md5sum = md5sum
 
