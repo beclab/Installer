@@ -30,3 +30,5 @@ frontend/node_modules/
 output/
 logs/
 docs/
+
+generate_vfs

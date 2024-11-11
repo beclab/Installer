@@ -43,6 +43,12 @@ spec:
           protocol: TCP
         - containerPort: 8443
           protocol: TCP
+        startupProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 5
+          failureThreshold: 30
+          periodSeconds: 10
         resources:
           {{- toYaml .Values.controller.resources | nindent 12 }}
         volumeMounts:
