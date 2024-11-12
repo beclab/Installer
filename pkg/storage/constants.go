@@ -13,6 +13,7 @@ var (
 	StorageDataOlaresDir = path.Join(StorageDataDir, common.OlaresDir)
 	OlaresRootDir        = path.Join(Root, common.OlaresDir)
 	OlaresSharedLibDir   = path.Join(OlaresRootDir, "share")
+	OlaresUserDataDir    = path.Join(OlaresRootDir, "userdata")
 
 	RedisRootDir             = path.Join(OlaresRootDir, "data", "redis")
 	RedisConfigDir           = path.Join(RedisRootDir, "etc")
@@ -26,12 +27,11 @@ var (
 	RedisServerInstalledFile = path.Join(Root, "usr", "local", "bin", "redis-server")
 	RedisCliInstalledFile    = path.Join(Root, "usr", "local", "bin", "redis-cli")
 
-	JuiceFsFile              = path.Join(Root, "usr", "local", "bin", "juicefs")
-	JuiceFsDataDir           = path.Join(OlaresRootDir, "data", "juicefs")
-	JuiceFsCacheDir          = path.Join(OlaresRootDir, "jfscache")
-	OlaresJuiceFSRootDir     = path.Join(OlaresRootDir, "rootfs")
-	OlaresJuiceFSUserDataDir = path.Join(OlaresJuiceFSRootDir, "userdata")
-	JuiceFsServiceFile       = path.Join(Root, "etc", "systemd", "system", templates.JuicefsService.Name())
+	JuiceFsFile          = path.Join(Root, "usr", "local", "bin", "juicefs")
+	JuiceFsDataDir       = path.Join(OlaresRootDir, "data", "juicefs")
+	JuiceFsCacheDir      = path.Join(OlaresRootDir, "jfscache")
+	OlaresJuiceFSRootDir = path.Join(OlaresRootDir, "rootfs")
+	JuiceFsServiceFile   = path.Join(Root, "etc", "systemd", "system", templates.JuicefsService.Name())
 
 	MinioRootUser    = "minioadmin"
 	MinioDataDir     = path.Join(OlaresRootDir, "data", "minio", "vol1")
