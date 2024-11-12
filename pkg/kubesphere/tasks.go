@@ -17,15 +17,6 @@
 package kubesphere
 
 import (
-	"context"
-	"encoding/base64"
-	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
-
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -35,8 +26,17 @@ import (
 	ksv3 "bytetrade.io/web3os/installer/pkg/kubesphere/v3"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
+	"encoding/base64"
+	"fmt"
 	"github.com/pkg/errors"
 	yamlV2 "gopkg.in/yaml.v2"
+	"net"
+	"os"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type DeleteKubeSphereCaches struct {
@@ -384,136 +384,18 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	svcIPCMD := fmt.Sprintf("%s -n kubesphere-system get svc ks-controller-manager -o jsonpath='{.spec.clusterIP}'", kubectlpath)
+	svcIP, err := runtime.GetRunner().Host.SudoCmd(svcIPCMD, false, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to get the service IP of ks-controller-manager")
+	}
+
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(svcIP, strconv.Itoa(443)), 10*time.Second)
+	if err != nil {
+		return errors.Wrap(err, "failed to connect to ks-controller-manager service")
+	}
+	defer conn.Close()
 	return nil
-
-	// // var (
-	// // 	position = 1
-	// // 	notes    = "Please wait for the installation to complete: "
-	// // )
-	// ch := make(chan string)
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
-	// go CheckKubeSphereStatus(ctx, runtime, ch)
-
-	// if err := checkInstallerRunning(ctx, runtime); err != nil {
-	// 	return err
-	// }
-
-	// logFile := "/tmp/.ks-installer.log"
-	// _, err := runtime.GetRunner().Host.SudoCmd("cat /dev/null > "+logFile, false, false) // make sure log file exists
-	// if err != nil {
-	// 	return err
-	// }
-	// go tailInstallerLog(logFile, runtime) // FIXME:
-	// config := tail.Config{MustExist: true, Follow: true}
-	// tail, err := tail.TailFile(logFile, config)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// stop := false
-	// for !stop {
-	// 	select {
-	// 	case <-ch:
-	// 		stop = true
-	// 	case output := <-tail.Lines:
-	// 		fmt.Println(output.Text)
-	// 	}
-	// }
-	// tail.Stop()
-	// // for !stop {
-	// // 	select {
-	// // 	case <-ch:
-	// // 		fmt.Printf("\033[%dA\033[K", position)
-	// // 		// fmt.Println(res)
-	// // 		stop = true
-	// // 	default:
-	// // 		for i := 0; i < 10; i++ {
-	// // 			if i < 5 {
-	// // 				fmt.Printf("\033[%dA\033[K", position)
-
-	// // 				output := fmt.Sprintf(
-	// // 					"%s%s%s",
-	// // 					notes,
-	// // 					strings.Repeat(" ", i),
-	// // 					">>--->",
-	// // 				)
-
-	// // 				fmt.Printf("%s \033[K\n", output)
-	// // 				time.Sleep(time.Duration(200) * time.Millisecond)
-	// // 			} else {
-	// // 				fmt.Printf("\033[%dA\033[K", position)
-
-	// // 				output := fmt.Sprintf(
-	// // 					"%s%s%s",
-	// // 					notes,
-	// // 					strings.Repeat(" ", 10-i),
-	// // 					"<---<<",
-	// // 				)
-
-	// // 				fmt.Printf("%s \033[K\n", output)
-	// // 				time.Sleep(time.Duration(200) * time.Millisecond)
-	// // 			}
-	// // 		}
-	// // 	}
-	// // } // end for
-	// return nil
-}
-
-func checkInstallerRunning(ctx context.Context, runtime connector.Runtime) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			output, err := runtime.GetRunner().Host.SudoCmd(
-				"/usr/local/bin/kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[*].status.phase}'", false, false)
-			if err != nil {
-				return err
-			}
-			if output == "Running" {
-				return nil
-			}
-		}
-	}
-}
-
-func tailInstallerLog(log string, runtime connector.Runtime) error {
-	// TODO: kill when done
-	fmt.Print("start to sync ks-installer's log")
-	output, err := runtime.GetRunner().Host.SudoCmd(
-		"/usr/local/bin/kubectl logs -n kubesphere-system "+
-			"$(kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[0].metadata.name}') "+
-			"-f > "+log, false, false)
-
-	fmt.Printf("tail log: %s , [%v]", output, err)
-	return err
-}
-
-func CheckKubeSphereStatus(ctx context.Context, runtime connector.Runtime, stopChan chan string) {
-	defer close(stopChan)
-	for {
-		select {
-		case <-ctx.Done():
-			stopChan <- ""
-		default:
-			time.Sleep(5 * time.Second)
-			_, err := runtime.GetRunner().Host.SudoCmd(
-				"/usr/local/bin/kubectl exec -n kubesphere-system "+
-					"$(kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[0].metadata.name}') "+
-					"-- ls /kubesphere/playbooks/kubesphere_running", false, false)
-			if err == nil {
-				output, err := runtime.GetRunner().Host.SudoCmd(
-					"/usr/local/bin/kubectl exec -n kubesphere-system "+
-						"$(kubectl get pod -n kubesphere-system -l app=ks-installer -o jsonpath='{.items[0].metadata.name}') "+
-						"-- cat /kubesphere/playbooks/kubesphere_running", false, false)
-				if err == nil && output != "" {
-					stopChan <- output
-					break
-				}
-			}
-		}
-	}
 }
 
 type CleanCC struct {
