@@ -74,7 +74,7 @@ func (m *WelcomeModule) Init() {
 		Name:   "WaitServicesReady",
 		Action: new(WelcomeServicePrecheck),
 		Retry:  30,
-		Delay:  10 * time.Second,
+		Delay:  15 * time.Second,
 	}
 
 	welcomeMessage := &task.LocalTask{
