@@ -409,14 +409,10 @@ func (m *ChangeIPModule) Init() {
 				Action: new(DeleteAllPods),
 			},
 			&task.LocalTask{
-				Name: "CheckSystemServiceStatus",
-				Action: &CheckPodsRunning{
-					labels: map[string][]string{
-						"os-system": {"tier=app-service", "app=vault-server", "app=authelia-backend"},
-					},
-				},
-				Delay: 10 * time.Second,
-				Retry: 20,
+				Name:   "EnsurePodsUpAndRunningAgain",
+				Action: new(CheckKeyPodsRunning),
+				Delay:  20 * time.Second,
+				Retry:  30,
 			},
 		)
 	}

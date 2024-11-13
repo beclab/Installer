@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 	"time"
 
@@ -51,6 +55,35 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 	} else {
 		return version, nil
 	}
+}
+
+type CheckKeyPodsRunning struct {
+	common.KubeAction
+}
+
+func (t *CheckKeyPodsRunning) Execute(runtime connector.Runtime) error {
+	kubeConfig, err := ctrl.GetConfig()
+	if err != nil {
+		return errors.Wrap(err, "failed to load kubeconfig")
+	}
+	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kube client")
+	}
+	pods, err := kubeClient.CoreV1().Pods(corev1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "failed to list pods")
+	}
+	for _, pod := range pods.Items {
+		if strings.HasPrefix(pod.Namespace, "user-space") ||
+			strings.HasPrefix(pod.Namespace, "user-system") ||
+			pod.Namespace == "os-system" {
+			if pod.Status.Phase != corev1.PodRunning {
+				return fmt.Errorf("pod %s/%s is not running", pod.Namespace, pod.Name)
+			}
+		}
+	}
+	return nil
 }
 
 type CheckPodsRunning struct {
