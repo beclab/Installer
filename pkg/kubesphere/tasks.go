@@ -380,8 +380,20 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 		var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[0].status.phase}'", kubectlpath, common.NamespaceKubesphereSystem, label)
 		rphase, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
 		if rphase != "Running" {
-			return fmt.Errorf("APIServer State is Pending")
+			return errors.New("Waiting for KubeSphere to be Running")
 		}
+	}
+
+	if runtime.GetSystemInfo().IsDarwin() {
+		epIPCMD := fmt.Sprintf("%s -n kubesphere-system get ep ks-controller-manager -o jsonpath='{.subsets[*].addresses[*].ip}'", kubectlpath)
+		epIP, _ := runtime.GetRunner().Host.SudoCmd(epIPCMD, false, false)
+		if net.ParseIP(strings.TrimSpace(epIP)) == nil {
+			return errors.New("Waiting for ks-controller-manager svc endpoints to be populated")
+		}
+		// we can't check the svc connectivity in macOS host
+		// so just wait for some time for the proxy to take effect
+		time.Sleep(5 * time.Second)
+		return nil
 	}
 
 	svcIPCMD := fmt.Sprintf("%s -n kubesphere-system get svc ks-controller-manager -o jsonpath='{.spec.clusterIP}'", kubectlpath)
