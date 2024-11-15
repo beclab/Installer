@@ -16,7 +16,9 @@
 
 package common
 
-import "os"
+import (
+	"os"
+)
 
 const (
 	DefaultK8sVersion        = "v1.22.10"
@@ -288,6 +290,7 @@ var TerminusGlobalEnvs = map[string]interface{}{
 	"FIREBASE_PUSH_URL":          "https://firebase-push-test.bttcdn.com/v1/api/push",
 	"FRP_LIST_URL":               "https://terminus-frp.snowinning.com",
 	"TAILSCALE_CONTROLPLANE_URL": "https://controlplane.snowinning.com",
+	"OLARES_ROOT_DIR":            "/olares",
 }
 
 const (
