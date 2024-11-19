@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"os/exec"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/util"
@@ -94,6 +95,7 @@ type Systems interface {
 	CgroupMemoryEnabled() bool
 	GetFsType() string
 	GetDefaultZfsPrefixName() string
+	GetTotalMemory() uint64
 
 	Print()
 	String() string
@@ -262,6 +264,10 @@ func (s *SystemInfo) GetFsType() string {
 
 func (s *SystemInfo) GetDefaultZfsPrefixName() string {
 	return s.FsInfo.DefaultZfsPrefixName
+}
+
+func (s *SystemInfo) GetTotalMemory() uint64 {
+	return s.MemoryInfo.Total
 }
 
 func (s *SystemInfo) GetPkgManager() string {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -88,7 +89,13 @@ func (u *UpdateWSL) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("create wsl config %s failed", wslConfigFile))
 	}
 
-	wslConfigStr, err := util.Render(templates.WSLConfigValue, nil)
+	systemInfo := runtime.GetSystemInfo()
+	memory := u.getMemroy(systemInfo.GetTotalMemory())
+	var data = util.Data{
+		"Memory": memory,
+	}
+
+	wslConfigStr, err := util.Render(templates.WSLConfigValue, data)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "render account template failed")
 	}
@@ -105,6 +112,30 @@ func (u *UpdateWSL) Execute(runtime connector.Runtime) error {
 	}
 
 	return nil
+}
+
+func (u *UpdateWSL) getMemroy(total uint64) uint64 {
+	var memory uint64 = 12
+	m := os.Getenv("WSL_MEMORY")
+	if m == "" {
+		return memory
+	}
+
+	sets, err := strconv.ParseUint(m, 10, 64)
+	if err != nil {
+		return memory
+	}
+
+	localMemeory := total / 1024 / 1024 / 1024
+	if localMemeory < sets {
+		if localMemeory > memory {
+			return memory
+		} else {
+			return localMemeory
+		}
+	}
+
+	return sets
 }
 
 type InstallWSLDistro struct {
