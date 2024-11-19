@@ -8,7 +8,7 @@ import (
 
 var WSLConfigValue = template.Must(template.New(".wslconfig").Parse(
 	dedent.Dedent(`[wsl2]
-memory=12GB
+memory={{ .Memory }}GB
 swap=0GB
 `),
 ))
