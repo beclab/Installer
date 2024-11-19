@@ -51,6 +51,17 @@ func (l *linuxInstallPhaseBuilder) installTerminus() phase {
 	}
 }
 
+func (l *linuxInstallPhaseBuilder) installBackup() phase {
+	return []module.Module{
+		&terminus.InstallVeleroModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: l.manifestMap,
+				BaseDir:  l.runtime.GetBaseDir(),
+			},
+		},
+	}
+}
+
 func (l *linuxInstallPhaseBuilder) build() []module.Module {
 	return l.base().
 		addModule(l.installCluster()...).
@@ -58,6 +69,9 @@ func (l *linuxInstallPhaseBuilder) build() []module.Module {
 			return l.installGpuPlugin()
 		}).withGPU(l.runtime)...).
 		addModule(l.installTerminus()...).
+		addModule(backupModuleBuilder(func() []module.Module {
+			return l.installBackup()
+		}).withBackup(l.runtime)...).
 		addModule(&terminus.WelcomeModule{}).
 		addModule(&terminus.InstalledModule{})
 }

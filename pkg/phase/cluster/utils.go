@@ -25,3 +25,13 @@ func (m gpuModuleBuilder) withGPU(runtime *common.KubeRuntime) []module.Module {
 	}
 	return nil
 }
+
+type backupModuleBuilder func() []module.Module
+
+func (m backupModuleBuilder) withBackup(runtime *common.KubeRuntime) []module.Module {
+	systemInfo := runtime.GetSystemInfo()
+	if systemInfo.IsLinux() {
+		return m()
+	}
+	return nil
+}

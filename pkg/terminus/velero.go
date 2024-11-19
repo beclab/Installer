@@ -1,18 +1,21 @@
 package terminus
 
 import (
+	"fmt"
+	"io/fs"
+	"path"
+	"path/filepath"
+	"strings"
+
 	"bytetrade.io/web3os/installer/pkg/common"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/utils"
-	"fmt"
 	"github.com/pkg/errors"
-	"io/fs"
-	"path/filepath"
-	"strings"
 )
 
 type InstallVeleroBinary struct {
@@ -26,7 +29,16 @@ func (t *InstallVeleroBinary) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	path := veleroPkg.FilePath(t.BaseDir)
+	systemInfo := runtime.GetSystemInfo()
+	var baseDir = t.BaseDir
+	if systemInfo.IsWsl() {
+		var wslPackageDir = t.KubeConf.Arg.GetWslUserPath()
+		if wslPackageDir != "" {
+			baseDir = path.Join(wslPackageDir, cc.DefaultBaseDir)
+		}
+	}
+
+	path := veleroPkg.FilePath(baseDir)
 
 	var cmd = fmt.Sprintf("rm -rf /tmp/velero* && mkdir /tmp/velero && cp %s /tmp/%s && tar xf /tmp/%s -C /tmp/velero ", path, veleroPkg.Filename, veleroPkg.Filename)
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
