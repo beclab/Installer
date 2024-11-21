@@ -52,7 +52,7 @@ ExecStartPre=/bin/sh -c "test -f /sys/kernel/mm/transparent_hugepage/enabled && 
 ExecStart={{ .RedisBinPath }} {{ .RedisConfPath }}
 
 # Let systemd restart this service always
-Restart=no
+Restart=always
 
 # Specifies the maximum file descriptor number that can be opened by this process
 LimitNOFILE=65536
