@@ -408,7 +408,7 @@ func (a *BackupFilesToDir) Execute(runtime connector.Runtime) error {
 			return errors.Wrapf(err, "failed to create backup dir %s for file %s", path.Dir(file), path.Base(file))
 		}
 		logger.Debugf("copying file %s to backup dir %s", file, a.BackupDir)
-		if err := util.CopyFile(file, path.Join(a.BackupDir, path.Dir(file))); err != nil {
+		if err := util.CopyFile(file, path.Join(a.BackupDir, file)); err != nil {
 			return errors.Wrapf(err, "failed to copy file %s to backup dir", file)
 		}
 	}
