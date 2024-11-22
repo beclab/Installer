@@ -18,7 +18,7 @@ func ChangeIPPipeline(opt *options.ChangeIPOptions) error {
 	var arg = common.NewArgument()
 	arg.SetTerminusVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
-	arg.SetConsoleLogFileName("changeip.log")
+	arg.SetConsoleLog("changeip.log", true)
 	arg.SetKubeVersion(kubeType)
 	arg.SetMinikubeProfile(opt.MinikubeProfile)
 	arg.SetWSLDistribution(opt.WSLDistribution)
