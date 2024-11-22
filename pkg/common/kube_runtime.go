@@ -112,6 +112,7 @@ type Argument struct {
 	BaseDir            string   `json:"base_dir"`
 	Manifest           string   `json:"manifest"`
 	ConsoleLogFileName string   `json:"console_log_file_name"`
+	ConsoleLogTruncate bool     `json:"console_log_truncate"`
 	HostIP             string   `json:"host_ip"`
 }
 
@@ -337,8 +338,9 @@ func (a *Argument) SetManifest(manifest string) {
 	a.Manifest = manifest
 }
 
-func (a *Argument) SetConsoleLogFileName(consoleLogFileName string) {
-	a.ConsoleLogFileName = consoleLogFileName
+func (a *Argument) SetConsoleLog(fileName string, truncate bool) {
+	a.ConsoleLogFileName = fileName
+	a.ConsoleLogTruncate = truncate
 }
 
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
@@ -353,7 +355,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
-		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.ConsoleLogFileName, arg.SystemInfo)
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.ConsoleLogFileName, arg.ConsoleLogTruncate, arg.SystemInfo)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.SystemInfo.IsDarwin())

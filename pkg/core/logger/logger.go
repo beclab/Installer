@@ -15,7 +15,7 @@ var logger *zap.SugaredLogger
 
 var FatalMessagePrefix = "[FATAL] "
 
-func InitLog(jsonLogDir, consoleLogFilePath string) {
+func InitLog(jsonLogDir, consoleLogFilePath string, consoleLogTruncate bool) {
 	for _, logDir := range []string{jsonLogDir, path.Dir(consoleLogFilePath)} {
 		found, err := isDirExist(logDir)
 		if err != nil {
@@ -37,7 +37,13 @@ func InitLog(jsonLogDir, consoleLogFilePath string) {
 	if err != nil {
 		panic(err)
 	}
-	consoleLogFile, err := os.OpenFile(consoleLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, common.FileMode0755)
+	consoleFileFlag := os.O_CREATE | os.O_WRONLY
+	if consoleLogTruncate {
+		consoleFileFlag = consoleFileFlag | os.O_TRUNC
+	} else {
+		consoleFileFlag = consoleFileFlag | os.O_APPEND
+	}
+	consoleLogFile, err := os.OpenFile(consoleLogFilePath, consoleFileFlag, common.FileMode0755)
 	if err != nil {
 		panic(err)
 	}
