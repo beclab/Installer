@@ -160,22 +160,6 @@ func Mkdir(dirName string) error {
 	return os.MkdirAll(dirName, os.ModePerm)
 }
 
-func CopyFile(src, dst string) error {
-	cmd := exec.Command("cp", src, dst)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func MoveFile(src, dst string) error {
-	cmd := exec.Command("mv", src, dst)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func WriteFile(fileName string, content []byte, perm os.FileMode) error {
 	dir := filepath.Dir(fileName)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -188,6 +172,85 @@ func WriteFile(fileName string, content []byte, perm os.FileMode) error {
 		return err
 	}
 	return nil
+}
+
+func CopyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	dstDir := filepath.Dir(dst)
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return err
+	}
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
+func CopyFileToDir(src, dir string) error {
+	dest := filepath.Join(dir, filepath.Base(src))
+	return CopyFile(src, dest)
+}
+
+func MoveFile(src, dst string) error {
+	if err := CopyFile(src, dst); err != nil {
+		return err
+	}
+	return os.Remove(src)
+}
+
+func CopyDirectory(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		dstPath := filepath.Join(dst, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(dstPath, info.Mode())
+		}
+
+		return CopyFile(path, dstPath)
+	})
+}
+
+func MoveDirectory(src, dst string) error {
+	if err := CopyDirectory(src, dst); err != nil {
+		return err
+	}
+	return os.RemoveAll(src)
+}
+
+func CopyDirectoryIfExists(src, dstDir string) error {
+	if _, err := os.Stat(src); os.IsNotExist(err) {
+		return nil // Skip if source doesn't exist
+	}
+	return CopyDirectory(src, dstDir)
+}
+
+func ReplaceInFile(filepath, old, new string) error {
+	content, err := os.ReadFile(filepath)
+	if err != nil {
+		return err
+	}
+
+	newContent := strings.ReplaceAll(string(content), old, new)
+	return os.WriteFile(filepath, []byte(newContent), 0644)
 }
 
 func Tar(src, dst, trimPrefix string) error {

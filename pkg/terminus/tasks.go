@@ -355,7 +355,7 @@ func (a *PrepareFilesForETCDIPChange) Execute(runtime connector.Runtime) error {
 			return nil
 		}
 		if strings.HasPrefix(filepath.Base(path), "ca") {
-			if err := util.CopyFile(path, dstCertsDir); err != nil {
+			if err := util.CopyFileToDir(path, dstCertsDir); err != nil {
 				return err
 			}
 		}
