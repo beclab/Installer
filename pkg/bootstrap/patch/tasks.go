@@ -50,7 +50,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	switch platformFamily {
 	case common.Debian:
 		if _, err := util.GetCommand("add-apt-repository"); err != nil {
-			if _, err := runtime.GetRunner().Host.SudoCmd("apt install -y add-apt-repository", false, true); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd("apt install -y software-properties-common", false, true); err != nil {
 				logger.Errorf("install add-apt-repository error %v", err)
 				return err
 			}
