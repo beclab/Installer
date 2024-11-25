@@ -48,18 +48,34 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	var platformFamily = systemInfo.GetOsPlatformFamily()
 	var pkgManager = systemInfo.GetPkgManager()
 	switch platformFamily {
-	case common.Ubuntu, common.Debian:
-		if !systemInfo.IsPve() && !systemInfo.IsRaspbian() {
-			if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository universe -y", false, true); err != nil {
-				logger.Errorf("add os repo error %v", err)
+	case common.Debian:
+		if _, err := util.GetCommand("add-apt-repository"); err != nil {
+			if _, err := runtime.GetRunner().Host.SudoCmd("apt install -y add-apt-repository", false, true); err != nil {
+				logger.Errorf("install add-apt-repository error %v", err)
 				return err
 			}
+		}
 
-			if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository multiverse -y", false, true); err != nil {
-				logger.Errorf("add os repo error %v", err)
-				return err
+		var cmd = fmt.Sprintf("add-apt-repository 'deb http://deb.debian.org/debian %s contrib non-free' -y", systemInfo.GetDebianVersionCode())
+		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+			logger.Errorf("add os repo error %v", err)
+			return err
+		}
+
+		fallthrough
+	case common.Ubuntu:
+		if systemInfo.IsUbuntu() {
+			if !systemInfo.IsPve() && !systemInfo.IsRaspbian() {
+				if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository universe -y", false, true); err != nil {
+					logger.Errorf("add os repo error %v", err)
+					return err
+				}
+
+				if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository multiverse -y", false, true); err != nil {
+					logger.Errorf("add os repo error %v", err)
+					return err
+				}
 			}
-
 			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s update -qq", pkgManager), false, true); err != nil {
 				logger.Errorf("update os error %v", err)
 				return err

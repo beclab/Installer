@@ -54,6 +54,8 @@ const (
 	Ubuntu22 UbuntuVersion = "22."
 	Ubuntu24 UbuntuVersion = "24."
 
+	Debian9  DebianVersion = "9"
+	Debian10 DebianVersion = "10"
 	Debian11 DebianVersion = "11"
 	Debian12 DebianVersion = "12"
 )
@@ -71,6 +73,7 @@ type Systems interface {
 
 	IsUbuntu() bool
 	IsDebian() bool
+	GetDebianVersionCode() string
 
 	IsUbuntuVersionEqual(ver UbuntuVersion) bool
 	IsDebianVersionEqual(ver DebianVersion) bool
@@ -248,6 +251,24 @@ func (s *SystemInfo) IsUbuntuVersionEqual(ver UbuntuVersion) bool {
 
 func (s *SystemInfo) IsDebianVersionEqual(ver DebianVersion) bool {
 	return strings.Contains(s.HostInfo.OsVersion, ver.String())
+}
+
+func (s *SystemInfo) GetDebianVersionCode() string {
+	if !s.IsDebian() {
+		return ""
+	}
+
+	if strings.Contains(s.HostInfo.OsVersion, string(Debian12)) {
+		return "bookworm"
+	} else if strings.Contains(s.HostInfo.OsVersion, string(Debian11)) {
+		return "bullseye"
+	} else if strings.Contains(s.HostInfo.OsVersion, string(Debian10)) {
+		return "buster"
+	} else if strings.Contains(s.HostInfo.OsVersion, string(Debian9)) {
+		return "stretch"
+	} else {
+		return "jessie"
+	}
 }
 
 func (s *SystemInfo) CgroupCpuEnabled() bool {
