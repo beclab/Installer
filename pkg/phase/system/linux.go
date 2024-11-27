@@ -100,7 +100,10 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				&storage.InitStorageModule{Skip: !l.runtime.Arg.IsCloudInstance},
 			}
 		}).withCloud(l.runtime)...).
-		addModule(l.storage()...).
+		addModule(storageModuleBuilder(func() []module.Module {
+			return l.storage()
+
+		}).withJuiceFS(l.runtime)...).
 		addModule(cloudModuleBuilder(l.installContainerModule).withoutCloud(l.runtime)...).
 		addModule(cloudModuleBuilder(func() []module.Module {
 			// unitl now, system ready

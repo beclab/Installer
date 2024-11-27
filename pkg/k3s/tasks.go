@@ -231,7 +231,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"SchedulerArgs":          kubeSchedulerArgs,
 		"KubeletArgs":            kubeletArgs,
 		"KubeProxyArgs":          kubeProxyArgs,
-		"JuiceFSPreCheckEnabled": !runtime.GetSystemInfo().IsWsl(),
+		"JuiceFSPreCheckEnabled": util.IsExist(storage.JuiceFsServiceFile),
 		"JuiceFSServiceUnit":     storagetpl.JuicefsService.Name(),
 		"JuiceFSBinPath":         storage.JuiceFsFile,
 		"JuiceFSMountPoint":      storage.OlaresJuiceFSRootDir,

@@ -28,16 +28,16 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetTokenMaxAge()
 	arg.SetReverseProxy()
+	if opts.WithJuiceFS {
+		arg.WithJuiceFS = true
+	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return err
 	}
 
-	manifest := opts.Manifest
-	if manifest == "" {
-		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
-	}
+	manifest := path.Join(runtime.GetInstallerDir(), "installation.manifest")
 
 	runtime.Arg.SetManifest(manifest)
 

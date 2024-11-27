@@ -39,6 +39,19 @@ func (m cloudModuleBuilder) withoutCloud(runtime *common.KubeRuntime) []module.M
 	return nil
 }
 
+type storageModuleBuilder func() []module.Module
+
+func (m storageModuleBuilder) withJuiceFS(runtime *common.KubeRuntime) []module.Module {
+	// if juicefs is enabled
+	// install redis/minio/juicefs
+	if runtime.Arg.WithJuiceFS {
+		return m()
+	}
+	// use local disk storage
+	// so nothing need to be done
+	return nil
+}
+
 type gpuModuleBuilder func() []module.Module
 
 func (m gpuModuleBuilder) withGPU(runtime *common.KubeRuntime) []module.Module {
