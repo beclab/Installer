@@ -76,10 +76,11 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 					return err
 				}
 			}
-			if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s update -qq", pkgManager), false, true); err != nil {
-				logger.Errorf("update os error %v", err)
-				return err
-			}
+		}
+
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s update -qq", pkgManager), false, true); err != nil {
+			logger.Errorf("update os error %v", err)
+			return err
 		}
 
 		logger.Debug("apt update success")
