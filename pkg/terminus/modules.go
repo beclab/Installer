@@ -1,6 +1,8 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
@@ -9,12 +11,10 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/task"
-	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/etcd"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/manifest"
-	"bytetrade.io/web3os/installer/pkg/storage"
 )
 
 type InstallWizardDownloadModule struct {
@@ -237,74 +237,7 @@ func (m *ChangeIPModule) Init() {
 	}
 
 	if prepared {
-		m.Tasks = append(m.Tasks,
-			&task.LocalTask{
-				Name: "StopStorageComponents",
-				Action: &SystemctlCommand{
-					Command:   "stop",
-					UnitNames: []string{"juicefs", "minio", "redis-server"},
-				},
-				Retry: 3,
-			},
-			&task.LocalTask{
-				Name:   "GetOrSetRedisPassword",
-				Action: new(storage.GetOrSetRedisPassword),
-			},
-			&task.LocalTask{
-				Name:   "ReConfigureRedis",
-				Action: new(storage.ConfigRedis),
-			},
-			&task.LocalTask{
-				Name:   "EnableRedisService",
-				Action: new(storage.EnableRedisService),
-				Retry:  3,
-			},
-			&task.LocalTask{
-				Name:   "CheckRedisState",
-				Action: new(storage.CheckRedisServiceState),
-				Retry:  20,
-			},
-		)
-
-		minioExists := util.IsExist(storage.MinioServiceFile)
-		if minioExists {
-			m.Tasks = append(m.Tasks,
-				&task.LocalTask{
-					Name:   "GetOrSetMinIOPassword",
-					Action: new(storage.GetOrSetMinIOPassword),
-				},
-				&task.LocalTask{
-					Name:   "ReConfigureMinio",
-					Action: new(storage.ConfigMinio),
-				},
-				&task.LocalTask{
-					Name:   "EnableMinioService",
-					Action: new(storage.EnableMinio),
-				},
-				&task.LocalTask{
-					Name:   "CheckMinioState",
-					Action: new(storage.CheckMinioState),
-					Retry:  20,
-				},
-				&task.LocalTask{
-					Name:   "ConfigJuiceFSMetaDB",
-					Action: new(storage.ConfigJuiceFsMetaDB),
-				},
-			)
-		}
-
-		m.Tasks = append(m.Tasks,
-			&task.LocalTask{
-				Name:   "EnableJuiceFsService",
-				Action: new(storage.EnableJuiceFsService),
-			},
-
-			&task.LocalTask{
-				Name:   "CheckJuiceFsState",
-				Action: new(storage.CheckJuiceFsState),
-				Retry:  20,
-			},
-		)
+		m.addStorageTasks()
 	}
 	if installed {
 		m.Tasks = append(m.Tasks,
@@ -416,6 +349,89 @@ func (m *ChangeIPModule) Init() {
 			},
 		)
 	}
+}
+
+func (m *ChangeIPModule) addStorageTasks() {
+	var storageComponents []string
+	juiceFSExists := util.IsExist(storage.JuiceFsServiceFile)
+	if juiceFSExists {
+		storageComponents = append(storageComponents, "juicefs", "redis")
+	} else {
+		logger.Info("JuiceFS is not installed, no storage component needs IP reconfiguration.")
+		return
+	}
+	minioExists := util.IsExist(storage.MinioServiceFile)
+	if minioExists {
+		storageComponents = append(storageComponents, "minio")
+	}
+	m.Tasks = append(m.Tasks,
+		&task.LocalTask{
+			Name: "StopStorageComponents",
+			Action: &SystemctlCommand{
+				Command:   "stop",
+				UnitNames: storageComponents,
+			},
+			Retry: 3,
+		})
+	m.Tasks = append(m.Tasks,
+		&task.LocalTask{
+			Name:   "GetOrSetRedisPassword",
+			Action: new(storage.GetOrSetRedisPassword),
+		},
+		&task.LocalTask{
+			Name:   "ReConfigureRedis",
+			Action: new(storage.ConfigRedis),
+		},
+		&task.LocalTask{
+			Name:   "EnableRedisService",
+			Action: new(storage.EnableRedisService),
+			Retry:  3,
+		},
+		&task.LocalTask{
+			Name:   "CheckRedisState",
+			Action: new(storage.CheckRedisServiceState),
+			Retry:  20,
+		},
+	)
+
+	if minioExists {
+		m.Tasks = append(m.Tasks,
+			&task.LocalTask{
+				Name:   "GetOrSetMinIOPassword",
+				Action: new(storage.GetOrSetMinIOPassword),
+			},
+			&task.LocalTask{
+				Name:   "ReConfigureMinio",
+				Action: new(storage.ConfigMinio),
+			},
+			&task.LocalTask{
+				Name:   "EnableMinioService",
+				Action: new(storage.EnableMinio),
+			},
+			&task.LocalTask{
+				Name:   "CheckMinioState",
+				Action: new(storage.CheckMinioState),
+				Retry:  20,
+			},
+			&task.LocalTask{
+				Name:   "ConfigJuiceFSMetaDB",
+				Action: new(storage.ConfigJuiceFsMetaDB),
+			},
+		)
+	}
+
+	m.Tasks = append(m.Tasks,
+		&task.LocalTask{
+			Name:   "EnableJuiceFsService",
+			Action: new(storage.EnableJuiceFsService),
+		},
+
+		&task.LocalTask{
+			Name:   "CheckJuiceFsState",
+			Action: new(storage.CheckJuiceFsState),
+			Retry:  20,
+		},
+	)
 }
 
 type ChangeHostIPModule struct {

@@ -37,10 +37,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 		return nil
 	}
 
-	manifest := opts.Manifest
-	if manifest == "" {
-		manifest = path.Join(runtime.GetInstallerDir(), "installation.manifest")
-	}
+	manifest := path.Join(runtime.GetInstallerDir(), "installation.manifest")
 
 	runtime.Arg.SetManifest(manifest)
 

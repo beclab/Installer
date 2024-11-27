@@ -92,7 +92,12 @@ type Argument struct {
 	Provider storage.Provider `json:"-"`
 	// User
 	User *User `json:"user"`
-	// storage
+	// if juicefs is opted off, the local storage is used directly
+	// only used in prepare phase
+	// the existence of juicefs should be checked in other phases
+	// to avoid wrong information given by user
+	WithJuiceFS bool `json:"with_juicefs"`
+	// the object storage service used as backend for JuiceFS
 	Storage                *Storage           `json:"storage"`
 	PublicNetworkInfo      *PublicNetworkInfo `json:"public_network_info"`
 	GPU                    *GPU               `json:"gpu"`
