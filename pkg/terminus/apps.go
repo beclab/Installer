@@ -95,7 +95,7 @@ func (u *PrepareAppValues) Execute(runtime connector.Runtime) error {
 	if err != nil {
 		return err
 	}
-	fsType := getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin())
+	fsType := getRootFSType()
 	gpuType := getGpuType(u.KubeConf.Arg.GPU.Enable, u.KubeConf.Arg.GPU.Share)
 	appValues := getAppSecrets(getAppPatches())
 

@@ -70,7 +70,7 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 		},
 		"gpu":                                  getGpuType(t.KubeConf.Arg.GPU.Enable, t.KubeConf.Arg.GPU.Share),
 		"s3_bucket":                            t.KubeConf.Arg.Storage.StorageBucket,
-		"fs_type":                              getFsType(runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin()),
+		"fs_type":                              getRootFSType(),
 		common.HelmValuesKeyTerminusGlobalEnvs: common.TerminusGlobalEnvs,
 		common.HelmValuesKeyOlaresRootFSPath:   storage.OlaresRootDir,
 	}
@@ -273,11 +273,11 @@ func cloudValue(cloudInstance bool) string {
 	return ""
 }
 
-func getFsType(juiceFSDisabled bool) string {
-	if juiceFSDisabled {
-		return "fs"
+func getRootFSType() string {
+	if util.IsExist(storage.JuiceFsServiceFile) {
+		return "jfs"
 	}
-	return "jfs"
+	return "fs"
 }
 
 func getRedisPassword(client clientset.Client, runtime connector.Runtime) (string, error) {
