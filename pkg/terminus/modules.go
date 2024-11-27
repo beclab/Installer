@@ -355,7 +355,7 @@ func (m *ChangeIPModule) addStorageTasks() {
 	var storageComponents []string
 	juiceFSExists := util.IsExist(storage.JuiceFsServiceFile)
 	if juiceFSExists {
-		storageComponents = append(storageComponents, "juicefs", "redis")
+		storageComponents = append(storageComponents, "juicefs", "redis-server")
 	} else {
 		logger.Info("JuiceFS is not installed, no storage component needs IP reconfiguration.")
 		return
