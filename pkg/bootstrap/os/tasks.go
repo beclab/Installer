@@ -58,15 +58,7 @@ func (t *UpdateNtpDateTask) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("getntpdate command error: %v", err)
 	}
 
-	hwclockCommand, err := util.GetCommand(common.CommandHwclock)
-	if err != nil {
-		return fmt.Errorf("gethwclock command error: %v", err)
-	}
-
 	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s -b -u pool.ntp.org", ntpdateCommand), false, true); err != nil {
-		return err
-	}
-	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s -w", hwclockCommand), false, true); err != nil {
 		return err
 	}
 
@@ -83,24 +75,32 @@ func (t *TimeSyncTask) Execute(runtime connector.Runtime) error {
 	// 	logger.Errorf("failed to execute %s: %v", cmd, err)
 	// 	return err
 	// }
-	var cmd string
 
-	ntpdatePath, err := util.GetCommand(common.CommandNtpdate)
+	var hwclockCmd = ""
+	ntpdatePath, _ := util.GetCommand(common.CommandNtpdate)
+	hwclockCommand, err := util.GetCommand(common.CommandHwclock)
 	if err != nil {
-		logger.Errorf("ntpdate lookup error %v", err)
-		return err
-	}
-	hwclockPath, err := util.GetCommand(common.CommandHwclock)
-	if err != nil {
-		logger.Errorf("hwclock lookup error %v", err)
-		return err
+		logger.Debugf("hwclock not found")
+	} else {
+		if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s -w", hwclockCommand), false, true); err != nil {
+			logger.Debugf("hwclock set the RTC from the system time error %v", err)
+		} else {
+			hwclockCmd = fmt.Sprintf(" && %s -w", hwclockCommand)
+		}
 	}
 
 	cronContent := fmt.Sprintf(`#!/bin/sh
-	%s -b -u pool.ntp.org && %s -w
-	exit 0`, ntpdatePath, hwclockPath)
-	cronFile := path.Join(runtime.GetBaseDir(), "cron.ntpdate")
+%s -b -u pool.ntp.org %s
+exit 0`, ntpdatePath, hwclockCmd)
 
+	// cronContent := fmt.Sprintf(`#!/bin/sh
+	// %s -b -u pool.ntp.org && %s -w
+	// exit 0`, ntpdatePath, hwclockPath)
+
+	// cronContent := fmt.Sprintf(`#!/bin/sh
+	// %s -b -u pool.ntp.org
+	// exit 0`, ntpdatePath)
+	cronFile := path.Join(runtime.GetBaseDir(), "cron.ntpdate")
 	if err := ioutil.WriteFile(cronFile, []byte(cronContent), 0700); err != nil {
 		logger.Errorf("Failed to write cron.ntpdate: %v", err)
 		return err
@@ -111,7 +111,7 @@ func (t *TimeSyncTask) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	cmd = fmt.Sprintf("cat %s > /etc/cron.daily/ntpdate && chmod 0700 /etc/cron.daily/ntpdate && rm -rf %s", cronFile, cronFile)
+	var cmd = fmt.Sprintf("cat %s > /etc/cron.daily/ntpdate && chmod 0700 /etc/cron.daily/ntpdate && rm -rf %s", cronFile, cronFile)
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("failed to execute %s: %v", cmd, err)
 		return err
