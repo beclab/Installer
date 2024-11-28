@@ -24,17 +24,24 @@ func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 	var input string
 	var systemInfo = runtime.GetSystemInfo()
 	var hostIP = s.KubeConf.Arg.HostIP
+	disableHostIPPrompt := os.Getenv(common.ENV_DISABLE_HOST_IP_PROMPT)
 
 	switch {
 	case systemInfo.IsWsl() || systemInfo.IsWindows():
-		disableHostIPPrompt := os.Getenv(common.ENV_DISABLE_HOST_IP_PROMPT)
 		if strings.EqualFold(disableHostIPPrompt, "") || !util.IsValidIPv4Addr(net.ParseIP(hostIP)) {
 			prompt = "Enter the NAT gateway(the Windows host)'s IP [default: " + hostIP + "]: "
 		} else {
 			input = hostIP
 		}
 	case systemInfo.IsDarwin():
-		prompt = "Enter the NAT gateway(the MacOs host)'s IP: "
+		if strings.EqualFold(disableHostIPPrompt, "") || !util.IsValidIPv4Addr(net.ParseIP(hostIP)) {
+			if hostIP == "" {
+				hostIP = systemInfo.GetLocalIp()
+			}
+			prompt = "Enter the NAT gateway(the MacOS host)'s IP [default: " + hostIP + "]: "
+		} else {
+			input = hostIP
+		}
 	default:
 		return nil
 	}
