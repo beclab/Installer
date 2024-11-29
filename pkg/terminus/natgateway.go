@@ -1,13 +1,14 @@
 package terminus
 
 import (
-	"bytetrade.io/web3os/installer/pkg/utils"
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
+
+	"bytetrade.io/web3os/installer/pkg/utils"
+	"github.com/pkg/errors"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -22,14 +23,14 @@ type GetNATGatewayIP struct {
 func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 	var prompt string
 	var input string
+	var retry bool
 	var systemInfo = runtime.GetSystemInfo()
 	var hostIP = s.KubeConf.Arg.HostIP
 	disableHostIPPrompt := os.Getenv(common.ENV_DISABLE_HOST_IP_PROMPT)
-
 	switch {
 	case systemInfo.IsWsl() || systemInfo.IsWindows():
 		if strings.EqualFold(disableHostIPPrompt, "") || !util.IsValidIPv4Addr(net.ParseIP(hostIP)) {
-			prompt = "Enter the NAT gateway(the Windows host)'s IP [default: " + hostIP + "]: "
+			prompt = "the NAT gateway(the Windows host)'s IP is " + hostIP + ", Confirm[Y] or ReEnter [R]: "
 		} else {
 			input = hostIP
 		}
@@ -38,7 +39,7 @@ func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 			if hostIP == "" {
 				hostIP = systemInfo.GetLocalIp()
 			}
-			prompt = "Enter the NAT gateway(the MacOS host)'s IP [default: " + hostIP + "]: "
+			prompt = "the NAT gateway(the MacOS host)'s IP is " + hostIP + ", Confirm[Y] or ReEnter [R]: "
 		} else {
 			input = hostIP
 		}
@@ -52,17 +53,38 @@ func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 			return errors.Wrap(err, "failed to get terminal input reader")
 		}
 	LOOP:
-		fmt.Printf(prompt)
+		if !retry {
+			fmt.Printf(prompt)
+		} else {
+			fmt.Printf("\nEnter the NAT gateway IP: ")
+		}
+
 		input, err = reader.ReadString('\n')
 		if input == "" {
 			if err != nil && err.Error() != "EOF" {
 				return err
 			}
 		}
-		input = strings.TrimSpace(input)
-		if input == "" && hostIP != "" {
-			input = hostIP
+		if retry {
+			input = strings.TrimSpace(input)
+			if !util.IsValidIPv4Addr(net.ParseIP(input)) {
+				fmt.Printf("\nsorry, invalid IP, please try again.\n")
+				goto LOOP
+			}
+		} else {
+			input = strings.TrimSpace(input)
+			switch input {
+			case "Y":
+				input = hostIP
+				break
+			case "R":
+				retry = true
+				fallthrough
+			default:
+				goto LOOP
+			}
 		}
+
 		if !util.IsValidIPv4Addr(net.ParseIP(input)) {
 			fmt.Printf("\nsorry, invalid IP, please try again.\n")
 			goto LOOP
