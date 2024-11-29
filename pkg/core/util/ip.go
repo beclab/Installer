@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/libp2p/go-netroute"
 	"github.com/pkg/errors"
 )
 
@@ -167,7 +168,7 @@ func GetLocalIP() (net.IP, error) {
 	var validIfIPs []net.IP
 	for _, ifAddr := range ifAddrs {
 		if ipNet, ok := ifAddr.(*net.IPNet); ok && IsValidIPv4Addr(ipNet.IP) {
-			validIfIPs = append(validIfIPs, ipNet.IP)
+			validIfIPs = append(validIfIPs, ipNet.IP.To4())
 		}
 	}
 	if len(validIfIPs) == 0 {
@@ -202,6 +203,16 @@ func GetLocalIP() (net.IP, error) {
 			if validIP.Equal(hostIP) {
 				return validIP, nil
 			}
+		}
+	}
+
+	// choose the IP address of the interface connected to the default gateway
+	// by checking the route table
+	r, err := netroute.New()
+	if err == nil {
+		_, _, src, err := r.Route(net.IPv4(0, 0, 0, 0))
+		if err == nil {
+			return src, nil
 		}
 	}
 
