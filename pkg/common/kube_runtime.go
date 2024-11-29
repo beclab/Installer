@@ -185,6 +185,7 @@ func NewArgument() *Argument {
 		User:                   &User{},
 		PublicNetworkInfo:      &PublicNetworkInfo{},
 		RegistryMirrors:        os.Getenv(ENV_REGISTRY_MIRRORS),
+		DownloadCdnUrl:         os.Getenv(ENV_DOWNLOAD_CDN_URL),
 		MarketProvider:         os.Getenv(ENV_MARKET_PROVIDER),
 		TerminusCertServiceAPI: os.Getenv(ENV_TERMINUS_CERT_SERVICE_API),
 		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),

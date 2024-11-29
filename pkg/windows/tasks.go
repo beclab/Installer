@@ -271,6 +271,7 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		fmt.Sprintf("export %s=%s", common.ENV_TERMINUS_DNS_SERVICE_API, i.KubeConf.Arg.TerminusDNSServiceAPI),
 		fmt.Sprintf("export %s=%s", common.ENV_HOST_IP, systemInfo.GetLocalIp()),
 		fmt.Sprintf("export %s=%s", common.ENV_DISABLE_HOST_IP_PROMPT, os.Getenv(common.ENV_DISABLE_HOST_IP_PROMPT)),
+		fmt.Sprintf("export %s=%s", common.ENV_DOWNLOAD_CDN_URL, i.KubeConf.Arg.DownloadCdnUrl),
 	}
 
 	for key, val := range common.TerminusGlobalEnvs {
