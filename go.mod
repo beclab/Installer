@@ -43,6 +43,7 @@ require (
 	github.com/estesp/manifest-tool/v2 v2.1.6
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/libp2p/go-netroute v0.2.2
 	github.com/lithammer/dedent v1.1.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/mitchellh/mapstructure v1.5.0
@@ -55,9 +56,9 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.24.0
-	golang.org/x/term v0.21.0
-	golang.org/x/text v0.16.0
+	golang.org/x/crypto v0.28.0
+	golang.org/x/term v0.25.0
+	golang.org/x/text v0.19.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.15.2
 	k8s.io/api v0.30.2
@@ -114,6 +115,7 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
@@ -159,7 +161,6 @@ require (
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/shurcooL/vfsgen v0.0.0-20230704071429-0000e147ea92 // indirect
 	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
@@ -172,9 +173,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
-	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
@@ -203,7 +204,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	sigs.k8s.io/controller-runtime v0.18.4
