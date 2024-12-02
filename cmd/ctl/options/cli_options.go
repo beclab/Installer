@@ -64,7 +64,7 @@ func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "r", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 	cmd.Flags().StringVarP(&o.MinikubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
-	cmd.Flags().BoolVar(&o.WithJuiceFS, "with-juicefs", true, "Use JuiceFS as the base storage for Olares workloads, rather than the local disk.")
+	cmd.Flags().BoolVar(&o.WithJuiceFS, "with-juicefs", false, "Use JuiceFS as the rootfs for Olares workloads, rather than the local disk.")
 }
 
 type ChangeIPOptions struct {
