@@ -9,27 +9,6 @@ import (
 	"time"
 )
 
-type WelcomeServicePrecheck struct {
-	common.KubeAction
-}
-
-func (t *WelcomeServicePrecheck) Execute(runtime connector.Runtime) error {
-	action := CheckPodsRunning{
-		labels: map[string][]string{
-			fmt.Sprintf("user-space-%s", t.KubeConf.Arg.User.UserName): {
-				"app=edge-desktop",
-				"app=vault",
-				"app=wizard",
-				"app=settings",
-				"app=system-frontend",
-				"app=authelia",
-				"tier=bfl",
-			},
-		},
-	}
-	return action.Execute(runtime)
-}
-
 type WelcomeMessage struct {
 	common.KubeAction
 }
@@ -72,7 +51,7 @@ func (m *WelcomeModule) Init() {
 
 	waitServicesReady := &task.LocalTask{
 		Name:   "WaitServicesReady",
-		Action: new(WelcomeServicePrecheck),
+		Action: new(CheckKeyPodsRunning),
 		Retry:  30,
 		Delay:  15 * time.Second,
 	}
