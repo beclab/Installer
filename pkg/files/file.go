@@ -19,6 +19,7 @@ package files
 import (
 	"context"
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"math"
 	"net/http"
@@ -503,10 +504,6 @@ func (b *KubeBinary) Download() error {
 	}()
 
 	for i := 5; i > 0; i-- {
-		totalSize, err := b.GetFileSize()
-		if totalSize > 0 {
-			logger.Infof("get file %s %s size: %s", b.FileName, b.Version, utils.FormatBytes(totalSize))
-		}
 
 		client := grab.NewClient()
 		req, _ := grab.NewRequest(fmt.Sprintf("%s/%s", b.BaseDir, b.FileName), b.Url)
@@ -518,35 +515,19 @@ func (b *KubeBinary) Download() error {
 		req.HTTPRequest = req.HTTPRequest.WithContext(ctx)
 		resp := client.Do(req)
 
-		t := time.NewTicker(500 * time.Millisecond)
+		size := resp.Size()
+		bar := progressbar.DefaultBytes(size)
+
+		t := time.NewTicker(100 * time.Millisecond)
 		defer t.Stop()
 
-		var downloaded int64
 	Loop:
 		for {
 			select {
 			case <-t.C:
-				downloaded = resp.BytesComplete()
-				var progressInfo string
-				if totalSize != 0 {
-					result := float64(downloaded) / float64(totalSize)
-					progressInfo = fmt.Sprintf("transferred %s %s / %s (%.2f%%) / speed: %s", b.FileName, utils.FormatBytes(resp.BytesComplete()), utils.FormatBytes(totalSize), math.Round(result*10000)/100, utils.FormatBytes(int64(resp.BytesPerSecond())))
-					if b.PrintOutput {
-						fmt.Println(progressInfo)
-					}
-					logger.Debug(progressInfo)
-					line <- []interface{}{fmt.Sprintf("downloading %s %s (%0.2f%%)", b.FileName, utils.FormatBytes(resp.BytesComplete()), math.Round(result*10000)/100),
-						common.StateDownload, math.Round(result * 10000 / float64(common.DefaultInstallSteps))}
-				} else {
-					progressInfo = fmt.Sprintf("transferred %s %s / speed: %s\n", b.FileName, utils.FormatBytes(resp.BytesComplete()), utils.FormatBytes(int64(resp.BytesPerSecond())))
-					if b.PrintOutput {
-						fmt.Println(progressInfo)
-					}
-					logger.Debug(progressInfo)
-					line <- []interface{}{fmt.Sprintf("downloading %s %s", b.FileName, utils.FormatBytes(resp.BytesComplete())),
-						common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
-				}
+				bar.Set64(resp.BytesComplete())
 			case <-resp.Done:
+				bar.Clear()
 				break Loop
 			}
 		}
@@ -562,7 +543,7 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
-		if err = b.UntarCmd(); err != nil { // only for helm and kubekey
+		if err := b.UntarCmd(); err != nil { // only for helm and kubekey
 			logger.Errorf("decompression failed: %v", err)
 			time.Sleep(1 * time.Second)
 			continue
@@ -592,7 +573,7 @@ func (b *KubeBinary) Download() error {
 			continue
 		}
 
-		logger.Infof("%s download succeeded", b.FileName)
+		logger.Debugf("%s download succeeded", b.FileName)
 		line <- []interface{}{fmt.Sprintf("%s download succeeded", b.FileName), common.StateDownload, math.Round(1 * 10000 / float64(common.DefaultInstallSteps))}
 		break
 	}
