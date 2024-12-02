@@ -38,7 +38,7 @@ func (i *CheckDownloadModule) Init() {
 	check := &task.LocalTask{
 		Name:   i.Name,
 		Desc:   i.Desc,
-		Action: &CheckDownload{Manifest: i.Manifest, BaseDir: i.BaseDir},
+		Action: &CheckDownload{PackageDownload{Manifest: i.Manifest, BaseDir: i.BaseDir}},
 	}
 
 	i.Tasks = []task.Interface{

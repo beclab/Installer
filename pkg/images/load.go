@@ -69,7 +69,8 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 	}
 
 	var mf = filterMinikubeImages(runtime.GetRunner(), host.GetOs(), minikubepath, manifests, minikubeprofile)
-	for index, imageRepoTag := range mf {
+	var missingImages []string
+	for _, imageRepoTag := range mf {
 		if imageRepoTag == "" {
 			continue
 		}
@@ -78,8 +79,9 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 			logger.Infof("%s already exists", imageRepoTag)
 			continue
 		}
-
-		// logger.Debugf("preloading %s", imageRepoTag)
+		missingImages = append(missingImages, imageRepoTag)
+	}
+	for index, imageRepoTag := range missingImages {
 		var start = time.Now()
 		var imageHashTag = utils.MD5(imageRepoTag)
 		var imageFileName string
@@ -147,7 +149,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 			if _, err := runtime.GetRunner().Host.SudoCmd(loadCmd, false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
-				logger.Infof("import %s success (%s)", imageRepoTag, time.Since(start))
+				logger.Infof("(%d/%d) imported image: %s, time: %s", index+1, len(missingImages), imageRepoTag, time.Since(start))
 			}
 			return nil
 		}, MAX_IMPORT_RETRY); err != nil {

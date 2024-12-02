@@ -2,9 +2,8 @@ package download
 
 import (
 	"bufio"
-	"bytes"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"path"
 	"strings"
@@ -24,84 +23,86 @@ type PackageDownload struct {
 	Manifest       string
 	BaseDir        string
 	DownloadCdnUrl string
+	existingItems  []*manifest.ManifestItem
+	missingItems   []*manifest.ManifestItem
 }
 
 type CheckDownload struct {
-	common.KubeAction
-	Manifest string
-	BaseDir  string
+	PackageDownload
 }
 
 func (d *PackageDownload) Execute(runtime connector.Runtime) error {
-	if d.Manifest == "" {
-		return errors.New("manifest path is empty")
-	}
-
-	var baseDir = d.BaseDir
-	var systemInfo = runtime.GetSystemInfo()
-
-	if systemInfo.IsWsl() {
+	baseDir := d.BaseDir
+	if runtime.GetSystemInfo().IsWsl() {
 		var wslPackageDir = d.KubeConf.Arg.GetWslUserPath()
 		if wslPackageDir != "" {
 			baseDir = path.Join(wslPackageDir, cc.DefaultBaseDir)
 		}
 	}
-
-	if data, err := os.ReadFile(d.Manifest); err != nil {
-		logger.Fatal("unable to read manifest, ", err)
+	logger.Info("checking local cache ...")
+	err := d.CheckLocalCache(runtime)
+	if err != nil {
+		return errors.Wrap(err, "failed to check local cache")
+	}
+	if len(d.missingItems) == 0 {
+		logger.Info("all files are already downloaded and is the expected version")
 	} else {
-		scanner := bufio.NewScanner(bytes.NewReader(data))
-
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line == "" && strings.HasPrefix(line, "#") {
-				continue
-			}
-
-			item := must(manifest.ReadItem(line))
-
-			if !must(isRealExists(runtime, item, baseDir)) {
-				err := d.downloadItem(runtime, item, baseDir, d.DownloadCdnUrl)
-				if err != nil {
-					logger.Fatal(err)
-				}
-			}
-		}
-
-		if err := scanner.Err(); err != nil {
-			logger.Fatal("reading mainfest err:", err)
+		logger.Infof("%d out of %d files need to be downloaded", len(d.missingItems), len(d.missingItems)+len(d.existingItems))
+	}
+	for i := range d.missingItems {
+		err = d.downloadItem(runtime, baseDir, i)
+		if err != nil {
+			logger.Fatal(err)
 		}
 	}
 
 	return nil
 }
 
-func (d *CheckDownload) Execute(runtime connector.Runtime) error {
+// CheckLocalCache compares the items in the manifest file
+// against the local files by MD5 checksum
+// and filters out the existing and missing items
+func (d *PackageDownload) CheckLocalCache(runtime connector.Runtime) error {
 	if d.Manifest == "" {
 		return errors.New("manifest path is empty")
 	}
+	baseDir := d.BaseDir
 
-	if data, err := os.ReadFile(d.Manifest); err != nil {
-		logger.Fatal("unable to read manifest, ", err)
-	} else {
-		scanner := bufio.NewScanner(bytes.NewReader(data))
-
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line == "" && strings.HasPrefix(line, "#") {
-				continue
-			}
-
-			item := must(manifest.ReadItem(line))
-
-			if !must(isRealExists(runtime, item, d.BaseDir)) {
-				name := item.Filename
-				if item.ImageName != "" {
-					name = item.ImageName
-				}
-				logger.Fatal("%s not found in the pre-download path", name)
-			}
+	if runtime.GetSystemInfo().IsWsl() {
+		var wslPackageDir = d.KubeConf.Arg.GetWslUserPath()
+		if wslPackageDir != "" {
+			baseDir = path.Join(wslPackageDir, cc.DefaultBaseDir)
 		}
+	}
+
+	f, err := os.Open(d.Manifest)
+	if err != nil {
+		return errors.Wrap(err, "unable to open manifest")
+	}
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		item := must(manifest.ReadItem(line))
+		if must(isRealExists(runtime, item, baseDir)) {
+			d.existingItems = append(d.existingItems, item)
+		} else {
+			d.missingItems = append(d.missingItems, item)
+		}
+	}
+	return nil
+}
+
+func (d *CheckDownload) Execute(runtime connector.Runtime) error {
+	if err := d.CheckLocalCache(runtime); err != nil {
+		return err
+	}
+
+	if len(d.missingItems) > 0 {
+		logger.Fatalf("found %d missing items", len(d.missingItems))
 	}
 
 	logger.Info("suceess to check download")
@@ -123,15 +124,16 @@ func isRealExists(runtime connector.Runtime, item *manifest.ManifestItem, baseDi
 	return checksum == item.GetItemUrlForHost(arch).Checksum, nil
 }
 
-func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest.ManifestItem, baseDir string, downloadCdnUrl string) error {
+func (d *PackageDownload) downloadItem(runtime connector.Runtime, baseDir string, index int) error {
 	arch := runtime.GetSystemInfo().GetOsArch()
+	item := d.missingItems[index]
 	url := item.GetItemUrlForHost(arch)
 
 	component := new(files.KubeBinary)
 	component.ID = item.Filename
 	component.Arch = runtime.GetSystemInfo().GetOsArch()
 	component.BaseDir = getDownloadTargetBasePath(item, baseDir)
-	component.Url = fmt.Sprintf("%s/%s", downloadCdnUrl, strings.TrimPrefix(url.Url, "/"))
+	component.Url = fmt.Sprintf("%s/%s", d.DownloadCdnUrl, strings.TrimPrefix(url.Url, "/"))
 	component.FileName = item.Filename
 	component.CheckMd5Sum = true
 	component.Md5sum = url.Checksum
@@ -147,11 +149,29 @@ func (d *PackageDownload) downloadItem(runtime connector.Runtime, item *manifest
 		}
 	}
 
+	logger.Infof("(%d/%d) downloading %s %s, file: %s",
+		index+1, len(d.missingItems),
+		friendlyItemType(item.Type),
+		item.FileID,
+		item.Filename)
+
 	if err := component.Download(); err != nil {
 		return fmt.Errorf("Failed to download %s binary: %s error: %w ", component.ID, component.Url, err)
 	}
 
 	return nil
+}
+
+// friendlyItemType is a simple translation from
+// path-based item type to a friendly type that's more readable by user
+// "image.*" is simplified to "image"  and all other types to "package"
+// to shadow the details.
+// should Only be used for output to console
+func friendlyItemType(itemType string) string {
+	if strings.Contains(itemType, "image") {
+		return "image"
+	}
+	return "package"
 }
 
 func getDownloadTargetPath(item *manifest.ManifestItem, baseDir string) string {
