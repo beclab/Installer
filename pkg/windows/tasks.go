@@ -310,3 +310,16 @@ func convertPath(windowsPath string) string {
 
 	return linuxPath
 }
+
+type UninstallOlares struct {
+	common.KubeAction
+}
+
+func (u *UninstallOlares) Execute(runtime connector.Runtime) error {
+	var cmd = &utils.DefaultCommandExecutor{
+		Commands: []string{"wsl", "--unregister", "Ubuntu"},
+	}
+	_, _ = cmd.Run()
+
+	return nil
+}

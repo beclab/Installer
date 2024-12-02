@@ -18,3 +18,13 @@ func (w *windowsInstallPhaseBuilder) build() []module.Module {
 		&windows.InstallTerminusModule{},
 	}
 }
+
+type windowsUninstallPhaseBuilder struct {
+	runtime *common.KubeRuntime
+}
+
+func (w *windowsUninstallPhaseBuilder) build() []module.Module {
+	return []module.Module{
+		&windows.UninstallOlaresModule{},
+	}
+}

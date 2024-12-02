@@ -1,13 +1,14 @@
 package pipelines
 
 import (
+	"fmt"
+	"os"
+
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/phase"
 	"bytetrade.io/web3os/installer/pkg/phase/cluster"
-	"fmt"
-	"os"
 )
 
 func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
