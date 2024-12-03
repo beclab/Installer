@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -31,7 +32,7 @@ func NewCmdRelease() *cobra.Command {
 				fmt.Printf("failed to get current working directory: %s\n", err)
 				os.Exit(1)
 			}
-			if filepath.Base(cwd) != "Olares" {
+			if !strings.HasPrefix(strings.ToLower(filepath.Base(cwd)), "olares") {
 				fmt.Println("error: please run release command under the root path of Olares repo")
 				os.Exit(1)
 			}
