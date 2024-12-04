@@ -88,3 +88,17 @@ func (i *InstallTerminusModule) Init() {
 		},
 	}
 }
+
+type UninstallOlaresModule struct {
+	common.KubeModule
+}
+
+func (u *UninstallOlaresModule) Init() {
+	u.Name = "UninstallOlares"
+	u.Tasks = []task.Interface{
+		&task.LocalTask{
+			Name:   "UninstallOlares",
+			Action: &UninstallOlares{},
+		},
+	}
+}

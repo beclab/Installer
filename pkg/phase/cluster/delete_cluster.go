@@ -167,8 +167,11 @@ func UninstallTerminus(phase string, args *common.Argument, runtime *common.Kube
 		runtime: runtime,
 	}
 
-	if args.SystemInfo.IsDarwin() {
+	var systemInfo = runtime.GetSystemInfo()
+	if systemInfo.IsDarwin() {
 		builder.phaseMacos()
+	} else if systemInfo.IsWindows() {
+		builder.modules = (&windowsUninstallPhaseBuilder{runtime: runtime}).build()
 	} else {
 		builder.
 			phaseInstall().
