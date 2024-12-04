@@ -1,11 +1,13 @@
 package storage
 
 import (
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
+
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
@@ -167,7 +169,17 @@ type InstallRedis struct {
 }
 
 func (t *InstallRedis) Execute(runtime connector.Runtime) error {
-	redis, err := t.Manifest.Get("redis")
+	compName := "redis"
+	version, err := t.getGlibcVersion(runtime)
+	if err != nil {
+		logger.Warnf("get glibc version error, %v", err)
+	} else {
+		if version.lessThan("2.32") {
+			compName = "redis-231"
+		}
+	}
+
+	redis, err := t.Manifest.Get(compName)
 	if err != nil {
 		return err
 	}
@@ -195,6 +207,63 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 	}
 
 	return nil
+}
+
+func (t *InstallRedis) getGlibcVersion(runtime connector.Runtime) (GlibcVersion, error) {
+	output, err := runtime.GetRunner().Host.SudoCmd("ldd --version", false, false)
+	if err != nil {
+		return "", err
+	}
+
+	// Convert the output to string
+	outputStr := string(output)
+
+	// Find the line containing the glibc version
+	lines := strings.Split(outputStr, "\n")
+
+	for _, line := range lines {
+		if strings.Contains(line, "GLIBC") {
+			lineToken := strings.Split(strings.TrimSpace(line), " ")
+
+			version := lineToken[len(lineToken)-1]
+
+			return GlibcVersion(version), nil
+		}
+	}
+
+	return "", errors.New("glibc version not found")
+}
+
+type GlibcVersion string
+
+func (v GlibcVersion) lessThan(v2 GlibcVersion) bool {
+	return compareGLibC(string(v), string(v2)) < 0
+}
+
+func compareGLibC(versionA, versionB string) int {
+	partsA := strings.Split(versionA, ".")
+	partsB := strings.Split(versionB, ".")
+
+	// Convert major and minor versions to integers
+	majorA, _ := strconv.Atoi(partsA[0])
+	minorA, _ := strconv.Atoi(partsA[1])
+
+	majorB, _ := strconv.Atoi(partsB[0])
+	minorB, _ := strconv.Atoi(partsB[1])
+
+	if majorA < majorB {
+		return -1
+	} else if majorA > majorB {
+		return 1
+	} else {
+		if minorA < minorB {
+			return -1
+		} else if minorA > minorB {
+			return 1
+		}
+	}
+
+	return 0 // versions are equal
 }
 
 type InstallRedisModule struct {
