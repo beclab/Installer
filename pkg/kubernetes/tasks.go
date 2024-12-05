@@ -53,8 +53,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/kubernetes/templates"
 	"bytetrade.io/web3os/installer/pkg/kubernetes/templates/v1beta2"
-	"bytetrade.io/web3os/installer/pkg/plugins/dns"
-	dnsTemplates "bytetrade.io/web3os/installer/pkg/plugins/dns/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
@@ -357,8 +355,6 @@ func (g *GenerateKubeadmConfig) Execute(runtime connector.Runtime) error {
 				"EtcdCertSANs":           etcdCertSANs,
 				"EtcdRepo":               strings.TrimSuffix(images.GetImage(runtime, g.KubeConf, "etcd").ImageRepo(), "/etcd"),
 				"EtcdTag":                images.GetImage(runtime, g.KubeConf, "etcd").Tag,
-				"CorednsRepo":            strings.TrimSuffix(images.GetImage(runtime, g.KubeConf, "coredns").ImageRepo(), "/coredns"),
-				"CorednsTag":             images.GetImage(runtime, g.KubeConf, "coredns").Tag,
 				"Version":                g.KubeConf.Cluster.Kubernetes.Version,
 				"ClusterName":            g.KubeConf.Cluster.Kubernetes.ClusterName,
 				"DNSDomain":              g.KubeConf.Cluster.Kubernetes.DNSDomain,
@@ -401,6 +397,9 @@ func (k *KubeadmInit) Execute(runtime connector.Runtime) error {
 	if k.KubeConf.Cluster.Kubernetes.DisableKubeProxy {
 		initCmd = initCmd + " --skip-phases=addon/kube-proxy"
 	}
+
+	// we manage the creation of coredns ourselves
+	initCmd = initCmd + " --skip-phases=addon/coredns"
 
 	if _, err := runtime.GetRunner().Host.SudoCmd(initCmd, false, false); err != nil {
 		// kubeadm reset and then retry
@@ -960,143 +959,6 @@ func SyncKubeConfigTask(runtime connector.Runtime, kubeAction common.KubeAction)
 
 	tasks := []task.Interface{
 		syncKubeConfig,
-	}
-
-	for i := range tasks {
-		t := tasks[i]
-		t.Init(runtime, kubeAction.ModuleCache, kubeAction.PipelineCache)
-		if res := t.Execute(); res.IsFailed() {
-			return res.CombineErr()
-		}
-	}
-	return nil
-}
-
-type ReconfigureDNS struct {
-	common.KubeAction
-	ModuleName string
-}
-
-func (r *ReconfigureDNS) Execute(runtime connector.Runtime) error {
-	patchCorednsCmd := `/usr/local/bin/kubectl patch deploy -n kube-system coredns -p \" 
-spec:
-    template:
-       spec:
-           volumes:
-           - name: config-volume
-             configMap:
-                 name: coredns
-                 items:
-                 - key: Corefile
-                   path: Corefile\"`
-	if _, err := runtime.GetRunner().Host.SudoCmd(patchCorednsCmd, true, false); err != nil {
-		return errors.Wrap(errors.WithStack(err), "patch the coredns failed")
-	}
-	if err := OverrideCoreDNSService(runtime, r.KubeAction); err != nil {
-		return errors.Wrap(errors.WithStack(err), "re-config coredns failed")
-	}
-	return nil
-}
-
-func OverrideCoreDNSService(runtime connector.Runtime, kubeAction common.KubeAction) error {
-	host := runtime.RemoteHost()
-
-	generateCoreDNDSvc := &task.RemoteTask{
-		Name:  "GenerateCoreDNSSvc(k8s)",
-		Desc:  "generate coredns service",
-		Hosts: []connector.Host{host},
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-		},
-		Action: &action.Template{
-			Template: dnsTemplates.CorednsService,
-			Dst:      filepath.Join(common.KubeConfigDir, dnsTemplates.CorednsService.Name()),
-			Data: util.Data{
-				"ClusterIP": kubeAction.KubeConf.Cluster.CorednsClusterIP(),
-			},
-		},
-		Parallel: true,
-	}
-
-	override := &task.RemoteTask{
-		Name:  "OverrideCoreDNSService",
-		Desc:  "override coredns service",
-		Hosts: []connector.Host{host},
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-		},
-		Action:   new(dns.OverrideCoreDNS),
-		Delay:    2 * time.Second,
-		Retry:    2,
-		Parallel: false,
-	}
-
-	generateNodeLocalDNS := &task.RemoteTask{
-		Name:  "GenerateNodeLocalDNS",
-		Desc:  "generate nodelocaldns",
-		Hosts: []connector.Host{host},
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			new(dns.EnableNodeLocalDNS),
-		},
-		Action: &action.Template{
-			Template: dnsTemplates.NodeLocalDNSService,
-			Dst:      filepath.Join(common.KubeConfigDir, dnsTemplates.NodeLocalDNSService.Name()),
-			Data: util.Data{
-				"NodelocaldnsImage": images.GetImage(runtime, kubeAction.KubeConf, "k8s-dns-node-cache").ImageName(),
-			},
-		},
-		Parallel: true,
-	}
-
-	applyNodeLocalDNS := &task.RemoteTask{
-		Name:  "DeployNodeLocalDNS",
-		Desc:  "deploy nodelocaldns",
-		Hosts: []connector.Host{host},
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			new(dns.EnableNodeLocalDNS),
-		},
-		Action:   new(dns.DeployNodeLocalDNS),
-		Parallel: true,
-		Retry:    5,
-	}
-
-	generateNodeLocalDNSConfigMap := &task.RemoteTask{
-		Name:  "GenerateNodeLocalDNSConfigMap",
-		Desc:  "generate nodelocaldns configmap",
-		Hosts: []connector.Host{host},
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			new(dns.EnableNodeLocalDNS),
-			new(dns.NodeLocalDNSConfigMapNotExist),
-		},
-		Action:   new(dns.GenerateNodeLocalDNSConfigMap),
-		Parallel: true,
-	}
-
-	applyNodeLocalDNSConfigMap := &task.RemoteTask{
-		Name:  "ApplyNodeLocalDNSConfigMap",
-		Desc:  "apply nodelocaldns configmap",
-		Hosts: []connector.Host{host},
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			new(dns.EnableNodeLocalDNS),
-			new(dns.NodeLocalDNSConfigMapNotExist),
-		},
-		Action:   new(dns.ApplyNodeLocalDNSConfigMap),
-		Parallel: true,
-		Retry:    5,
-	}
-
-	tasks := []task.Interface{
-		override,
-		generateCoreDNDSvc,
-		override,
-		generateNodeLocalDNS,
-		applyNodeLocalDNS,
-		generateNodeLocalDNSConfigMap,
-		applyNodeLocalDNSConfigMap,
 	}
 
 	for i := range tasks {
