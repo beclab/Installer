@@ -69,7 +69,6 @@ etcd:
 {{- end }}
 {{- end }}
 dns:
-  type: CoreDNS
   imageRepository: {{ .CorednsRepo }}
   imageTag: {{ .CorednsTag }}
 imageRepository: {{ .ImageRepo }}
@@ -261,7 +260,7 @@ func GetKubeletConfiguration(runtime connector.Runtime, kubeConf *common.KubeCon
 
 	defaultKubeletConfiguration := map[string]interface{}{
 		"clusterDomain":      kubeConf.Cluster.Kubernetes.DNSDomain,
-		"clusterDNS":         []string{kubeConf.Cluster.ClusterDNS()},
+		"clusterDNS":         []string{kubeConf.Cluster.CorednsClusterIP()},
 		"maxPods":            kubeConf.Cluster.Kubernetes.MaxPods,
 		"podPidsLimit":       kubeConf.Cluster.Kubernetes.PodPidsLimit,
 		"rotateCertificates": true,

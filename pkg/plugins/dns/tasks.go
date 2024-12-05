@@ -17,10 +17,6 @@
 package dns
 
 import (
-	"fmt"
-	"path/filepath"
-	"strings"
-
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -28,7 +24,9 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/plugins/dns/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"fmt"
 	"github.com/pkg/errors"
+	"path/filepath"
 )
 
 type SetProxyNameServer struct {
@@ -56,19 +54,13 @@ func (s *SetProxyNameServer) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type OverrideCoreDNS struct {
+type ApplyCoreDNS struct {
 	common.KubeAction
 }
 
-func (o *OverrideCoreDNS) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl delete -n kube-system svc kube-dns", false, true); err != nil {
-		if !strings.Contains(err.Error(), "NotFound") {
-			return errors.Wrap(errors.WithStack(err), "delete kube-dns failed")
-		}
-	}
-
-	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl apply -f /etc/kubernetes/coredns-svc.yaml", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "create coredns service failed")
+func (o *ApplyCoreDNS) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("/usr/local/bin/kubectl apply -f %s", filepath.Join(common.KubeConfigDir, templates.CorednsService.Name())), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "apply coredns service failed")
 	}
 	return nil
 }
@@ -104,7 +96,6 @@ func (g *GenerateNodeLocalDNSConfigMap) Execute(runtime connector.Runtime) error
 		Dst:      filepath.Join(common.KubeConfigDir, templates.NodeLocalDNSConfigMap.Name()),
 		Data: util.Data{
 			"ForwardTarget": clusterIP,
-			"DNSDomain":     g.KubeConf.Cluster.Kubernetes.DNSDomain,
 		},
 	}
 
