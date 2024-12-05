@@ -18,12 +18,13 @@ package util
 
 import (
 	"encoding/binary"
+	"github.com/libp2p/go-netroute"
 	"net"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/libp2p/go-netroute"
 	"github.com/pkg/errors"
 )
 
@@ -198,21 +199,32 @@ func GetLocalIP() (net.IP, error) {
 	if err != nil && !strings.Contains(err.Error(), "no such host") {
 		return nil, errors.Wrap(err, "failed to resolve local hostname")
 	}
-	for _, hostIP := range hostIPs {
-		for _, validIP := range validIfIPs {
+
+	// get the IP address of the interface connected to the default gateway
+	// by checking the route table
+	r, err := netroute.New()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the default route")
+	}
+	_, _, defaultRouteSrcIP, err := r.Route(net.IPv4(0, 0, 0, 0))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the default route")
+	}
+	defaultRouteSrcIP = defaultRouteSrcIP.To4()
+
+	// the IP address of the default route has the highest priority
+	sort.Slice(validIfIPs, func(i, j int) bool {
+		if defaultRouteSrcIP.Equal(validIfIPs[i]) {
+			return true
+		}
+		return false
+	})
+
+	for _, validIP := range validIfIPs {
+		for _, hostIP := range hostIPs {
 			if validIP.Equal(hostIP) {
 				return validIP, nil
 			}
-		}
-	}
-
-	// choose the IP address of the interface connected to the default gateway
-	// by checking the route table
-	r, err := netroute.New()
-	if err == nil {
-		_, _, src, err := r.Route(net.IPv4(0, 0, 0, 0))
-		if err == nil {
-			return src, nil
 		}
 	}
 
