@@ -27,17 +27,18 @@ func (t *WelcomeMessage) Execute(runtime connector.Runtime) error {
 	}
 
 	logger.InfoInstallationProgress("Installation wizard is complete")
-
-	fmt.Printf("\n\n------------------------------------------------\n")
-	logger.Info("Olares is running at")
+	logger.InfoInstallationProgress("All done")
+	fmt.Printf("\n\n\n\n------------------------------------------------\n\n")
+	logger.Info("Olares is running at:")
 	logger.Infof("http://%s:%d", ip, port)
+	fmt.Println()
 	logger.Info("Open your browser and visit the above address")
+	logger.Info("with the following credentials:")
+	fmt.Println()
 	logger.Infof("Username: %s", t.KubeConf.Arg.User.UserName)
 	logger.Infof("Password: %s", t.KubeConf.Arg.User.Password)
-	logger.Info("Please change the default password after login")
-	fmt.Println("\n------------------------------------------------\n\n")
+	fmt.Printf("\n------------------------------------------------\n\n\n\n\n")
 
-	logger.InfoInstallationProgress("All done")
 	return nil
 }
 

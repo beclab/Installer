@@ -399,12 +399,12 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 	svcIPCMD := fmt.Sprintf("%s -n kubesphere-system get svc ks-controller-manager -o jsonpath='{.spec.clusterIP}'", kubectlpath)
 	svcIP, err := runtime.GetRunner().Host.SudoCmd(svcIPCMD, false, false)
 	if err != nil {
-		return errors.Wrap(err, "failed to get the service IP of ks-controller-manager")
+		return errors.New("Waiting for ks-controller-manager service to be reachable")
 	}
 
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(svcIP, strconv.Itoa(443)), 10*time.Second)
 	if err != nil {
-		return errors.Wrap(err, "failed to connect to ks-controller-manager service")
+		return errors.New("Waiting for ks-controller-manager service to be reachable")
 	}
 	defer conn.Close()
 	return nil
