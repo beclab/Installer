@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"io/fs"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -80,6 +84,14 @@ func (t *CheckKeyPodsRunning) Execute(runtime connector.Runtime) error {
 			pod.Namespace == "os-system" {
 			if pod.Status.Phase != corev1.PodRunning {
 				return fmt.Errorf("pod %s/%s is not running", pod.Namespace, pod.Name)
+			}
+			if len(pod.Status.ContainerStatuses) == 0 {
+				return fmt.Errorf("pod %s/%s has no container statuses yet", pod.Namespace, pod.Name)
+			}
+			for _, cStatus := range pod.Status.ContainerStatuses {
+				if cStatus.State.Running == nil {
+					return fmt.Errorf("container %s in pod %s/%s is not running", cStatus.Name, pod.Namespace, pod.Name)
+				}
 			}
 		}
 	}
@@ -419,6 +431,146 @@ func (a *DeleteAllPods) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
+	return nil
+}
+
+type DeletePodsUsingHostIP struct {
+	common.KubeAction
+}
+
+func (a *DeletePodsUsingHostIP) Execute(runtime connector.Runtime) error {
+	kubeConfig, err := ctrl.GetConfig()
+	if err != nil {
+		return errors.Wrap(err, "failed to load kubeconfig")
+	}
+	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kube client")
+	}
+
+	targetPods, err := getPodsUsingHostIP(kubeClient)
+	if err != nil {
+		return errors.Wrap(err, "failed to get pods using host IP")
+	}
+	a.PipelineCache.Set(common.CacheCountPodsUsingHostIP, len(targetPods))
+	for _, pod := range targetPods {
+		logger.Infof("restarting pod %s/%s that's using host IP", pod.Namespace, pod.Name)
+		err = kubeClient.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
+		if err != nil && !kerrors.IsNotFound(err) {
+			return errors.Wrap(err, "failed to delete pod")
+		}
+	}
+
+	// try our best to wait for the pods to be actually deleted
+	// to avoid the next module getting the pods with a still running phase
+	err = waitForPodsToBeGone(kubeClient, targetPods, 3*time.Minute)
+	if err != nil {
+		logger.Warnf("failed to wait for pods to be gone: %v, will delay and skip", err)
+		time.Sleep(60 * time.Second)
+		return nil
+	}
+
+	return nil
+}
+
+type WaitForPodsUsingHostIPRecreate struct {
+	common.KubeAction
+}
+
+func (a *WaitForPodsUsingHostIPRecreate) Execute(runtime connector.Runtime) error {
+	count, ok := a.PipelineCache.GetMustInt(common.CacheCountPodsUsingHostIP)
+	if !ok {
+		return errors.New("failed to get the count of pods using host IP")
+	}
+	kubeConfig, err := ctrl.GetConfig()
+	if err != nil {
+		return errors.Wrap(err, "failed to load kubeconfig")
+	}
+	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kube client")
+	}
+
+	targetPods, err := getPodsUsingHostIP(kubeClient)
+	if err != nil {
+		return errors.Wrap(err, "failed to get pods using host IP")
+	}
+	if len(targetPods) < count {
+		return errors.New("waiting for pods using host IP to be recreated")
+	}
+	return nil
+}
+
+func getPodsUsingHostIP(kubeClient kubernetes.Interface) ([]*corev1.Pod, error) {
+	pods, err := kubeClient.CoreV1().Pods(corev1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
+	if err != nil || len(pods.Items) == 0 {
+		return nil, errors.Wrap(err, "failed to list pods")
+	}
+	var targetPods []*corev1.Pod
+	for _, pod := range pods.Items {
+		if podIsUsingHostIP(&pod) {
+			targetPods = append(targetPods, &pod)
+		}
+	}
+	return targetPods, nil
+}
+
+func podIsUsingHostIP(pod *corev1.Pod) bool {
+	if pod == nil {
+		return false
+	}
+	if pod.Spec.HostNetwork == true {
+		return true
+	}
+	var allContainers []corev1.Container
+	allContainers = append(allContainers, pod.Spec.Containers...)
+	allContainers = append(allContainers, pod.Spec.InitContainers...)
+	for _, container := range allContainers {
+		for _, env := range container.Env {
+			if env.ValueFrom != nil && env.ValueFrom.FieldRef != nil && env.ValueFrom.FieldRef.FieldPath == "status.hostIP" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func waitForPodsToBeGone(kubeClient *kubernetes.Clientset, pods []*corev1.Pod, timeout time.Duration) error {
+	for _, pod := range pods {
+		pod, err := kubeClient.CoreV1().Pods(pod.Namespace).Get(context.Background(), pod.Name, metav1.GetOptions{})
+		if kerrors.IsNotFound(err) {
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to check if pod exists")
+		}
+		watchOptions := metav1.ListOptions{
+			FieldSelector:   fields.OneTermEqualSelector("metadata.name", pod.Name).String(),
+			ResourceVersion: pod.GetResourceVersion(),
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		watcher, err := kubeClient.CoreV1().Pods(pod.Namespace).Watch(ctx, watchOptions)
+		if err != nil {
+			return errors.Wrapf(err, "failed to watch pod %s for deletion", client.ObjectKeyFromObject(pod).String())
+		}
+		defer watcher.Stop()
+		watchChan := watcher.ResultChan()
+		for {
+			event, ok := <-watchChan
+			if !ok || event.Type == watch.Error {
+				if !ok {
+					err = errors.New("watch channel closed unexpectedly")
+				} else {
+					err = kerrors.FromObject(event.Object)
+				}
+				return errors.Wrapf(err, "failed to watch pod %s for deletion", client.ObjectKeyFromObject(pod).String())
+			}
+			if event.Type == watch.Deleted {
+				break
+			}
+		}
+	}
 	return nil
 }
 
