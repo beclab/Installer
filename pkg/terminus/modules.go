@@ -1,20 +1,20 @@
 package terminus
 
 import (
-	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/storage"
-	"time"
-
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/task"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/etcd"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/manifest"
+	"bytetrade.io/web3os/installer/pkg/storage"
+	"bytetrade.io/web3os/installer/pkg/utils"
+	"time"
 )
 
 type InstallWizardDownloadModule struct {
@@ -240,114 +240,9 @@ func (m *ChangeIPModule) Init() {
 		m.addStorageTasks()
 	}
 	if installed {
-		m.Tasks = append(m.Tasks,
-			&task.RemoteTask{
-				Name:   "GetETCDStatus",
-				Action: new(etcd.GetStatus),
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-			},
-			&task.RemoteTask{
-				Name:   "GenerateETCDAccessAddress",
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-				Action: new(etcd.GenerateAccessAddress),
-			},
-			&task.LocalTask{
-				Name:   "PrepareETCDFiles",
-				Action: new(PrepareFilesForETCDIPChange),
-			},
-			&task.LocalTask{
-				Name:   "RegenerateETCDCerts",
-				Action: new(etcd.GenerateCerts),
-			},
-			&task.RemoteTask{
-				Name:   "SyncETCDCerts",
-				Action: new(etcd.SyncCertsFile),
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-			},
-			&task.RemoteTask{
-				Name:   "RefreshETCDConfig",
-				Action: new(etcd.RefreshConfig),
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-			},
-			&task.RemoteTask{
-				Name:   "RestartETCD",
-				Action: new(etcd.RestartETCD),
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-			},
-			&task.RemoteTask{
-				Name:   "ETCDHealthCheck",
-				Action: new(etcd.HealthCheck),
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-				Retry:  20,
-			},
-			&task.RemoteTask{
-				Name:   "RefreshBackupETCDScript",
-				Action: new(etcd.BackupETCD),
-				Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
-			},
-		)
-
-		if m.KubeConf.Arg.Kubetype == common.K3s {
-			cluster := k3s.NewK3sStatus()
-			m.PipelineCache.GetOrSet(common.ClusterStatus, cluster)
-			m.Tasks = append(m.Tasks,
-				&task.RemoteTask{
-					Name:   "RegenerateK3sService",
-					Action: new(k3s.GenerateK3sService),
-					Hosts:  m.Runtime.GetHostsByRole(common.Master),
-				},
-				&task.RemoteTask{
-					Name:   "RegenerateK3sServiceEnv",
-					Action: new(k3s.GenerateK3sServiceEnv),
-					Hosts:  m.Runtime.GetHostsByRole(common.Master),
-				},
-				&task.LocalTask{
-					Name:   "EnableK3sService",
-					Desc:   "Enable k3s service",
-					Action: new(k3s.EnableK3sService),
-				},
-			)
-		} else {
-			m.Tasks = append(m.Tasks,
-				&task.LocalTask{
-					Name:   "PrepareK8sFiles",
-					Action: new(PrepareFilesForK8sIPChange),
-				},
-				&task.RemoteTask{
-					Name: "RegenerateKubeadmConfig",
-					Action: &kubernetes.GenerateKubeadmConfig{
-						IsInitConfiguration:     true,
-						WithSecurityEnhancement: m.KubeConf.Arg.SecurityEnhancement,
-					},
-					Hosts: m.Runtime.GetHostsByRole(common.Master),
-				},
-				&task.LocalTask{
-					Name:   "RegenerateK8sFilesWithKubeadm",
-					Action: new(RegenerateFilesForK8sIPChange),
-				},
-				&task.LocalTask{
-					Name:   "CopyNewKubeConfig",
-					Action: new(kubernetes.CopyKubeConfigForControlPlane),
-				},
-			)
-		}
-		m.Tasks = append(m.Tasks,
-			&task.LocalTask{
-				Name:   "WaitForKubeAPIServerUp",
-				Action: new(precheck.GetKubernetesNodesStatus),
-				Retry:  20,
-			},
-			&task.LocalTask{
-				Name:   "RestartAllPods",
-				Action: new(DeleteAllPods),
-			},
-			&task.LocalTask{
-				Name:   "EnsurePodsUpAndRunningAgain",
-				Action: new(CheckKeyPodsRunning),
-				Delay:  20 * time.Second,
-				Retry:  30,
-			},
-		)
+		m.addEtcdTasks()
+		m.addKubernetesTasks()
+		m.addRestartTasks()
 	}
 }
 
@@ -432,6 +327,142 @@ func (m *ChangeIPModule) addStorageTasks() {
 			Retry:  20,
 		},
 	)
+}
+
+func (m *ChangeIPModule) addEtcdTasks() {
+	m.Tasks = append(m.Tasks,
+		&task.RemoteTask{
+			Name:   "GetETCDStatus",
+			Action: new(etcd.GetStatus),
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+		},
+		&task.RemoteTask{
+			Name:   "GenerateETCDAccessAddress",
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+			Action: new(etcd.GenerateAccessAddress),
+		},
+		&task.LocalTask{
+			Name:   "PrepareETCDFiles",
+			Action: new(PrepareFilesForETCDIPChange),
+		},
+		&task.LocalTask{
+			Name:   "RegenerateETCDCerts",
+			Action: new(etcd.GenerateCerts),
+		},
+		&task.RemoteTask{
+			Name:   "SyncETCDCerts",
+			Action: new(etcd.SyncCertsFile),
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+		},
+		&task.RemoteTask{
+			Name:   "RefreshETCDConfig",
+			Action: new(etcd.RefreshConfig),
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+		},
+		&task.RemoteTask{
+			Name:   "RestartETCD",
+			Action: new(etcd.RestartETCD),
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+		},
+		&task.RemoteTask{
+			Name:   "ETCDHealthCheck",
+			Action: new(etcd.HealthCheck),
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+			Retry:  20,
+		},
+		&task.RemoteTask{
+			Name:   "RefreshBackupETCDScript",
+			Action: new(etcd.BackupETCD),
+			Hosts:  m.Runtime.GetHostsByRole(common.ETCD),
+		})
+}
+
+func (m *ChangeIPModule) addKubernetesTasks() {
+	if m.KubeConf.Arg.Kubetype == common.K3s {
+		cluster := k3s.NewK3sStatus()
+		m.PipelineCache.GetOrSet(common.ClusterStatus, cluster)
+		m.Tasks = append(m.Tasks,
+			&task.RemoteTask{
+				Name:   "RegenerateK3sService",
+				Action: new(k3s.GenerateK3sService),
+				Hosts:  m.Runtime.GetHostsByRole(common.Master),
+			},
+			&task.RemoteTask{
+				Name:   "RegenerateK3sServiceEnv",
+				Action: new(k3s.GenerateK3sServiceEnv),
+				Hosts:  m.Runtime.GetHostsByRole(common.Master),
+			},
+			&task.LocalTask{
+				Name:   "EnableK3sService",
+				Desc:   "Enable k3s service",
+				Action: new(k3s.EnableK3sService),
+			},
+		)
+	} else {
+		m.Tasks = append(m.Tasks,
+			&task.LocalTask{
+				Name:   "PrepareK8sFiles",
+				Action: new(PrepareFilesForK8sIPChange),
+			},
+			&task.RemoteTask{
+				Name: "RegenerateKubeadmConfig",
+				Action: &kubernetes.GenerateKubeadmConfig{
+					IsInitConfiguration:     true,
+					WithSecurityEnhancement: m.KubeConf.Arg.SecurityEnhancement,
+				},
+				Hosts: m.Runtime.GetHostsByRole(common.Master),
+			},
+			&task.LocalTask{
+				Name:   "RegenerateK8sFilesWithKubeadm",
+				Action: new(RegenerateFilesForK8sIPChange),
+			},
+			&task.LocalTask{
+				Name:   "CopyNewKubeConfig",
+				Action: new(kubernetes.CopyKubeConfigForControlPlane),
+			},
+		)
+	}
+}
+
+func (m *ChangeIPModule) addRestartTasks() {
+	restartPodsTasks := []task.Interface{
+		&task.LocalTask{
+			Name:   "RestartAllPods",
+			Action: new(DeleteAllPods),
+		},
+	}
+	if !utils.IsExist(storage.JuiceFsServiceFile) {
+		restartPodsTasks = []task.Interface{
+			&task.LocalTask{
+				Name:   "RestartPodsUsingHostIP",
+				Action: new(DeletePodsUsingHostIP),
+				Delay:  3 * time.Second,
+				Retry:  5,
+			},
+			// the app controllers in k3s have significant delay detecting state change
+			// and there's a gap between a pod being deleted and recreated
+			&task.LocalTask{
+				Name:   "WaitForPodsUsingHostIPRecreate",
+				Action: new(WaitForPodsUsingHostIPRecreate),
+				Delay:  15 * time.Second,
+				Retry:  20,
+			},
+		}
+	}
+	m.Tasks = append(m.Tasks,
+		&task.LocalTask{
+			Name:   "WaitForKubeAPIServerUp",
+			Action: new(precheck.GetKubernetesNodesStatus),
+			Retry:  20,
+		})
+	m.Tasks = append(m.Tasks, restartPodsTasks...)
+
+	m.Tasks = append(m.Tasks, &task.LocalTask{
+		Name:   "EnsurePodsUpAndRunningAgain",
+		Action: new(CheckKeyPodsRunning),
+		Delay:  10 * time.Second,
+		Retry:  60,
+	})
 }
 
 type ChangeHostIPModule struct {

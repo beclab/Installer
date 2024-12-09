@@ -240,6 +240,8 @@ const (
 
 	CacheAppServicePod = "app_service_pod_name"
 	CacheAppValues     = "app_built_in_values"
+
+	CacheCountPodsUsingHostIP = "count_pods_using_host_ip"
 )
 
 const (
