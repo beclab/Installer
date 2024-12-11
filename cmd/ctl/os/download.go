@@ -2,9 +2,9 @@ package os
 
 import (
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 func NewCmdRootDownload() *cobra.Command {
@@ -28,7 +28,7 @@ func NewCmdDownload() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.DownloadInstallationPackage(o); err != nil {
-				logger.Fatalf("download installation package error: %v", err)
+				log.Fatalf("error: %v", err)
 			}
 		},
 	}
@@ -45,7 +45,7 @@ func NewCmdDownloadWizard() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.DownloadInstallationWizard(o); err != nil {
-				logger.Fatalf("download installation wizard error: %v", err)
+				log.Fatalf("error: %v", err)
 			}
 		},
 	}
@@ -62,7 +62,7 @@ func NewCmdCheckDownload() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.CheckDownloadInstallationPackage(o); err != nil {
-				logger.Errorf("check download error: %v", err)
+				log.Fatalf("error: %v", err)
 			}
 		},
 	}

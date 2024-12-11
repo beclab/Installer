@@ -2,9 +2,9 @@ package os
 
 import (
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 type InstallOsOptions struct {
@@ -24,7 +24,7 @@ func NewCmdInstallOs() *cobra.Command {
 		Short: "Install Olares",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := pipelines.CliInstallTerminusPipeline(o.InstallOptions); err != nil {
-				logger.Fatalf("install Olares error: %v", err)
+				log.Fatalf("error: %v", err)
 			}
 		},
 	}
