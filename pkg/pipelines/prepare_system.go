@@ -1,6 +1,7 @@
 package pipelines
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -15,8 +16,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
-		fmt.Printf("Olares is already installed, please uninstall it first.")
-		return nil
+		return errors.New("Olares is already installed, please uninstall it first.")
 	}
 
 	var arg = common.NewArgument()
@@ -34,7 +34,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating runtime: %w", err)
 	}
 
 	manifest := path.Join(runtime.GetInstallerDir(), "installation.manifest")
