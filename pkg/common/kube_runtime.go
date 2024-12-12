@@ -19,6 +19,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -122,8 +123,14 @@ type Argument struct {
 }
 
 type PublicNetworkInfo struct {
-	PublicIp string `json:"aws_public_ip"`
-	Hostname string `json:"aws_hostname"`
+	// OSPublicIPs contains a list of public ip(s)
+	// by looking at local network interfaces
+	// if any
+	OSPublicIPs []net.IP `json:"os_public_ips"`
+
+	// AWS contains the info retrieved from the AWS instance metadata service
+	// if any
+	AWSPublicIP net.IP `json:"aws"`
 }
 
 type User struct {
@@ -332,7 +339,7 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 
 func (a *Argument) SetBaseDir(dir string) {
 	a.BaseDir = dir
-	if !filepath.IsAbs(dir) {
+	if dir != "" && !filepath.IsAbs(dir) {
 		dir, _ = filepath.Abs(dir)
 		if dir != "" {
 			a.BaseDir = dir

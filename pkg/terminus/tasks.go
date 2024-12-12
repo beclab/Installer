@@ -645,3 +645,34 @@ func (a *CheckTerminusStateInHost) Execute(runtime connector.Runtime) error {
 
 	return nil
 }
+
+type GetPublicNetworkInfo struct {
+	common.KubeAction
+}
+
+func (p *GetPublicNetworkInfo) Execute(runtime connector.Runtime) error {
+	osPublicIPs, err := util.GetPublicIPsFromOS()
+	if err != nil {
+		return errors.Wrap(err, "failed to get public IPs from OS")
+	}
+	if len(osPublicIPs) > 0 {
+		logger.Info("detected public IP addresses on local network interface")
+		p.KubeConf.Arg.PublicNetworkInfo.OSPublicIPs = osPublicIPs
+		return nil
+	}
+
+	if util.IsOnAWSEC2() {
+		logger.Info("on AWS EC2 instance, will try to check if a public IP address is bound")
+		awsPublicIP, err := util.GetPublicIPFromAWSIMDS()
+		if err != nil {
+			return errors.Wrap(err, "failed to get public IP from AWS")
+		}
+		if awsPublicIP != nil {
+			logger.Info("retrieved public IP addresses from IMDS")
+			p.KubeConf.Arg.PublicNetworkInfo.AWSPublicIP = awsPublicIP
+			return nil
+		}
+	}
+
+	return nil
+}

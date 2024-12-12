@@ -17,15 +17,17 @@
 package util
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"encoding/binary"
 	"github.com/libp2p/go-netroute"
+	"github.com/pkg/errors"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 func ParseIp(ip string) []string {
@@ -229,4 +231,39 @@ func GetLocalIP() (net.IP, error) {
 	}
 
 	return validIfIPs[0], nil
+}
+
+// GetPublicIPsFromOS gets a list of public ips by looking at the local network interfaces
+// if any
+func GetPublicIPsFromOS() ([]net.IP, error) {
+	ifAddrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get local interface IP addresses")
+	}
+	var validIfIPs []net.IP
+	for _, ifAddr := range ifAddrs {
+		ipNet, ok := ifAddr.(*net.IPNet)
+		if !ok || !IsValidIPv4Addr(ipNet.IP) {
+			continue
+		}
+		if !ipNet.IP.To4().IsPrivate() {
+			validIfIPs = append(validIfIPs, ipNet.IP)
+		}
+	}
+	return validIfIPs, nil
+}
+
+func GetPublicIPFromAWSIMDS() (net.IP, error) {
+	url := "http://169.254.169.254/latest/meta-data/public-ipv4"
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to reach AWS metadata service")
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response from AWS metadata service")
+	}
+	logger.Debugf("retrieved public IP info from AWS metadata service: %s", string(body))
+	return net.ParseIP(string(body)), nil
 }
