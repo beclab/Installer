@@ -6,7 +6,6 @@ import (
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"path"
-	"strings"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -42,7 +41,9 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 	if p.KubeConf.Arg.IsCloudInstance {
 		selfhosted = false
 	}
-	if strings.Contains(p.KubeConf.Arg.PublicNetworkInfo.Hostname, common.CloudVendorAWS) && !strings.Contains(p.KubeConf.Arg.PublicNetworkInfo.PublicIp, "Not Found") {
+
+	publicNetworkInfo := p.KubeConf.Arg.PublicNetworkInfo
+	if len(publicNetworkInfo.OSPublicIPs) > 0 || publicNetworkInfo.AWSPublicIP != nil {
 		selfhosted = false
 	}
 
@@ -113,6 +114,12 @@ func (m *InstallSettingsModule) Init() {
 	logger.InfoInstallationProgress("Installing settings ...")
 	m.Name = "InstallSettings"
 
+	getPublicNetworkInfo := &task.LocalTask{
+		Name:   "GetPublicNetworkInfo",
+		Action: new(GetPublicNetworkInfo),
+		Retry:  3,
+	}
+
 	setSettingsValues := &task.LocalTask{
 		Name:   "SetSettingsValues",
 		Action: new(SetSettingsValues),
@@ -126,6 +133,7 @@ func (m *InstallSettingsModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		getPublicNetworkInfo,
 		setSettingsValues,
 		installSettings,
 	}

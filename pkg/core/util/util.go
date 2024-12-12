@@ -18,8 +18,11 @@ package util
 
 import (
 	"bytes"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -175,4 +178,51 @@ func RemoveHTTPPrefix(url string) string {
 	url = strings.TrimPrefix(url, "http://")
 	url = strings.TrimPrefix(url, "https://")
 	return url
+}
+
+func IsOnAWSEC2() bool {
+	vmUUIDFile := "/sys/hypervisor/uuid"
+	if IsExist("/sys/hypervisor/uuid") {
+		if content, err := os.ReadFile(vmUUIDFile); err == nil {
+			logger.Debugf("read content of aws vm uuid file: %s", string(content))
+			if strings.EqualFold(string(content)[:3], "ec2") {
+				return true
+			}
+			return false
+		} else {
+			logger.Debugf("failed to read aws vm uuid file: %v", err)
+		}
+	} else {
+		logger.Debug("aws vm uuid file does not exits")
+	}
+	productUUIDFile := "/sys/devices/virtual/dmi/id/product_uuid"
+	if IsExist(productUUIDFile) {
+		if content, err := os.ReadFile(productUUIDFile); err == nil {
+			logger.Debugf("read content of aws product uuid file: %s", string(content))
+			if strings.EqualFold(string(content)[:3], "ec2") {
+				return true
+			}
+			return false
+		} else {
+			logger.Debugf("failed to read product uuid file: %v", err)
+		}
+	} else {
+		logger.Debug("aws product uuid file does not exits")
+	}
+	resp, err := http.Get("http://169.254.169.254/latest/dynamic/instance-identity/document")
+	if err != nil {
+		logger.Debugf("failed to get aws instance identity document: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Debugf("failed to read aws instance identity document: %v", err)
+		return false
+	}
+	logger.Debugf("got aws instance identity document: %s", string(body))
+	if strings.Contains(string(body), "instanceID") {
+		return true
+	}
+	return false
 }

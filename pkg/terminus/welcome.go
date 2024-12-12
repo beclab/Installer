@@ -6,6 +6,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"fmt"
+	"net"
 	"time"
 )
 
@@ -15,22 +16,35 @@ type WelcomeMessage struct {
 
 func (t *WelcomeMessage) Execute(runtime connector.Runtime) error {
 	port := 30180
-	var ip string
-	if runtime.GetSystemInfo().GetLocalIp() != "" {
-		ip = runtime.GetSystemInfo().GetLocalIp()
-	}
+	localIP := runtime.GetSystemInfo().GetLocalIp()
 	if si := runtime.GetSystemInfo(); si.GetNATGateway() != "" {
-		ip = si.GetNATGateway()
+		localIP = si.GetNATGateway()
 	}
-	if ip == "" {
-		ip = t.KubeConf.Arg.PublicNetworkInfo.PublicIp
+	var publicIPs []net.IP
+	publicNetworkInfo := t.KubeConf.Arg.PublicNetworkInfo
+	publicIPs = append(publicIPs, publicNetworkInfo.OSPublicIPs...)
+	if publicNetworkInfo.AWSPublicIP != nil {
+		publicIPs = append(publicIPs, publicNetworkInfo.AWSPublicIP)
+	}
+	var filteredPublicIPs []net.IP
+	for _, publicIP := range publicIPs {
+		if publicIP != nil && publicIP.String() != localIP {
+			filteredPublicIPs = append(filteredPublicIPs, publicIP)
+		}
 	}
 
 	logger.InfoInstallationProgress("Installation wizard is complete")
 	logger.InfoInstallationProgress("All done")
 	fmt.Printf("\n\n\n\n------------------------------------------------\n\n")
 	logger.Info("Olares is running at:")
-	logger.Infof("http://%s:%d", ip, port)
+	logger.Infof("http://%s:%d", localIP, port)
+	if len(filteredPublicIPs) > 0 {
+		fmt.Println()
+		logger.Info("and publicly available at:")
+		for _, publicIP := range filteredPublicIPs {
+			logger.Infof("http://%s:%d", publicIP, port)
+		}
+	}
 	fmt.Println()
 	logger.Info("Open your browser and visit the above address")
 	logger.Info("with the following credentials:")
