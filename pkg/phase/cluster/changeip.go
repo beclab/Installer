@@ -23,7 +23,7 @@ func ChangeIP(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	}
 
 	return &pipeline.Pipeline{
-		Name:    "Change the local IP address of Olares OS components",
+		Name:    "Change the IP address of Olares OS components",
 		Modules: modules,
 		Runtime: runtime,
 	}
