@@ -18,6 +18,7 @@ package common
 
 import (
 	"bufio"
+	"bytetrade.io/web3os/installer/pkg/core/util"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -197,6 +198,12 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 	fmt.Printf("current: %s\n", user)
 
 	allInOne := &kubekeyapiv1alpha2.Cluster{}
+
+	if osType != Darwin && osType != Windows {
+		if err := installSUDOIfMissing(); err != nil {
+			return nil, err
+		}
+	}
 
 	if err := localSSH(osType); err != nil {
 		return nil, err
@@ -466,6 +473,18 @@ func currentUser(osType string) (*user.User, error) {
 		}
 	}
 	return u, nil
+}
+
+func installSUDOIfMissing() error {
+	p, _ := util.GetCommand("sudo")
+	if p != "" {
+		return nil
+	}
+	output, err := exec.Command("/bin/sh", "-c", "apt install -y sudo").CombinedOutput()
+	if err != nil {
+		return errors.Wrapf(err, "failed to install the sudo command that's missing: %s", string(output))
+	}
+	return nil
 }
 
 func localSSH(osType string) error {
