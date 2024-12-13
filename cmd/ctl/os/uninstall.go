@@ -4,6 +4,7 @@ import (
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 type UninstallOsOptions struct {
@@ -22,7 +23,10 @@ func NewCmdUninstallOs() *cobra.Command {
 		Use:   "uninstall",
 		Short: "Uninstall Olares",
 		Run: func(cmd *cobra.Command, args []string) {
-			pipelines.UninstallTerminusPipeline(o.UninstallOptions)
+			err := pipelines.UninstallTerminusPipeline(o.UninstallOptions)
+			if err != nil {
+				log.Fatalf("error: %v", err)
+			}
 		},
 	}
 	o.UninstallOptions.AddFlags(cmd)

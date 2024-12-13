@@ -2,9 +2,9 @@ package os
 
 import (
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
-	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 type PrepareSystemOptions struct {
@@ -25,7 +25,7 @@ func NewCmdPrepare() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 
 			if err := pipelines.PrepareSystemPipeline(o.PrepareOptions); err != nil {
-				logger.Fatalf("prepare system error: %v", err)
+				log.Fatalf("error: %v", err)
 			}
 		},
 	}

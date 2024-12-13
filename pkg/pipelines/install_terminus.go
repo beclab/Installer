@@ -3,6 +3,7 @@ package pipelines
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -18,8 +19,7 @@ import (
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	var terminusVersion, _ = phase.GetTerminusVersion()
 	if terminusVersion != "" {
-		fmt.Printf("Olares is already installed, please uninstall it first.")
-		return nil
+		return errors.New("Olares is already installed, please uninstall it first.")
 	}
 
 	arg := common.NewArgument()
@@ -33,8 +33,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
-		fmt.Printf("Error creating installation runtime: %v\n", err)
-		return nil
+		return fmt.Errorf("error creating runtime: %v", err)
 	}
 
 	manifest := path.Join(runtime.GetInstallerDir(), "installation.manifest")
