@@ -14,6 +14,7 @@
 package certs
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"crypto"
 	cryptorand "crypto/rand"
 	"crypto/x509"
@@ -26,7 +27,6 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/common"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 	certutil "k8s.io/client-go/util/cert"
 )
@@ -282,7 +282,7 @@ func CheckCertificatePeriodValidity(baseName string, cert *x509.Certificate) {
 	certPeriodValidation[baseName] = struct{}{}
 
 	if err := ValidateCertPeriod(cert, 0); err != nil {
-		logrus.Warningf("WARNING: could not validate bounds for certificate %s: %v", baseName, err)
+		logger.Warnf("WARNING: could not validate bounds for certificate %s: %v", baseName, err)
 	}
 }
 

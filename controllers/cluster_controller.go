@@ -18,6 +18,7 @@ package kubekey
 
 import (
 	"bytes"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -34,7 +35,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/go-logr/logr"
 	yamlV2 "gopkg.in/yaml.v2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +59,6 @@ const (
 // ClusterReconciler reconciles a Cluster object
 type ClusterReconciler struct {
 	client.Client
-	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
@@ -94,7 +93,6 @@ type ClusterReconciler struct {
 // +kubebuilder:rbac:groups=cluster.kubesphere.io,resources=*,verbs=*
 
 func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("cluster", req.NamespacedName)
 
 	cluster := &kubekeyv1alpha2.Cluster{}
 	cmFound := &corev1.ConfigMap{}
@@ -106,10 +104,10 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Fetch the Cluster object
 	if err := r.Get(ctx, req.NamespacedName, cluster); err != nil {
 		if kubeErr.IsNotFound(err) {
-			log.Info("Cluster resource not found. Ignoring since object must be deleted")
+			logger.Info("Cluster resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "Failed to get Cluster")
+		logger.Error(err, "Failed to get Cluster")
 		return ctrl.Result{}, err
 	}
 
@@ -131,7 +129,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 			}
 
-			if err := updateClusterConfigMap(r, ctx, cluster, cmFound, log); err != nil {
+			if err := updateClusterConfigMap(r, ctx, cluster, cmFound); err != nil {
 				return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 			}
 			return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
@@ -143,7 +141,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 		}
 		if len(nodes) != 0 {
-			log.Info("Cluster resource defines current cluster")
+			logger.Info("Cluster resource defines current cluster")
 			if err := adaptExistedCluster(nodes, cluster); err != nil {
 				return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 			}
@@ -160,7 +158,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 		}
 		if len(otherClusterNodes) != 0 {
-			log.Info("Cluster resource defines other existed cluster")
+			logger.Info("Cluster resource defines other existed cluster")
 			if err := adaptExistedCluster(otherClusterNodes, cluster); err != nil {
 				return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 			}
@@ -171,12 +169,12 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
 		}
 
-		if err := updateRunJob(r, req, ctx, cluster, jobFound, log, CreateCluster); err != nil {
+		if err := updateRunJob(r, req, ctx, cluster, jobFound, CreateCluster); err != nil {
 			return ctrl.Result{RequeueAfter: 2 * time.Second}, err
 		}
 
 		addHosts = cluster.Spec.Hosts
-		sendHostsAction(1, addHosts, log)
+		sendHostsAction(1, addHosts)
 
 		// Ensure that the cluster has been created successfully, otherwise re-enter Reconcile.
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
@@ -189,10 +187,10 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
 		}
 
-		if err := updateClusterConfigMap(r, ctx, cluster, cmFound, log); err != nil {
+		if err := updateClusterConfigMap(r, ctx, cluster, cmFound); err != nil {
 			return ctrl.Result{}, err
 		}
-		if err := updateRunJob(r, req, ctx, cluster, jobFound, log, AddNodes); err != nil {
+		if err := updateRunJob(r, req, ctx, cluster, jobFound, AddNodes); err != nil {
 			return ctrl.Result{Requeue: true}, err
 		}
 
@@ -206,7 +204,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				addHosts = append(addHosts, host)
 			}
 		}
-		sendHostsAction(1, addHosts, log)
+		sendHostsAction(1, addHosts)
 
 		// Ensure that the nodes has been added successfully, otherwise re-enter Reconcile.
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
@@ -282,7 +280,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 		}
 
-		sendHostsAction(0, removeHosts, log)
+		sendHostsAction(0, removeHosts)
 
 		var newEtcd, newMaster, newWorker []string
 		for _, node := range newNodes {
@@ -311,10 +309,10 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// Fetch the Cluster object
 		if err := r.Get(ctx, req.NamespacedName, cluster); err != nil {
 			if kubeErr.IsNotFound(err) {
-				log.Info("Cluster resource not found. Ignoring since object must be deleted")
+				logger.Info("Cluster resource not found. Ignoring since object must be deleted")
 				return ctrl.Result{}, nil
 			}
-			log.Error(err, "Failed to get Cluster")
+			logger.Error(err, "Failed to get Cluster")
 			return ctrl.Result{}, err
 		}
 
@@ -380,7 +378,7 @@ func (r *ClusterReconciler) configMapForCluster(c *kubekeyv1alpha2.Cluster) *cor
 	return cm
 }
 
-func (r *ClusterReconciler) jobForCluster(c *kubekeyv1alpha2.Cluster, action string, log logr.Logger) *batchv1.Job {
+func (r *ClusterReconciler) jobForCluster(c *kubekeyv1alpha2.Cluster, action string) *batchv1.Job {
 	var (
 		backoffLimit int32 = 0
 		name         string
@@ -401,7 +399,7 @@ func (r *ClusterReconciler) jobForCluster(c *kubekeyv1alpha2.Cluster, action str
 	}
 	err := r.List(context.TODO(), podlist, listOpts...)
 	if err != nil {
-		log.Error(err, "Failed to list kubekey controller-manager pod")
+		logger.Error(err, "Failed to list kubekey controller-manager pod")
 	}
 	nodeName := podlist.Items[0].Spec.NodeName
 	var image string
@@ -552,29 +550,29 @@ func updateStatusRunner(r *ClusterReconciler, req ctrl.Request, cluster *kubekey
 	return nil
 }
 
-func updateClusterConfigMap(r *ClusterReconciler, ctx context.Context, cluster *kubekeyv1alpha2.Cluster, cmFound *corev1.ConfigMap, log logr.Logger) error {
+func updateClusterConfigMap(r *ClusterReconciler, ctx context.Context, cluster *kubekeyv1alpha2.Cluster, cmFound *corev1.ConfigMap) error {
 	// Check if the configmap already exists, if not create a new one
 	if err := r.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cmFound); err != nil && !kubeErr.IsNotFound(err) {
-		log.Error(err, "Failed to get ConfigMap", "ConfigMap.Namespace", cmFound.Namespace, "ConfigMap.Name", cmFound.Name)
+		logger.Error(err, "Failed to get ConfigMap", "ConfigMap.Namespace", cmFound.Namespace, "ConfigMap.Name", cmFound.Name)
 		return err
 	} else if err == nil {
 		if err := r.Delete(ctx, cmFound); err != nil {
-			log.Error(err, "Failed to delete old ConfigMap", "ConfigMap.Namespace", cmFound.Namespace, "ConfigMap.Name", cmFound.Name)
+			logger.Error(err, "Failed to delete old ConfigMap", "ConfigMap.Namespace", cmFound.Namespace, "ConfigMap.Name", cmFound.Name)
 			return err
 		}
 	}
 
 	// Define a new configmap
 	cmCluster := r.configMapForCluster(cluster)
-	log.Info("Creating a new ConfigMap", "ConfigMap.Namespace", cmCluster.Namespace, "ConfigMap.Name", cmCluster.Name)
+	logger.Info("Creating a new ConfigMap", "ConfigMap.Namespace", cmCluster.Namespace, "ConfigMap.Name", cmCluster.Name)
 	if err := r.Create(ctx, cmCluster); err != nil {
-		log.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cmCluster.Namespace, "ConfigMap.Name", cmCluster.Name)
+		logger.Error(err, "Failed to create new ConfigMap", "ConfigMap.Namespace", cmCluster.Namespace, "ConfigMap.Name", cmCluster.Name)
 		return err
 	}
 	return nil
 }
 
-func updateRunJob(r *ClusterReconciler, req ctrl.Request, ctx context.Context, cluster *kubekeyv1alpha2.Cluster, jobFound *batchv1.Job, log logr.Logger, action string) error {
+func updateRunJob(r *ClusterReconciler, req ctrl.Request, ctx context.Context, cluster *kubekeyv1alpha2.Cluster, jobFound *batchv1.Job, action string) error {
 	var (
 		name string
 	)
@@ -599,15 +597,15 @@ func updateRunJob(r *ClusterReconciler, req ctrl.Request, ctx context.Context, c
 				_ = r.Delete(ctx, &pod)
 			}
 		}
-		log.Info("Prepare to delete old job", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
+		logger.Info("Prepare to delete old job", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
 		if err := r.Delete(ctx, jobFound); err != nil {
-			log.Error(err, "Failed to delete old Job", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
+			logger.Error(err, "Failed to delete old Job", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
 			return err
 		}
-		log.Info("Deleting old job success", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
+		logger.Info("Deleting old job success", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
 
 		err := wait.PollInfinite(1*time.Second, func() (bool, error) {
-			log.Info("Checking old job is deleted", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
+			logger.Info("Checking old job is deleted", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
 			if e := r.Get(ctx, types.NamespacedName{Name: name, Namespace: req.Namespace}, jobFound); e != nil {
 				if kubeErr.IsNotFound(e) {
 					return true, nil
@@ -617,21 +615,21 @@ func updateRunJob(r *ClusterReconciler, req ctrl.Request, ctx context.Context, c
 			return false, nil
 		})
 		if err != nil {
-			log.Error(err, "Failed to loop check old job is deleted", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
+			logger.Error(err, "Failed to loop check old job is deleted", "Job.Namespace", jobFound.Namespace, "Job.Name", jobFound.Name)
 			return err
 		}
 
-		jobCluster := r.jobForCluster(cluster, action, log)
-		log.Info("Creating a new Job to scale cluster", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
+		jobCluster := r.jobForCluster(cluster, action)
+		logger.Info("Creating a new Job to scale cluster", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
 		if err := r.Create(ctx, jobCluster); err != nil {
-			log.Error(err, "Failed to create new Job", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
+			logger.Error(err, "Failed to create new Job", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
 			return err
 		}
 	} else if kubeErr.IsNotFound(err) {
-		jobCluster := r.jobForCluster(cluster, action, log)
-		log.Info("Creating a new Job to create cluster", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
+		jobCluster := r.jobForCluster(cluster, action)
+		logger.Info("Creating a new Job to create cluster", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
 		if err := r.Create(ctx, jobCluster); err != nil {
-			log.Error(err, "Failed to create new Job", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
+			logger.Error(err, "Failed to create new Job", "Job.Namespace", jobCluster.Namespace, "Job.Name", jobCluster.Name)
 			return err
 		}
 	}
@@ -641,7 +639,7 @@ func updateRunJob(r *ClusterReconciler, req ctrl.Request, ctx context.Context, c
 	return nil
 }
 
-func sendHostsAction(action int, hosts []kubekeyv1alpha2.HostCfg, log logr.Logger) {
+func sendHostsAction(action int, hosts []kubekeyv1alpha2.HostCfg) {
 	if os.Getenv("HOSTS_MANAGER") == "true" {
 		type HostsAction struct {
 			Hosts  []kubekeyv1alpha2.HostCfg `json:"hosts,omitempty"`
@@ -655,20 +653,20 @@ func sendHostsAction(action int, hosts []kubekeyv1alpha2.HostCfg, log logr.Logge
 		fmt.Println(newHostsAction)
 		hostsInfoBytes, err := json.Marshal(newHostsAction)
 		if err != nil {
-			log.Error(err, "Failed to marshal hosts info")
+			logger.Error(err, "Failed to marshal hosts info")
 		}
 
 		fmt.Println(string(hostsInfoBytes))
 		req, err := http.NewRequest("POST", "http://localhost:8090/api/v1alpha2/hosts", bytes.NewReader(hostsInfoBytes))
 		if err != nil {
-			log.Error(err, "Failed to create request")
+			logger.Error(err, "Failed to create request")
 		}
 
 		req.Header.Add("Content-Type", "application/json")
 
 		_, err = http.DefaultClient.Do(req)
 		if err != nil {
-			log.Error(err, "Failed to  send hosts info")
+			logger.Error(err, "Failed to  send hosts info")
 		}
 	}
 }
