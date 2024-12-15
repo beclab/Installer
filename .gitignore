@@ -32,3 +32,5 @@ logs/
 docs/
 
 generate_vfs
+
+.DS_Store
