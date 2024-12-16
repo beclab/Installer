@@ -19,6 +19,7 @@ package precheck
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"regexp"
 	"strings"
@@ -47,6 +48,43 @@ func (t *PreCheckSupport) Execute(runtime connector.Runtime) error {
 	}
 	if err := si.IsLocalIpValid(); err != nil {
 		return err
+	}
+	return nil
+}
+
+type PreCheckPortsBindable struct {
+	common.KubeAction
+}
+
+func (t *PreCheckPortsBindable) Execute(runtime connector.Runtime) error {
+	ports := []int{80, 443, 444, 2444, 30180}
+	var unbindablePorts []int
+	for _, port := range ports {
+		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err != nil {
+			unbindablePorts = append(unbindablePorts, port)
+			continue
+		}
+		defer l.Close()
+	}
+	if len(unbindablePorts) > 0 {
+		return fmt.Errorf("port(s): %v are required but unbindable", unbindablePorts)
+	}
+	return nil
+}
+
+type PreCheckNoConflictingContainerd struct {
+	common.KubeAction
+}
+
+func (t *PreCheckNoConflictingContainerd) Execute(runtime connector.Runtime) error {
+	containerdBin, err := util.GetCommand("containerd")
+	if err == nil && containerdBin != "" {
+		return fmt.Errorf("found existing containerd binary: %s, please uninstall containerd first to avoid conflicts", containerdBin)
+	}
+	containerdSocket := "/run/containerd/containerd.sock"
+	if util.IsExist(containerdSocket) {
+		return fmt.Errorf("detected existing containerd socket: %s, please uninstall containerd first to avoid conflicts", containerdSocket)
 	}
 	return nil
 }

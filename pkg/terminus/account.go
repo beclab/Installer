@@ -35,20 +35,20 @@ func (s *GetUserInfo) Execute(runtime connector.Runtime) error {
 		if err != nil {
 			return err
 		}
-		logger.Infof("using domain name: %s", s.KubeConf.Arg.User.DomainName)
+		logger.Infof("using Domain Name: %s", s.KubeConf.Arg.User.DomainName)
 	}
 	if len(s.KubeConf.Arg.User.UserName) == 0 {
 		s.KubeConf.Arg.User.UserName, err = s.getUserName()
 		if err != nil {
 			return err
 		}
-		logger.Infof("using user name: %s", s.KubeConf.Arg.User.UserName)
+		logger.Infof("using Olares Local Name: %s", s.KubeConf.Arg.User.UserName)
 	}
 	s.KubeConf.Arg.User.Email, err = s.getUserEmail()
 	if err != nil {
 		return err
 	}
-	logger.Infof("using email: %s", s.KubeConf.Arg.User.Email)
+	logger.Infof("using Olares ID: %s", s.KubeConf.Arg.User.Email)
 	s.KubeConf.Arg.User.Password, err = s.getUserPassword()
 	if err != nil {
 		return err
