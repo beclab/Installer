@@ -84,6 +84,16 @@ func (m *PreCheckOsModule) Init() {
 		Action: new(PreCheckSupport),
 	}
 
+	preCheckPortsBindable := &task.LocalTask{
+		Name:   "PreCheckPortsBindable",
+		Action: new(PreCheckPortsBindable),
+	}
+
+	preCheckNoConflictingContainerd := &task.LocalTask{
+		Name:   "PreCheckNoConflictingContainerd",
+		Action: new(PreCheckNoConflictingContainerd),
+	}
+
 	patchAppArmor := &task.RemoteTask{
 		Name:  "PatchAppArmor",
 		Hosts: m.Runtime.GetAllHosts(),
@@ -125,6 +135,8 @@ func (m *PreCheckOsModule) Init() {
 
 	m.Tasks = []task.Interface{
 		preCheckSupport,
+		preCheckPortsBindable,
+		preCheckNoConflictingContainerd,
 		patchAppArmor,
 		raspbianCheck,
 		correctHostname,
