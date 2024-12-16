@@ -43,6 +43,15 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	if _, err := util.GetCommand(common.CommandSudo); err != nil {
 		pre_reqs = pre_reqs + " sudo "
 	}
+	if _, err := util.GetCommand(common.CommandUpdatePciids); err != nil {
+		pre_reqs = pre_reqs + " pciutils "
+	}
+	if _, err := util.GetCommand(common.CommandIptables); err != nil {
+		pre_reqs = pre_reqs + " iptables "
+	}
+	if _, err := util.GetCommand(common.CommandNmcli); err != nil {
+		pre_reqs = pre_reqs + " network-manager "
+	}
 
 	var systemInfo = runtime.GetSystemInfo()
 	var platformFamily = systemInfo.GetOsPlatformFamily()
@@ -65,7 +74,7 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 		fallthrough
 	case common.Ubuntu:
 		if systemInfo.IsUbuntu() {
-			if !systemInfo.IsPve() && !systemInfo.IsRaspbian() {
+			if !systemInfo.IsPveOrPveLxc() && !systemInfo.IsRaspbian() {
 				if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository universe -y", false, true); err != nil {
 					logger.Errorf("add os repo error %v", err)
 					return err
@@ -85,20 +94,12 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 
 		logger.Debug("apt update success")
 
-		// if _, err := runtime.GetRunner().Host.SudoCmd("apt --fix-broken install -y", false, true); err != nil {
-		// 	logger.Errorf("fix-broken install error %v", err)
-		// 	return err
-		// }
-
 		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s install -y -qq %s", pkgManager, pre_reqs), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", pre_reqs, err)
 			return err
 		}
 
 		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc bison flex tree unzip"
-		if runtime.GetSystemInfo().IsUbuntuVersionEqual(connector.Ubuntu24) {
-			cmd = cmd + " pciutils"
-		}
 		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, pkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err

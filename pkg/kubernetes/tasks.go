@@ -18,8 +18,6 @@ package kubernetes
 
 import (
 	"bufio"
-	"bytetrade.io/web3os/installer/pkg/storage"
-	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -29,6 +27,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 
 	"bytetrade.io/web3os/installer/pkg/etcd"
 	"bytetrade.io/web3os/installer/pkg/manifest"
@@ -371,7 +372,7 @@ func (g *GenerateKubeadmConfig) Execute(runtime connector.Runtime) error {
 				"ControllerManagerArgs":  v1beta2.UpdateFeatureGatesConfiguration(ControllerManagerArgs, g.KubeConf),
 				"SchedulerArgs":          v1beta2.UpdateFeatureGatesConfiguration(SchedulerArgs, g.KubeConf),
 				"KubeletConfiguration":   v1beta2.GetKubeletConfiguration(runtime, g.KubeConf, g.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint, g.WithSecurityEnhancement),
-				"KubeProxyConfiguration": v1beta2.GetKubeProxyConfiguration(g.KubeConf),
+				"KubeProxyConfiguration": v1beta2.GetKubeProxyConfiguration(g.KubeConf, runtime.GetSystemInfo().IsPveLxc()),
 				"IsControlPlane":         host.IsRole(common.Master),
 				"CgroupDriver":           checkCgroupDriver,
 				"BootstrapToken":         bootstrapToken,

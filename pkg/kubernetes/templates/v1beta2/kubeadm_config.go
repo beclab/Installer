@@ -391,7 +391,7 @@ func GetKubeletCgroupDriver(runtime connector.Runtime, kubeConf *common.KubeConf
 	return kubeletCgroupDriver, nil
 }
 
-func GetKubeProxyConfiguration(kubeConf *common.KubeConf) map[string]interface{} {
+func GetKubeProxyConfiguration(kubeConf *common.KubeConf, isPveLxc bool) map[string]interface{} {
 	defaultKubeProxyConfiguration := map[string]interface{}{
 		"clusterCIDR": kubeConf.Cluster.Network.KubePodsCIDR,
 		"mode":        kubeConf.Cluster.Kubernetes.ProxyMode,
@@ -401,6 +401,12 @@ func GetKubeProxyConfiguration(kubeConf *common.KubeConf) map[string]interface{}
 			"minSyncPeriod": "0s",
 			"syncPeriod":    "30s",
 		},
+	}
+
+	if isPveLxc {
+		defaultKubeProxyConfiguration["conntrack"] = map[string]interface{}{
+			"maxPerCore": 0,
+		}
 	}
 
 	customKubeProxyConfiguration := make(map[string]interface{})

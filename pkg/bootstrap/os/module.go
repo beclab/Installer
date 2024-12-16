@@ -27,6 +27,47 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 )
 
+type PvePatchModule struct {
+	common.KubeModule
+	Skip bool
+}
+
+func (p *PvePatchModule) IsSkip() bool {
+	return p.Skip
+}
+
+func (p *PvePatchModule) Init() {
+	p.Name = "PvePatch"
+
+	removePveCNDomain := &task.LocalTask{
+		Name:    "RemovePveCNDomain",
+		Action:  new(RemoveCNDomain),
+		Prepare: new(IsPve),
+		Retry:   1,
+	}
+
+	patchLxcInitScript := &task.LocalTask{
+		Name:    "PatchLxcInitScript",
+		Action:  new(PatchLxcInitScript),
+		Prepare: new(IsPveLxc),
+		Retry:   1,
+	}
+
+	patchLxcEnvVars := &task.LocalTask{
+		Name:    "PatchLxcEnvVars",
+		Action:  new(PatchLxcEnvVars),
+		Prepare: new(IsPveLxc),
+		Retry:   1,
+	}
+
+	p.Tasks = []task.Interface{
+		removePveCNDomain,
+		patchLxcInitScript,
+		patchLxcEnvVars,
+	}
+
+}
+
 type ConfigSystemModule struct {
 	common.KubeModule
 }
