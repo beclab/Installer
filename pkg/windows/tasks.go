@@ -256,8 +256,6 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 	var envs = []string{
 		fmt.Sprintf("export %s=%s", common.ENV_KUBE_TYPE, i.KubeConf.Arg.Kubetype),
 		fmt.Sprintf("export %s=%s", common.ENV_REGISTRY_MIRRORS, i.KubeConf.Arg.RegistryMirrors),
-		fmt.Sprintf("export %s=%d", common.ENV_LOCAL_GPU_ENABLE, utils.FormatBoolToInt(i.KubeConf.Arg.GPU.Enable)),
-		fmt.Sprintf("export %s=%d", common.ENV_LOCAL_GPU_SHARE, utils.FormatBoolToInt(i.KubeConf.Arg.GPU.Share)),
 		fmt.Sprintf("export %s=%s", common.ENV_CLOUDFLARE_ENABLE, i.KubeConf.Arg.Cloudflare.Enable),
 		fmt.Sprintf("export %s=%s", common.ENV_FRP_ENABLE, i.KubeConf.Arg.Frp.Enable),
 		fmt.Sprintf("export %s=%s", common.ENV_FRP_SERVER, i.KubeConf.Arg.Frp.Server),
