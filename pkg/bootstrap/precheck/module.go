@@ -17,6 +17,7 @@
 package precheck
 
 import (
+	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/binaries"
@@ -90,8 +91,9 @@ func (m *PreCheckOsModule) Init() {
 	}
 
 	preCheckNoConflictingContainerd := &task.LocalTask{
-		Name:   "PreCheckNoConflictingContainerd",
-		Action: new(PreCheckNoConflictingContainerd),
+		Name:    "PreCheckNoConflictingContainerd",
+		Prepare: &plugins.IsCloudInstance{Not: true},
+		Action:  new(PreCheckNoConflictingContainerd),
 	}
 
 	patchAppArmor := &task.RemoteTask{
