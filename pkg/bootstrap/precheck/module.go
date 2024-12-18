@@ -17,10 +17,12 @@
 package precheck
 
 import (
-	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"time"
 
+	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
+
 	"bytetrade.io/web3os/installer/pkg/binaries"
+	"bytetrade.io/web3os/installer/pkg/bootstrap/os"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
@@ -111,6 +113,12 @@ func (m *PreCheckOsModule) Init() {
 		Retry:    0,
 	}
 
+	pveUpdateSourceCheck := &task.LocalTask{
+		Name:    "PveAptUpdateSourceCheck",
+		Prepare: new(os.IsPve),
+		Action:  new(PveAptUpdateSourceCheck),
+	}
+
 	raspbianCheck := &task.RemoteTask{
 		Name:     "RaspbianCheck",
 		Hosts:    m.Runtime.GetAllHosts(),
@@ -140,6 +148,7 @@ func (m *PreCheckOsModule) Init() {
 		preCheckPortsBindable,
 		preCheckNoConflictingContainerd,
 		patchAppArmor,
+		pveUpdateSourceCheck,
 		raspbianCheck,
 		correctHostname,
 		disableDNS,
