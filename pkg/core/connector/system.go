@@ -68,6 +68,8 @@ type Systems interface {
 	IsDarwin() bool
 	IsWsl() bool
 	IsPve() bool
+	IsPveLxc() bool
+	IsPveOrPveLxc() bool
 	IsRaspbian() bool
 	IsLinux() bool
 
@@ -222,7 +224,15 @@ func (s *SystemInfo) IsDarwin() bool {
 }
 
 func (s *SystemInfo) IsPve() bool {
-	return strings.Contains(s.HostInfo.OsKernel, "-pve")
+	return s.HostInfo.OsPlatform == common.PVE
+}
+
+func (s *SystemInfo) IsPveLxc() bool {
+	return s.HostInfo.OsPlatform == common.PVE_LXC
+}
+
+func (s *SystemInfo) IsPveOrPveLxc() bool {
+	return s.IsPve() || s.IsPveLxc()
 }
 
 func (s *SystemInfo) IsWsl() bool {
@@ -406,6 +416,9 @@ func formatOsPlatform(osType, osPlatform, osKernel string) string {
 	}
 
 	if strings.Contains(osKernel, "pve") {
+		if lxc := os.Getenv("container"); lxc == "lxc" {
+			return common.PVE_LXC
+		}
 		return common.PVE
 	}
 

@@ -27,6 +27,7 @@ type linuxPhaseBuilder struct {
 
 func (l *linuxPhaseBuilder) base() phase {
 	m := []module.Module{
+		&os.PvePatchModule{Skip: !l.runtime.GetSystemInfo().IsPveOrPveLxc()},
 		&precheck.PreCheckOsModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,

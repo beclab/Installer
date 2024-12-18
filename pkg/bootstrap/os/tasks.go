@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -28,13 +29,66 @@ import (
 	"github.com/pkg/errors"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os/repository"
+	"bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
 	"bytetrade.io/web3os/installer/pkg/common"
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 )
 
+// pve-lxc
+type PatchLxcEnvVars struct {
+	common.KubeAction
+}
+
+func (p *PatchLxcEnvVars) Execute(runtime connector.Runtime) error {
+	var cmd = `sed -n '/export PATH=\"\/usr\/local\/bin:$PATH\"/p' ~/.bashrc`
+	if res, _ := runtime.GetRunner().Host.CmdExt(cmd, false, false); res == "" {
+		if _, err := runtime.GetRunner().Host.Cmd("echo 'export PATH=\"/usr/local/bin:$PATH\"' >> ~/.bashrc", false, false); err != nil {
+			return err
+		}
+
+		os.Setenv("PATH", "/usr/local/bin:"+os.Getenv("PATH"))
+	}
+	return nil
+}
+
+type PatchLxcInitScript struct {
+	common.KubeAction
+}
+
+func (p *PatchLxcInitScript) Execute(runtime connector.Runtime) error {
+	filePath := path.Join("/", "etc", templates.InitPveLxcTmpl.Name())
+
+	lxcPatchScriptStr, err := util.Render(templates.InitPveLxcTmpl, nil)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "render lxc patch template failed")
+	}
+
+	if err := util.WriteFile(filePath, []byte(lxcPatchScriptStr), cc.FileMode0755); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write lxc patch %s failed", filePath))
+	}
+
+	_, _ = runtime.GetRunner().Host.Cmd("/etc/rc.local", false, false)
+	return nil
+}
+
+type RemoveCNDomain struct {
+	common.KubeAction
+}
+
+func (r *RemoveCNDomain) Execute(runtime connector.Runtime) error {
+	if res, _ := runtime.GetRunner().Host.CmdExt("sed -n '/search/p' /etc/resolv.conf", false, false); res != "" {
+		if _, err := runtime.GetRunner().Host.CmdExt("sed -i '/search/d' /etc/resolv.conf", false, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// general
 type UpdateNtpDateTask struct {
 	common.KubeAction
 }

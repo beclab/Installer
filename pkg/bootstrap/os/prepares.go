@@ -85,3 +85,26 @@ func (d *DeleteNode) PreCheck(runtime connector.Runtime) (bool, error) {
 
 	return false, nil
 }
+
+type IsPveLxc struct {
+	common.KubePrepare
+}
+
+func (r *IsPveLxc) PreCheck(runtime connector.Runtime) (bool, error) {
+	if runtime.GetSystemInfo().IsPveLxc() {
+		return true, nil
+	}
+	return false, nil
+}
+
+type IsPve struct {
+	common.KubePrepare
+}
+
+func (r *IsPve) PreCheck(runtime connector.Runtime) (bool, error) {
+	sys := runtime.GetSystemInfo()
+	if sys.IsPve() {
+		return true, nil
+	}
+	return false, nil
+}

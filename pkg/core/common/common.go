@@ -82,6 +82,7 @@ const (
 	Raspbian = "raspbian"
 	WSL      = "wsl"
 	PVE      = "pve"
+	PVE_LXC  = "pve_lxc"
 
 	Ubuntu = "ubuntu"
 	Debian = "debian"
