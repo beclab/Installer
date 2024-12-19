@@ -54,7 +54,6 @@ require (
 	github.com/schollz/progressbar/v3 v3.17.1
 	github.com/shirou/gopsutil/v4 v4.24.5
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c
-	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.28.0
@@ -163,6 +162,7 @@ require (
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
@@ -196,7 +196,7 @@ require (
 )
 
 require (
-	github.com/go-logr/logr v1.4.1
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
