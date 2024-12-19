@@ -37,6 +37,22 @@ import (
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
+// pve
+type PveAptUpdateSourceCheck struct {
+	common.KubeAction
+}
+
+func (p *PveAptUpdateSourceCheck) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().Host.Cmd("apt-get update -qq", false, false); err != nil {
+
+		fmt.Printf("\n\nNOTE: \nThe PVE apt-get update has failed. Please check the source repository. \n\nIf you are a Non-Enterprise user:\n1. Disable the Enterprise Repository in the PVE Control Panel.\n2. Or remove the Enterprise Repository files located in /etc/apt/sources.list.d/.\n\n\n")
+
+		return err
+	}
+
+	return nil
+}
+
 type PreCheckSupport struct {
 	common.KubeAction
 }
