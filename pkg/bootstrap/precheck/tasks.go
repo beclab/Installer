@@ -73,7 +73,7 @@ type PreCheckPortsBindable struct {
 }
 
 func (t *PreCheckPortsBindable) Execute(runtime connector.Runtime) error {
-	ports := []int{80, 443, 444, 2444, 30180}
+	ports := []int{80, 443, 444, 2444, 9100, 30180}
 	var unbindablePorts []int
 	for _, port := range ports {
 		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
