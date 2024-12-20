@@ -233,7 +233,8 @@ const (
 	CacheJuiceFsPath     = "juicefs_binary_path"
 	CacheJuiceFsFileName = "juicefs_binary_filename"
 
-	CacheMinikubeNodeIp = "minikube_node_ip"
+	CacheMinikubeNodeIp                  = "minikube_node_ip"
+	CacheMinikubeTmpContainerdConfigFile = "minikube_tmp_containerd_config_file"
 
 	CacheAccessKey = "storage_access_key"
 	CacheSecretKey = "storage_secret_key"
