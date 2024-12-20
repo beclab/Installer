@@ -3,6 +3,9 @@ package kubesphere
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/containerd/containerd/plugin"
+	"github.com/pelletier/go-toml"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -16,14 +19,18 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
 	mk "bytetrade.io/web3os/installer/pkg/version/minikube"
+	criconfig "github.com/containerd/containerd/pkg/cri/config"
+	cdsrvconfig "github.com/containerd/containerd/services/server/config"
 	"github.com/pkg/errors"
 )
 
-type CreateTerminus struct {
+var minikubeContainerdConfigFilePath = "/etc/containerd/config.toml"
+
+type CreateMiniKubeCluster struct {
 	common.KubeAction
 }
 
-func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
+func (t *CreateMiniKubeCluster) Execute(runtime connector.Runtime) error {
 	minikube, err := util.GetCommand(common.CommandMinikube)
 	if err != nil {
 		return fmt.Errorf("Please install minikube on your machine")
@@ -32,11 +39,8 @@ func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
 	cmd := fmt.Sprintf("%s profile %s", minikube, t.KubeConf.Arg.MinikubeProfile)
 	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
 	if err != nil {
-		if !strings.Contains(stdout, "not found") {
-			return errors.Wrap(err, "failed to check minikube profile")
-		}
-
-	} else {
+		return errors.Wrap(err, "failed to check minikube profile")
+	} else if !strings.Contains(stdout, "not found") {
 		logger.Infof("found old minikube cluster %s, deleting...", t.KubeConf.Arg.MinikubeProfile)
 		cmd = fmt.Sprintf("%s delete -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
 		stdout, err = runtime.GetRunner().Host.CmdExt(cmd, false, true)
@@ -45,7 +49,7 @@ func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
 		}
 	}
 	logger.Infof("creating minikube cluster %s ...", t.KubeConf.Arg.MinikubeProfile)
-	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
+	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --container-runtime=containerd --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
 	if _, err := runtime.GetRunner().Host.CmdExt(cmd, false, true); err != nil {
 		return errors.Wrap(err, "failed to create minikube cluster")
 	}
@@ -53,20 +57,164 @@ func (t *CreateTerminus) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type CreateMinikubeModule struct {
+type GetMiniKubeContainerdConfig struct {
+	common.KubeAction
+}
+
+func (t *GetMiniKubeContainerdConfig) Execute(runtime connector.Runtime) error {
+	minikube, err := util.GetCommand(common.CommandMinikube)
+	if err != nil {
+		return fmt.Errorf("failed to get minikube command: %w", err)
+	}
+	tmpConfigFile, err := os.CreateTemp("", "minikube-containerd-config-*.toml")
+	if err != nil {
+		return fmt.Errorf("failed to create temp config file: %w", err)
+	}
+	t.ModuleCache.Set(common.CacheMinikubeTmpContainerdConfigFile, tmpConfigFile.Name())
+	cmd := fmt.Sprintf("%s ssh cat %s > %s -p %s", minikube, minikubeContainerdConfigFilePath, tmpConfigFile.Name(), t.KubeConf.Arg.MinikubeProfile)
+	_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	if err != nil {
+		return fmt.Errorf("failed to get minikube containerd config: %w", err)
+	}
+	return nil
+}
+
+type SetMirrorsToMinikubeContainerdConfig struct {
+	common.KubeAction
+}
+
+func (t *SetMirrorsToMinikubeContainerdConfig) Execute(runtime connector.Runtime) error {
+	if len(t.KubeConf.Cluster.Registry.RegistryMirrors) == 0 {
+		return nil
+	}
+	tmpConfigFilePath, ok := t.ModuleCache.GetMustString(common.CacheMinikubeTmpContainerdConfigFile)
+	if !ok || tmpConfigFilePath == "" {
+		return errors.New("failed to get minikube containerd config temp file path")
+	}
+	config := &cdsrvconfig.Config{}
+	err := cdsrvconfig.LoadConfig(tmpConfigFilePath, config)
+	if err != nil {
+		return fmt.Errorf("failed to load minikube containerd config: %w", err)
+	}
+	var filteredImports []string
+	for _, imp := range config.Imports {
+		if strings.EqualFold(imp, tmpConfigFilePath) {
+			continue
+		}
+		filteredImports = append(filteredImports, imp)
+	}
+	config.Imports = filteredImports
+
+	if config.Plugins == nil {
+		config.Plugins = make(map[string]toml.Tree)
+	}
+	criDefaultPluginConfig := criconfig.DefaultConfig()
+	criPlugin := &plugin.Registration{
+		Type:   plugin.GRPCPlugin,
+		ID:     "cri",
+		Config: &criDefaultPluginConfig,
+	}
+	criPluginConfigInterface, err := config.Decode(criPlugin)
+	if err != nil {
+		return fmt.Errorf("failed to load minikube containerd cri plugin config: %w", err)
+	}
+	criPluginConfig, ok := criPluginConfigInterface.(*criconfig.PluginConfig)
+	if !ok {
+		return fmt.Errorf("failed to load minikube containerd cri plugin config: decoded type mismatch")
+	}
+	if criPluginConfig.Registry.Mirrors == nil {
+		criPluginConfig.Registry.Mirrors = make(map[string]criconfig.Mirror)
+	}
+	registryHost := "docker.io"
+	registryMirrors := criPluginConfig.Registry.Mirrors[registryHost]
+	registryMirrors.Endpoints = append(registryMirrors.Endpoints, t.KubeConf.Cluster.Registry.RegistryMirrors...)
+	criPluginConfig.Registry.Mirrors[registryHost] = registryMirrors
+	criPluginConfigBytes, err := toml.Marshal(criPluginConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal minikube containerd cri plugin config: %w", err)
+	}
+	criPluginConfigTree, err := toml.LoadBytes(criPluginConfigBytes)
+	if err != nil {
+		return fmt.Errorf("failed to load minikube containerd cri plugin config: %w", err)
+	}
+	config.Plugins[criPlugin.URI()] = *criPluginConfigTree
+
+	tmpConfigFile, err := os.OpenFile(tmpConfigFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open minikube containerd config temp file for writing: %w", err)
+	}
+	defer tmpConfigFile.Close()
+	if err := toml.NewEncoder(tmpConfigFile).Encode(config); err != nil {
+		return fmt.Errorf("failed to write minikube containerd config temp file: %w", err)
+	}
+
+	return nil
+}
+
+type ReloadMinikubeContainerdConfig struct {
+	common.KubeAction
+}
+
+func (t *ReloadMinikubeContainerdConfig) Execute(runtime connector.Runtime) error {
+	minikube, err := util.GetCommand(common.CommandMinikube)
+	if err != nil {
+		return fmt.Errorf("failed to get minikube command: %w", err)
+	}
+	tmpConfigFilePath, ok := t.ModuleCache.GetMustString(common.CacheMinikubeTmpContainerdConfigFile)
+	if !ok || tmpConfigFilePath == "" {
+		return errors.New("failed to get minikube containerd config temp file path")
+	}
+	cmd := fmt.Sprintf("%s cp %s %s -p %s", minikube, tmpConfigFilePath, minikubeContainerdConfigFilePath, t.KubeConf.Arg.MinikubeProfile)
+	_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	if err != nil {
+		return fmt.Errorf("failed to cp back minikube containerd config: %w", err)
+	}
+
+	cmd = fmt.Sprintf("%s ssh sudo systemctl restart containerd -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
+	_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	if err != nil {
+		return fmt.Errorf("failed to restart containerd in minikube: %w", err)
+	}
+
+	if err := os.Remove(tmpConfigFilePath); err != nil {
+		logger.Warnf("failed to remove temp minikube containerd config temp file %s: %v", tmpConfigFilePath, err)
+	}
+
+	return nil
+}
+
+type CreateMinikubeClusterModule struct {
 	common.KubeModule
 }
 
-func (m *CreateMinikubeModule) Init() {
-	m.Name = "CreateMinikube"
+func (m *CreateMinikubeClusterModule) Init() {
+	m.Name = "CreateMinikubeCluster"
 
-	createTerminus := &task.LocalTask{
-		Name:   "Create",
-		Action: new(CreateTerminus),
+	createCluster := &task.LocalTask{
+		Name:   "CreateMinikubeCluster",
+		Action: new(CreateMiniKubeCluster),
+	}
+
+	getMiniKubeContainerdConfig := &task.LocalTask{
+		Name:   "GetMiniKubeContainerdConfig",
+		Action: new(GetMiniKubeContainerdConfig),
+	}
+
+	setMirrorsToMinikubeContainerdConfig := &task.LocalTask{
+		Name:   "SetMirrorsToMinikubeContainerdConfig",
+		Action: new(SetMirrorsToMinikubeContainerdConfig),
+	}
+
+	reloadMinikubeContainerdConfig := &task.LocalTask{
+		Name:   "ReloadMinikubeContainerdConfig",
+		Action: new(ReloadMinikubeContainerdConfig),
 	}
 
 	m.Tasks = []task.Interface{
-		createTerminus,
+		createCluster,
+		getMiniKubeContainerdConfig,
+		setMirrorsToMinikubeContainerdConfig,
+		reloadMinikubeContainerdConfig,
 	}
 }
 

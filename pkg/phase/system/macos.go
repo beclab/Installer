@@ -18,7 +18,7 @@ type macOsPhaseBuilder struct {
 func (m *macOsPhaseBuilder) build() []module.Module {
 	// TODO: install minikube
 	return []module.Module{
-		&kubesphere.CreateMinikubeModule{},
+		&kubesphere.CreateMinikubeClusterModule{},
 		&terminus.PreparedModule{},
 	}
 }
