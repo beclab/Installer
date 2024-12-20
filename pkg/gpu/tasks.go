@@ -309,3 +309,51 @@ func (t *InstallGPUShared) Execute(runtime connector.Runtime) error {
 
 	return nil
 }
+
+type GetCudaVersion struct {
+	common.KubeAction
+}
+
+func (g *GetCudaVersion) Execute(runtime connector.Runtime) error {
+	var nvidiaSmiFile string
+	var systemInfo = runtime.GetSystemInfo()
+
+	switch {
+	case systemInfo.IsWsl():
+		nvidiaSmiFile = "/usr/lib/wsl/lib/nvidia-smi"
+	default:
+		nvidiaSmiFile = "/usr/bin/nvidia-smi"
+	}
+
+	if !util.IsExist(nvidiaSmiFile) {
+		logger.Info("nvidia-smi not exists")
+		return nil
+	}
+
+	var cudaVersion string
+	res, err := runtime.GetRunner().Host.Cmd(fmt.Sprintf("%s --version", nvidiaSmiFile), false, true)
+	if err != nil {
+		logger.Errorf("get cuda version error %v", err)
+		return nil
+	}
+
+	lines := strings.Split(res, "\n")
+
+	if lines == nil || len(lines) == 0 {
+		return nil
+	}
+	for _, line := range lines {
+		if strings.Contains(line, "CUDA Version") {
+			parts := strings.Split(line, ":")
+			if len(parts) != 2 {
+				break
+			}
+			cudaVersion = strings.TrimSpace(parts[1])
+		}
+	}
+	if cudaVersion != "" {
+		common.TerminusGlobalEnvs["CUDA_VERSION"] = cudaVersion
+	}
+
+	return nil
+}

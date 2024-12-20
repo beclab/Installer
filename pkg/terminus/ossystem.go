@@ -1,12 +1,13 @@
 package terminus
 
 import (
-	"bytetrade.io/web3os/installer/pkg/core/logger"
-	"bytetrade.io/web3os/installer/pkg/storage"
 	"context"
 	"fmt"
 	"path"
 	"time"
+
+	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/storage"
 
 	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
