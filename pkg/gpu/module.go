@@ -198,3 +198,20 @@ func (m *InstallPluginModule) Init() {
 		installGPUShared,
 	}
 }
+
+type GetCudaVersionModule struct {
+	common.KubeModule
+}
+
+func (g *GetCudaVersionModule) Init() {
+	g.Name = "GetCudaVersion"
+
+	getCudaVersion := &task.LocalTask{
+		Name:   "GetCudaVersion",
+		Action: new(GetCudaVersion),
+	}
+
+	g.Tasks = []task.Interface{
+		getCudaVersion,
+	}
+}
