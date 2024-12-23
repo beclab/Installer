@@ -122,6 +122,12 @@ func (t *SetMirrorsToMinikubeContainerdConfig) Execute(runtime connector.Runtime
 	if !ok {
 		return fmt.Errorf("failed to load minikube containerd cri plugin config: decoded type mismatch")
 	}
+	if criPluginConfig.Registry.ConfigPath != "" {
+		// reset config path as it will mask the other options
+		// we do not set mirrors in the config path
+		// because image-service expects an explicit inline config in the Mirrors field
+		criPluginConfig.Registry.ConfigPath = ""
+	}
 	if criPluginConfig.Registry.Mirrors == nil {
 		criPluginConfig.Registry.Mirrors = make(map[string]criconfig.Mirror)
 	}
