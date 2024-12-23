@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/core/cache"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	corecommon "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -168,9 +167,12 @@ func (t *ConfigJuiceFsMetaDB) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("redis password not found")
 	}
 
-	var storageStr = getStorageTypeStr(t.PipelineCache, t.KubeConf.Arg.Storage, localIp)
-	var cmd = fmt.Sprintf("%s format %s --storage %s", JuiceFsFile, redisService, t.KubeConf.Arg.Storage.StorageType)
-	cmd = cmd + storageStr
+	storageFlags, err := getStorageFlags(t.KubeConf.Arg.Storage, localIp)
+	if err != nil {
+		return err
+	}
+	var cmd = fmt.Sprintf("%s format %s", JuiceFsFile, redisService)
+	cmd = cmd + storageFlags
 
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
@@ -194,46 +196,54 @@ func (t *CheckJuiceFsState) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func getStorageTypeStr(pc *cache.Cache, storage *common.Storage, localIp string) string {
-	var storageType = storage.StorageType
-	var formatStr string
+func getStorageFlags(storage *common.Storage, localIp string) (string, error) {
+	var storageFlags string
 	var fsName string
+	var err error
 
-	switch storageType {
-	case common.Minio:
-		formatStr = getMinioStr(pc, localIp)
-	case common.OSS, common.COS, common.S3:
-		formatStr = getCloudStr(storage)
+	switch storage.StorageType {
+	case common.ManagedMinIO:
+		storageFlags, err = getManagedMinIOAccessFlags(localIp)
+		if err != nil {
+			return "", err
+		}
+	default:
+		storageFlags = getExternalStorageAccessFlags(storage)
 	}
 
-	if storage.StorageVendor == "true" {
+	if storage.StorageVendor == "true" && storage.StorageClusterId != "" {
 		fsName = storage.StorageClusterId
 	} else {
 		fsName = "rootfs"
 	}
 
-	formatStr = formatStr + fmt.Sprintf(" %s --trash-days 0", fsName)
+	storageFlags = storageFlags + fmt.Sprintf(" %s --trash-days 0", fsName)
 
-	return formatStr
+	return storageFlags, nil
 }
 
-func getCloudStr(storage *common.Storage) string {
-
-	var str = fmt.Sprintf(" --bucket %s", storage.StorageBucket)
+func getExternalStorageAccessFlags(storage *common.Storage) string {
+	var params = fmt.Sprintf(" --storage %s --bucket %s", storage.StorageType, storage.StorageBucket)
 	if storage.StorageVendor == "true" {
 		if storage.StorageToken != "" {
-			str = str + fmt.Sprintf(" --session-token %s", storage.StorageToken)
+			params = params + fmt.Sprintf(" --session-token %s", storage.StorageToken)
 		}
 	}
-	if storage.StorageAccessKey != "" && storage.StorageSecretKey != "" {
-		str = str + fmt.Sprintf(" --access-key %s --secret-key %s", storage.StorageAccessKey, storage.StorageSecretKey)
+	if storage.StorageAccessKey != "" {
+		params = params + fmt.Sprintf(" --access-key %s", storage.StorageAccessKey)
+	}
+	if storage.StorageSecretKey != "" {
+		params = params + fmt.Sprintf(" --secret-key %s", storage.StorageSecretKey)
 	}
 
-	return str
+	return params
 }
 
-func getMinioStr(pc *cache.Cache, localIp string) string {
-	var minioPassword, _ = pc.GetMustString(common.CacheMinioPassword)
-	return fmt.Sprintf(" --bucket http://%s:9000/%s --access-key %s --secret-key %s",
-		localIp, cc.OlaresDir, MinioRootUser, minioPassword)
+func getManagedMinIOAccessFlags(localIp string) (string, error) {
+	minioPassword, err := getMinioPwdFromConfigFile()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get password of managed MinIO")
+	}
+	return fmt.Sprintf(" --storage minio --bucket http://%s:9000/%s --access-key %s --secret-key %s",
+		localIp, cc.OlaresDir, MinioRootUser, minioPassword), nil
 }

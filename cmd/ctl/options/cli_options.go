@@ -30,6 +30,7 @@ func (o *CliTerminusUninstallOptions) AddFlags(cmd *cobra.Command) {
 type CliTerminusInstallOptions struct {
 	Version         string
 	KubeType        string
+	WithJuiceFS     bool
 	MiniKubeProfile string
 	BaseDir         string
 }
@@ -41,6 +42,7 @@ func NewCliTerminusInstallOptions() *CliTerminusInstallOptions {
 func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
 	cmd.Flags().StringVar(&o.KubeType, "kube", "k3s", "Set kube type, e.g., k3s or k8s")
+	cmd.Flags().BoolVar(&o.WithJuiceFS, "with-juicefs", false, "Use JuiceFS as the rootfs for Olares workloads, rather than the local disk.")
 	cmd.Flags().StringVarP(&o.MiniKubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 }
@@ -51,7 +53,6 @@ type CliPrepareSystemOptions struct {
 	RegistryMirrors string
 	BaseDir         string
 	MinikubeProfile string
-	WithJuiceFS     bool
 }
 
 func NewCliPrepareSystemOptions() *CliPrepareSystemOptions {
@@ -64,7 +65,6 @@ func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "r", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 	cmd.Flags().StringVarP(&o.MinikubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
-	cmd.Flags().BoolVar(&o.WithJuiceFS, "with-juicefs", false, "Use JuiceFS as the rootfs for Olares workloads, rather than the local disk.")
 }
 
 type ChangeIPOptions struct {
@@ -83,4 +83,18 @@ func (o *ChangeIPOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 	cmd.Flags().StringVarP(&o.WSLDistribution, "distribution", "d", "", "Set WSL distribution name, only in Windows platform, defaults to "+common.WSLDefaultDistribution)
 	cmd.Flags().StringVarP(&o.MinikubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
+}
+
+type InstallStorageOptions struct {
+	Version string
+	BaseDir string
+}
+
+func NewInstallStorageOptions() *InstallStorageOptions {
+	return &InstallStorageOptions{}
+}
+
+func (o *InstallStorageOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 }

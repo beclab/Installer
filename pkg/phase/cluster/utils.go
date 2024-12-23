@@ -35,3 +35,16 @@ func (m backupModuleBuilder) withBackup(runtime *common.KubeRuntime) []module.Mo
 	}
 	return nil
 }
+
+type fsModuleBuilder func() []module.Module
+
+func (m fsModuleBuilder) withJuiceFS(runtime *common.KubeRuntime) []module.Module {
+	// if juicefs is enabled
+	// install redis/juicefs
+	if runtime.Arg.WithJuiceFS {
+		return m()
+	}
+	// use local fs
+	// so nothing need to be done
+	return nil
+}

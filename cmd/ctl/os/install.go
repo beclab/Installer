@@ -29,5 +29,6 @@ func NewCmdInstallOs() *cobra.Command {
 		},
 	}
 	o.InstallOptions.AddFlags(cmd)
+	cmd.AddCommand(NewCmdInstallStorage())
 	return cmd
 }

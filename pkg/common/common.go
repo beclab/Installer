@@ -159,7 +159,10 @@ const (
 	OSS   = "oss"
 	COS   = "cos"
 	S3    = "s3"
-	Minio = "minio"
+	MinIO = "minio"
+
+	//ManagedMinIO is MinIO instance that's managed by us
+	ManagedMinIO = "managed-minio"
 )
 
 var (

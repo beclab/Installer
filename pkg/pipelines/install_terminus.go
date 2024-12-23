@@ -30,7 +30,9 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
-
+	if opts.WithJuiceFS {
+		arg.WithJuiceFS = true
+	}
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
 		return fmt.Errorf("error creating runtime: %v", err)
