@@ -22,6 +22,7 @@ type UninstallPhaseString string
 const (
 	PhaseInvalid UninstallPhaseType = iota
 	PhaseInstall
+	PhaseStorage
 	PhasePrepare
 	PhaseDownload
 )
@@ -32,6 +33,8 @@ func (p UninstallPhaseType) String() string {
 		return "invalid"
 	case PhaseInstall:
 		return "install"
+	case PhaseStorage:
+		return "storage"
 	case PhasePrepare:
 		return "prepare"
 	case PhaseDownload:
@@ -48,6 +51,8 @@ func (s UninstallPhaseString) Type() UninstallPhaseType {
 	switch s.String() {
 	case PhaseInstall.String():
 		return PhaseInstall
+	case PhaseStorage.String():
+		return PhaseStorage
 	case PhasePrepare.String():
 		return PhasePrepare
 	case PhaseDownload.String():
@@ -100,6 +105,7 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 			&certs.UninstallCertsFilesModule{},
 			&storage.DeleteUserDataModule{},
 			&terminus.DeleteWizardFilesModule{},
+			&storage.RemoveJuiceFSModule{},
 			&storage.DeletePhaseFlagModule{
 				PhaseFile: common.TerminusStateFileInstalled,
 				BaseDir:   p.runtime.GetBaseDir(),
@@ -109,11 +115,17 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 	return p
 }
 
+func (p *phaseBuilder) phaseStorage() *phaseBuilder {
+	if p.convert() >= PhaseStorage {
+		p.modules = append(p.modules, &storage.RemoveStorageModule{})
+	}
+	return p
+}
+
 func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 	if p.convert() >= PhasePrepare {
 		p.modules = append(p.modules,
 			&container.DeleteZfsMountModule{},
-			&storage.RemoveStorageModule{},
 			&container.UninstallContainerModule{Skip: p.runtime.Arg.IsCloudInstance},
 			&storage.DeleteTerminusDataModule{},
 			&storage.DeletePhaseFlagModule{
@@ -175,6 +187,7 @@ func UninstallTerminus(phase string, args *common.Argument, runtime *common.Kube
 	} else {
 		builder.
 			phaseInstall().
+			phaseStorage().
 			phasePrepare().
 			phaseDownload()
 	}

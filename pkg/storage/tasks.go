@@ -268,23 +268,38 @@ func (t *StopRedis) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type RemoveTerminusFiles struct {
+type RemoveJuiceFSFiles struct {
 	common.KubeAction
 }
 
-func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
+func (t *RemoveJuiceFSFiles) Execute(runtime connector.Runtime) error {
 	var files = []string{
 		"/usr/local/bin/redis-*",
 		"/usr/bin/redis-*",
 		"/sbin/mount.juicefs",
 		"/etc/init.d/redis-server",
 		"/usr/local/bin/juicefs",
+		"/etc/systemd/system/redis-server.service",
+		"/etc/systemd/system/juicefs.service",
+	}
+
+	for _, f := range files {
+		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
+	}
+
+	return nil
+}
+
+type RemoveTerminusFiles struct {
+	common.KubeAction
+}
+
+func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
+	var files = []string{
 		"/usr/local/bin/minio",
 		"/usr/local/bin/velero",
-		"/etc/systemd/system/redis-server.service",
 		"/etc/systemd/system/minio.service",
 		"/etc/systemd/system/minio-operator.service",
-		"/etc/systemd/system/juicefs.service",
 	}
 
 	for _, f := range files {

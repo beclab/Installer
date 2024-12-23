@@ -46,30 +46,6 @@ func (l *linuxPhaseBuilder) base() phase {
 	return m
 }
 
-func (l *linuxPhaseBuilder) storage() phase {
-	return []module.Module{
-		&storage.InstallMinioModule{
-			ManifestModule: manifest.ManifestModule{
-				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
-			},
-			Skip: l.runtime.Arg.Storage.StorageType != common.Minio,
-		},
-		&storage.InstallRedisModule{
-			ManifestModule: manifest.ManifestModule{
-				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
-			},
-		},
-		&storage.InstallJuiceFsModule{
-			ManifestModule: manifest.ManifestModule{
-				Manifest: l.manifestMap,
-				BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
-			},
-		},
-	}
-}
-
 func (l *linuxPhaseBuilder) installContainerModule() []module.Module {
 	var isK3s = strings.Contains(l.runtime.Arg.KubernetesVersion, "k3s")
 	if isK3s {
@@ -101,10 +77,6 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				&storage.InitStorageModule{Skip: !l.runtime.Arg.IsCloudInstance},
 			}
 		}).withCloud(l.runtime)...).
-		addModule(storageModuleBuilder(func() []module.Module {
-			return l.storage()
-
-		}).withJuiceFS(l.runtime)...).
 		addModule(cloudModuleBuilder(l.installContainerModule).withoutCloud(l.runtime)...).
 		addModule(cloudModuleBuilder(func() []module.Module {
 			// unitl now, system ready

@@ -6,6 +6,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/gpu"
 	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
 	"bytetrade.io/web3os/installer/pkg/manifest"
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
@@ -22,6 +23,23 @@ func (l *linuxInstallPhaseBuilder) base() phase {
 	}
 
 	return m
+}
+
+func (l *linuxInstallPhaseBuilder) storage() phase {
+	return []module.Module{
+		&storage.InstallRedisModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: l.manifestMap,
+				BaseDir:  l.runtime.GetBaseDir(),
+			},
+		},
+		&storage.InstallJuiceFsModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: l.manifestMap,
+				BaseDir:  l.runtime.GetBaseDir(),
+			},
+		},
+	}
 }
 
 func (l *linuxInstallPhaseBuilder) installCluster() phase {
@@ -69,6 +87,9 @@ func (l *linuxInstallPhaseBuilder) installBackup() phase {
 
 func (l *linuxInstallPhaseBuilder) build() []module.Module {
 	return l.base().
+		addModule(fsModuleBuilder(func() []module.Module {
+			return l.storage()
+		}).withJuiceFS(l.runtime)...).
 		addModule(l.installCluster()...).
 		addModule(gpuModuleBuilder(func() []module.Module {
 			return l.installGpuPlugin()

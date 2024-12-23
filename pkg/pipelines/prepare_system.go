@@ -28,9 +28,6 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetTokenMaxAge()
 	arg.SetReverseProxy()
-	if opts.WithJuiceFS {
-		arg.WithJuiceFS = true
-	}
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)
 	if err != nil {
@@ -50,11 +47,10 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 }
 
 func getStorageValueFromEnv() *common.Storage {
-	storageType := os.Getenv("STORAGE")
+	storageType := os.Getenv(common.ENV_STORAGE)
 	switch storageType {
-	case common.S3, common.OSS, common.COS:
-	default:
-		storageType = common.Minio
+	case "":
+		storageType = common.ManagedMinIO
 	}
 
 	return &common.Storage{

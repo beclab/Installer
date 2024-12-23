@@ -181,7 +181,7 @@ func NewArgument() *Argument {
 		SystemInfo:       connector.GetSystemInfo(),
 		IsCloudInstance:  strings.EqualFold(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION), TRUE),
 		Storage: &Storage{
-			StorageType: Minio,
+			StorageType: ManagedMinIO,
 		},
 		GPU: &GPU{
 			Enable: strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "1"),
