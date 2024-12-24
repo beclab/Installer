@@ -57,6 +57,37 @@ func (t *CreateMiniKubeCluster) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type RetagMinikubeKubeImages struct {
+	common.KubeAction
+}
+
+func (t *RetagMinikubeKubeImages) Execute(runtime connector.Runtime) error {
+	legacyKubeImageRepo := "k8s.gcr.io"
+	newKubeImageRepo := "registry.k8s.io"
+	minikube, err := util.GetCommand(common.CommandMinikube)
+	if err != nil {
+		return fmt.Errorf("Please install minikube on your machine")
+	}
+
+	cmd := fmt.Sprintf("%s image ls -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
+	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to check list minikube images")
+	}
+	images := strings.Split(stdout, "\n")
+	for _, image := range images {
+		if strings.HasPrefix(image, legacyKubeImageRepo) {
+			newTag := strings.ReplaceAll(image, legacyKubeImageRepo, newKubeImageRepo)
+			cmd = fmt.Sprintf("%s image tag %s %s -p %s", minikube, image, newTag, t.KubeConf.Arg.MinikubeProfile)
+			_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+			if err != nil {
+				return errors.Wrap(err, "failed to retag minikube images")
+			}
+		}
+	}
+	return nil
+}
+
 type GetMiniKubeContainerdConfig struct {
 	common.KubeAction
 }
@@ -201,6 +232,11 @@ func (m *CreateMinikubeClusterModule) Init() {
 		Action: new(CreateMiniKubeCluster),
 	}
 
+	retagMinikubeKubeImages := &task.LocalTask{
+		Name:   "RetagMinikubeKubeImages",
+		Action: new(RetagMinikubeKubeImages),
+	}
+
 	getMiniKubeContainerdConfig := &task.LocalTask{
 		Name:   "GetMiniKubeContainerdConfig",
 		Action: new(GetMiniKubeContainerdConfig),
@@ -218,6 +254,7 @@ func (m *CreateMinikubeClusterModule) Init() {
 
 	m.Tasks = []task.Interface{
 		createCluster,
+		retagMinikubeKubeImages,
 		getMiniKubeContainerdConfig,
 		setMirrorsToMinikubeContainerdConfig,
 		reloadMinikubeContainerdConfig,
