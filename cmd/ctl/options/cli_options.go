@@ -85,6 +85,20 @@ func (o *ChangeIPOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.MinikubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
 }
 
+type PreCheckOptions struct {
+	Version string
+	BaseDir string
+}
+
+func NewPreCheckOptions() *PreCheckOptions {
+	return &PreCheckOptions{}
+}
+
+func (o *PreCheckOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+}
+
 type InstallStorageOptions struct {
 	Version string
 	BaseDir string

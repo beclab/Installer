@@ -19,10 +19,6 @@ package precheck
 import (
 	"time"
 
-	"bytetrade.io/web3os/installer/pkg/kubesphere/plugins"
-
-	"bytetrade.io/web3os/installer/pkg/binaries"
-	"bytetrade.io/web3os/installer/pkg/bootstrap/os"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
@@ -74,84 +70,29 @@ type GetKubeVersionModule struct {
 	module.BaseTaskModule
 }
 
-type PreCheckOsModule struct {
+type RunPrechecksModule struct {
 	common.KubeModule
 	manifest.ManifestModule
 }
 
-func (m *PreCheckOsModule) Init() {
-	m.Name = "PreCheckOs"
+func (m *RunPrechecksModule) Init() {
+	m.Name = "RunPrechecks"
 
-	preCheckSupport := &task.LocalTask{
-		Name:   "PreCheckSupport",
-		Action: new(PreCheckSupport),
+	checkers := []Checker{
+		new(SystemSupportCheck),
+		new(SystemdCheck),
+		new(RequiredPortsCheck),
+		new(ConflictingContainerdCheck),
 	}
-
-	preCheckPortsBindable := &task.LocalTask{
-		Name:   "PreCheckPortsBindable",
-		Action: new(PreCheckPortsBindable),
-	}
-
-	preCheckNoConflictingContainerd := &task.LocalTask{
-		Name:    "PreCheckNoConflictingContainerd",
-		Prepare: &plugins.IsCloudInstance{Not: true},
-		Action:  new(PreCheckNoConflictingContainerd),
-	}
-
-	patchAppArmor := &task.RemoteTask{
-		Name:  "PatchAppArmor",
-		Hosts: m.Runtime.GetAllHosts(),
-		Prepare: &prepare.PrepareCollection{
-			&binaries.Ubuntu24AppArmorCheck{},
+	runPreChecks := &task.LocalTask{
+		Name: "RunPrechecks",
+		Action: &RunChecks{
+			Checkers: checkers,
 		},
-		Action: &binaries.InstallAppArmorTask{
-			ManifestAction: manifest.ManifestAction{
-				BaseDir:  m.BaseDir,
-				Manifest: m.Manifest},
-		},
-		Parallel: false,
-		Retry:    0,
-	}
-
-	pveUpdateSourceCheck := &task.LocalTask{
-		Name:    "PveAptUpdateSourceCheck",
-		Prepare: new(os.IsPve),
-		Action:  new(PveAptUpdateSourceCheck),
-	}
-
-	raspbianCheck := &task.RemoteTask{
-		Name:     "RaspbianCheck",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(RaspbianCheckTask),
-		Parallel: false,
-		Retry:    0,
-	}
-
-	correctHostname := &task.RemoteTask{
-		Name:     "CorrectHostname",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(CorrectHostname),
-		Parallel: false,
-		Retry:    0,
-	}
-
-	disableDNS := &task.RemoteTask{
-		Name:     "DisableLocalDNS",
-		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(DisableLocalDNSTask),
-		Parallel: false,
-		Retry:    0,
 	}
 
 	m.Tasks = []task.Interface{
-		preCheckSupport,
-		preCheckPortsBindable,
-		preCheckNoConflictingContainerd,
-		patchAppArmor,
-		pveUpdateSourceCheck,
-		raspbianCheck,
-		correctHostname,
-		disableDNS,
+		runPreChecks,
 	}
 }
 

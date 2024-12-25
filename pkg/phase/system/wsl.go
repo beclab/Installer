@@ -30,7 +30,7 @@ type wslPhaseBuilder struct {
 
 func (l *wslPhaseBuilder) base() phase {
 	return []module.Module{
-		&precheck.PreCheckOsModule{
+		&precheck.RunPrechecksModule{
 			ManifestModule: manifest.ManifestModule{
 				Manifest: l.manifestMap,
 				BaseDir:  l.baseDir,

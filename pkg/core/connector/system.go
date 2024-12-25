@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -62,7 +61,6 @@ const (
 
 type Systems interface {
 	IsSupport() error
-	IsLocalIpValid() error
 
 	IsWindows() bool
 	IsDarwin() bool
@@ -119,12 +117,12 @@ type SystemInfo struct {
 }
 
 func (s *SystemInfo) IsSupport() error {
-	if !s.IsLinux() && !s.IsDarwin() {
-		return fmt.Errorf("unsupported os type '%s', exit ...", s.GetOsType())
+	if !s.IsLinux() && !s.IsDarwin() && !s.IsWindows() {
+		return fmt.Errorf("unsupported os type '%s'", s.GetOsType())
 	}
 
 	if s.IsOsArchInvalid() {
-		return fmt.Errorf("unsupported arch '%s', exit ...", s.GetOsArch())
+		return fmt.Errorf("unsupported arch '%s'", s.GetOsArch())
 	}
 
 	//if !s.IsUbuntu() && !s.IsDebian() {
@@ -133,34 +131,17 @@ func (s *SystemInfo) IsSupport() error {
 
 	if s.IsUbuntu() {
 		if !s.IsUbuntuVersionEqual(Ubuntu20) && !s.IsUbuntuVersionEqual(Ubuntu22) && !s.IsUbuntuVersionEqual(Ubuntu24) {
-			return fmt.Errorf("unsupported ubuntu os version '%s', exit ...", s.GetOsVersion())
+			return fmt.Errorf("unsupported ubuntu os version '%s'", s.GetOsVersion())
 		}
 	}
 
 	if s.IsDebian() {
 		if !s.IsDebianVersionEqual(Debian11) && !s.IsDebianVersionEqual(Debian12) {
-			return fmt.Errorf("unsupported debian os version '%s', exit ...", s.GetOsVersion())
+			return fmt.Errorf("unsupported debian os version '%s'", s.GetOsVersion())
 		}
 	}
 
 	return nil
-}
-
-func (s *SystemInfo) IsLocalIpValid() error {
-	ip := net.ParseIP(s.LocalIp)
-	if ip == nil {
-		return fmt.Errorf("invalid local ip %s", s.LocalIp)
-	}
-
-	if ip4 := ip.To4(); ip4 == nil {
-		return fmt.Errorf("invalid local ip %s", s.LocalIp)
-	}
-	switch s.LocalIp {
-	case "", "172.17.0.1", "127.0.0.1", "127.0.1.1":
-		return fmt.Errorf("incorrect ip %s for hostname %s, please check", s.LocalIp, s.HostInfo.HostName)
-	default:
-		return nil
-	}
 }
 
 func (s *SystemInfo) GetLocalIp() string {

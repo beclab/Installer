@@ -46,6 +46,12 @@ func (p *PvePatchModule) Init() {
 		Retry:   1,
 	}
 
+	pveUpdateSourceCheck := &task.LocalTask{
+		Name:    "PveAptUpdateSourceCheck",
+		Prepare: new(IsPve),
+		Action:  new(PveAptUpdateSourceCheck),
+	}
+
 	patchLxcInitScript := &task.LocalTask{
 		Name:    "PatchLxcInitScript",
 		Action:  new(PatchLxcInitScript),
@@ -62,6 +68,7 @@ func (p *PvePatchModule) Init() {
 
 	p.Tasks = []task.Interface{
 		removePveCNDomain,
+		pveUpdateSourceCheck,
 		patchLxcInitScript,
 		patchLxcEnvVars,
 	}

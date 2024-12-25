@@ -17,6 +17,7 @@
 package precheck
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net"
@@ -30,49 +31,58 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"bytetrade.io/web3os/installer/pkg/utils"
 	"bytetrade.io/web3os/installer/pkg/version/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"github.com/pkg/errors"
 	versionutil "k8s.io/apimachinery/pkg/util/version"
 )
 
-// pve
-type PveAptUpdateSourceCheck struct {
+type RunChecks struct {
 	common.KubeAction
+	Checkers []Checker
 }
 
-func (p *PveAptUpdateSourceCheck) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.Cmd("apt-get update -qq", false, false); err != nil {
+type Checker interface {
+	Name() string
+	Check(runtime connector.Runtime) error
+}
 
-		fmt.Printf("\n\nNOTE: \nThe PVE apt-get update has failed. Please check the source repository. \n\nIf you are a Non-Enterprise user:\n1. Disable the Enterprise Repository in the PVE Control Panel.\n2. Or remove the Enterprise Repository files located in /etc/apt/sources.list.d/.\n\n\n")
-
-		return err
+func (t *RunChecks) Execute(runtime connector.Runtime) error {
+	var errBuffer bytes.Buffer
+	for _, checker := range t.Checkers {
+		if err := checker.Check(runtime); err != nil {
+			errBuffer.WriteString(
+				fmt.Sprintf("[%s] %v\n", checker.Name(), err),
+			)
+		}
 	}
-
-	return nil
-}
-
-type PreCheckSupport struct {
-	common.KubeAction
-}
-
-func (t *PreCheckSupport) Execute(runtime connector.Runtime) error {
-	si := runtime.GetSystemInfo()
-	if err := si.IsSupport(); err != nil {
-		return err
-	}
-	if err := si.IsLocalIpValid(); err != nil {
-		return err
+	if errBuffer.Len() > 0 {
+		logger.Errorf("Some checks have failed:\n%s", errBuffer.String())
+		os.Exit(1)
 	}
 	return nil
 }
 
-type PreCheckPortsBindable struct {
-	common.KubeAction
+type SystemSupportCheck struct{}
+
+func (t *SystemSupportCheck) Name() string {
+	return "System"
 }
 
-func (t *PreCheckPortsBindable) Execute(runtime connector.Runtime) error {
+func (t *SystemSupportCheck) Check(runtime connector.Runtime) error {
+	return runtime.GetSystemInfo().IsSupport()
+}
+
+type RequiredPortsCheck struct{}
+
+func (t *RequiredPortsCheck) Name() string {
+	return "Ports"
+}
+
+func (t *RequiredPortsCheck) Check(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsLinux() {
+		return nil
+	}
 	ports := []int{80, 443, 444, 2444, 9100, 30180}
 	var unbindablePorts []int
 	for _, port := range ports {
@@ -84,172 +94,50 @@ func (t *PreCheckPortsBindable) Execute(runtime connector.Runtime) error {
 		defer l.Close()
 	}
 	if len(unbindablePorts) > 0 {
-		return fmt.Errorf("port(s): %v are required but unbindable", unbindablePorts)
+		return fmt.Errorf("port %v required by Olares cannot be bound", unbindablePorts)
 	}
 	return nil
 }
 
-type PreCheckNoConflictingContainerd struct {
-	common.KubeAction
+type ConflictingContainerdCheck struct{}
+
+func (t *ConflictingContainerdCheck) Name() string {
+	return "Containerd"
 }
 
-func (t *PreCheckNoConflictingContainerd) Execute(runtime connector.Runtime) error {
+func (t *ConflictingContainerdCheck) Check(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsLinux() {
+		return nil
+	}
+	kubeRuntime := runtime.(*common.KubeRuntime)
+	if kubeRuntime.Arg.IsCloudInstance {
+		return nil
+	}
 	containerdBin, err := util.GetCommand("containerd")
 	if err == nil && containerdBin != "" {
-		return fmt.Errorf("found existing containerd binary: %s, please uninstall containerd first to avoid conflicts", containerdBin)
+		return fmt.Errorf("found existing containerd binary: %s, a containerd managed by Olares is required to ensure normal function", containerdBin)
 	}
 	containerdSocket := "/run/containerd/containerd.sock"
 	if util.IsExist(containerdSocket) {
-		return fmt.Errorf("detected existing containerd socket: %s, please uninstall containerd first to avoid conflicts", containerdSocket)
+		return fmt.Errorf("found existing containerd socket: %s, a containerd managed by Olares is required to ensure normal function", containerdSocket)
 	}
 	return nil
 }
 
-type CorrectHostname struct {
-	common.KubeAction
+type SystemdCheck struct{}
+
+func (t *SystemdCheck) Name() string {
+	return "Systemd"
 }
 
-func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
-	hostName := runtime.GetSystemInfo().GetHostname()
-	if !utils.ContainsUppercase(hostName) {
+func (t *SystemdCheck) Check(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsLinux() {
 		return nil
 	}
-	hostname := strings.ToLower(hostName)
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, false); err != nil {
-		return err
+	if util.IsExist("/run/systemd/system") {
+		return nil
 	}
-	runtime.GetSystemInfo().SetHostname(hostname)
-	return nil
-}
-
-type RaspbianCheckTask struct {
-	common.KubeAction
-}
-
-func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
-	// if util.IsExist(common.RaspbianCmdlineFile) || util.IsExist(common.RaspbianFirmwareFile) {
-	systemInfo := runtime.GetSystemInfo()
-	if systemInfo.IsRaspbian() {
-		if _, err := util.GetCommand(common.CommandIptables); err != nil {
-			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
-			if err != nil {
-				logger.Errorf("%s install iptables error %v", common.Raspbian, err)
-				return err
-			}
-
-			_, err = runtime.GetRunner().Host.Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
-			if err != nil {
-				logger.Errorf("%s exec error %v", common.Raspbian, err)
-				return err
-			}
-
-			_, err = runtime.GetRunner().Host.Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
-			if err != nil {
-				logger.Errorf("%s exec error %v", common.Raspbian, err)
-				return err
-			}
-
-			if !systemInfo.CgroupCpuEnabled() || !systemInfo.CgroupMemoryEnabled() {
-				return fmt.Errorf("cpu or memory cgroups disabled, please edit /boot/cmdline.txt or /boot/firmware/cmdline.txt and reboot to enable it")
-			}
-		}
-	}
-	return nil
-}
-
-type DisableLocalDNSTask struct {
-	common.KubeAction
-}
-
-func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
-	switch runtime.GetSystemInfo().GetOsPlatformFamily() {
-	case common.Ubuntu, common.Debian:
-		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
-		if stdout != "active" {
-			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
-			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl disable systemd-resolved.service", false, true)
-
-			if utils.IsExist("/usr/bin/systemd-resolve") {
-				_, _ = runtime.GetRunner().Host.SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
-			}
-			ok, err := utils.IsSymLink("/etc/resolv.conf")
-			if err != nil {
-				logger.Errorf("check /etc/resolv.conf error %v", err)
-				return err
-			}
-			if ok {
-				if _, err := runtime.GetRunner().Host.SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
-					logger.Errorf("unlink /etc/resolv.conf error %v", err)
-					return err
-				}
-			}
-
-			if err = ConfigResolvConf(runtime); err != nil {
-				logger.Errorf("config /etc/resolv.conf error %v", err)
-				return err
-			}
-		} else {
-			if _, err := runtime.GetRunner().Host.SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
-				logger.Errorf("backup /etc/resolv.conf error %v", err)
-				return err
-			}
-		}
-	}
-
-	sysInfo := runtime.GetSystemInfo()
-	localIp := sysInfo.GetLocalIp()
-	hostname := sysInfo.GetHostname()
-	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
-			return errors.Wrap(err, "failed to set hostname mapping")
-		}
-	}
-
-	httpCode, _ := utils.GetHttpStatus("https://download.docker.com/linux/ubuntu")
-	if httpCode != 200 {
-		if err := ConfigResolvConf(runtime); err != nil {
-			logger.Errorf("config /etc/resolv.conf error %v", err)
-			return err
-		}
-		if utils.IsExist("/etc/resolv.conf.bak") {
-			if err := utils.DeleteFile("/etc/resolv.conf.bak"); err != nil {
-				logger.Errorf("remove /etc/resolv.conf.bak error %v", err)
-				return err
-			}
-		}
-	}
-
-	if runtime.GetSystemInfo().IsWsl() {
-		_, _ = runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, false)
-	}
-
-	return nil
-}
-
-func ConfigResolvConf(runtime connector.Runtime) error {
-	var err error
-	var cmd string
-
-	if common.CloudVendor == common.CloudVendorAliYun {
-		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
-		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
-			logger.Errorf("exec %s error %v", cmd, err)
-			return err
-		}
-	}
-
-	cmd = `echo "nameserver 1.0.0.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
-		logger.Errorf("exec %s error %v", cmd, err)
-		return err
-	}
-
-	cmd = `echo "nameserver 1.1.1.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
-		logger.Errorf("exec %s error %v", cmd, err)
-		return err
-	}
-	return nil
+	return errors.New("this system is not inited by systemd, which is required by Olares")
 }
 
 type GreetingsTask struct {
