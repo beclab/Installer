@@ -15,6 +15,7 @@ func NewCmdOs() *cobra.Command {
 	_ = exec.Command("/bin/bash", "-c", "ulimit -u 65535").Run()
 	_ = exec.Command("/bin/bash", "-c", "ulimit -n 65535").Run()
 
+	rootOsCmd.AddCommand(NewCmdPrecheck())
 	rootOsCmd.AddCommand(NewCmdRootDownload())
 	rootOsCmd.AddCommand(NewCmdPrepare())
 	rootOsCmd.AddCommand(NewCmdInstallOs())

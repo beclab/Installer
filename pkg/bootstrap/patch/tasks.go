@@ -1,8 +1,11 @@
 package patch
 
 import (
+	"bytetrade.io/web3os/installer/pkg/utils"
 	"fmt"
+	"github.com/pkg/errors"
 	"path"
+	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/binaries"
@@ -206,5 +209,152 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
+	return nil
+}
+
+type CorrectHostname struct {
+	common.KubeAction
+}
+
+func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
+	hostName := runtime.GetSystemInfo().GetHostname()
+	if !utils.ContainsUppercase(hostName) {
+		return nil
+	}
+	hostname := strings.ToLower(hostName)
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, false); err != nil {
+		return err
+	}
+	runtime.GetSystemInfo().SetHostname(hostname)
+	return nil
+}
+
+type RaspbianCheckTask struct {
+	common.KubeAction
+}
+
+func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
+	// if util.IsExist(common.RaspbianCmdlineFile) || util.IsExist(common.RaspbianFirmwareFile) {
+	systemInfo := runtime.GetSystemInfo()
+	if systemInfo.IsRaspbian() {
+		if _, err := util.GetCommand(common.CommandIptables); err != nil {
+			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
+			if err != nil {
+				logger.Errorf("%s install iptables error %v", common.Raspbian, err)
+				return err
+			}
+
+			_, err = runtime.GetRunner().Host.Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
+			if err != nil {
+				logger.Errorf("%s exec error %v", common.Raspbian, err)
+				return err
+			}
+
+			_, err = runtime.GetRunner().Host.Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
+			if err != nil {
+				logger.Errorf("%s exec error %v", common.Raspbian, err)
+				return err
+			}
+
+			if !systemInfo.CgroupCpuEnabled() || !systemInfo.CgroupMemoryEnabled() {
+				return fmt.Errorf("cpu or memory cgroups disabled, please edit /boot/cmdline.txt or /boot/firmware/cmdline.txt and reboot to enable it")
+			}
+		}
+	}
+	return nil
+}
+
+type DisableLocalDNSTask struct {
+	common.KubeAction
+}
+
+func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
+	switch runtime.GetSystemInfo().GetOsPlatformFamily() {
+	case common.Ubuntu, common.Debian:
+		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
+		if stdout != "active" {
+			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
+			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl disable systemd-resolved.service", false, true)
+
+			if utils.IsExist("/usr/bin/systemd-resolve") {
+				_, _ = runtime.GetRunner().Host.SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
+			}
+			ok, err := utils.IsSymLink("/etc/resolv.conf")
+			if err != nil {
+				logger.Errorf("check /etc/resolv.conf error %v", err)
+				return err
+			}
+			if ok {
+				if _, err := runtime.GetRunner().Host.SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
+					logger.Errorf("unlink /etc/resolv.conf error %v", err)
+					return err
+				}
+			}
+
+			if err = ConfigResolvConf(runtime); err != nil {
+				logger.Errorf("config /etc/resolv.conf error %v", err)
+				return err
+			}
+		} else {
+			if _, err := runtime.GetRunner().Host.SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
+				logger.Errorf("backup /etc/resolv.conf error %v", err)
+				return err
+			}
+		}
+	}
+
+	sysInfo := runtime.GetSystemInfo()
+	localIp := sysInfo.GetLocalIp()
+	hostname := sysInfo.GetHostname()
+	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
+		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
+			return errors.Wrap(err, "failed to set hostname mapping")
+		}
+	}
+
+	httpCode, _ := utils.GetHttpStatus("https://download.docker.com/linux/ubuntu")
+	if httpCode != 200 {
+		if err := ConfigResolvConf(runtime); err != nil {
+			logger.Errorf("config /etc/resolv.conf error %v", err)
+			return err
+		}
+		if utils.IsExist("/etc/resolv.conf.bak") {
+			if err := utils.DeleteFile("/etc/resolv.conf.bak"); err != nil {
+				logger.Errorf("remove /etc/resolv.conf.bak error %v", err)
+				return err
+			}
+		}
+	}
+
+	if runtime.GetSystemInfo().IsWsl() {
+		_, _ = runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, false)
+	}
+
+	return nil
+}
+
+func ConfigResolvConf(runtime connector.Runtime) error {
+	var err error
+	var cmd string
+
+	if common.CloudVendor == common.CloudVendorAliYun {
+		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
+		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+			logger.Errorf("exec %s error %v", cmd, err)
+			return err
+		}
+	}
+
+	cmd = `echo "nameserver 1.0.0.1" >> /etc/resolv.conf`
+	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		logger.Errorf("exec %s error %v", cmd, err)
+		return err
+	}
+
+	cmd = `echo "nameserver 1.1.1.1" >> /etc/resolv.conf`
+	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		logger.Errorf("exec %s error %v", cmd, err)
+		return err
+	}
 	return nil
 }
