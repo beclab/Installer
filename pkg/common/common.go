@@ -284,6 +284,7 @@ const (
 	ENV_HOST_IP                     = "HOST_IP"
 	ENV_PREINSTALL                  = "PREINSTALL"
 	ENV_DISABLE_HOST_IP_PROMPT      = "DISABLE_HOST_IP_PROMPT"
+	ENV_AUTO_ADD_FIREWALL_RULES     = "AUTO_ADD_FIREWALL_RULES"
 )
 
 // TerminusGlobalEnvs holds a group of general environment variables
