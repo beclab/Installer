@@ -68,10 +68,16 @@ func (c *ConfigWslModule) Init() {
 		Action: &ConfigWSLHostsAndDns{},
 	}
 
+	configWindowsFirewallRule := &task.LocalTask{
+		Name:   "ConfigFirewallRule",
+		Action: &ConfigWindowsFirewallRule{},
+	}
+
 	c.Tasks = []task.Interface{
 		configWslConf,
 		configWSLForwardRules,
 		configWSLHostsAndDns,
+		configWindowsFirewallRule,
 	}
 }
 
@@ -99,6 +105,14 @@ func (u *UninstallOlaresModule) Init() {
 		&task.LocalTask{
 			Name:   "UninstallOlares",
 			Action: &UninstallOlares{},
+		},
+		&task.LocalTask{
+			Name:   "RemoveFirewallRule",
+			Action: &RemoveFirewallRule{},
+		},
+		&task.LocalTask{
+			Name:   "RemovePortProxy",
+			Action: &RemovePortProxy{},
 		},
 	}
 }
