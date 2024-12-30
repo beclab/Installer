@@ -186,8 +186,8 @@ func NewArgument() *Argument {
 			StorageType: ManagedMinIO,
 		},
 		GPU: &GPU{
-			Enable: strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "1"),
-			Share:  strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_SHARE), "1"),
+			Enable: !strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "0"), // default enable GPU, not set or 1 means enable
+			Share:  !strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "0"), // default share GPU
 		},
 		Cloudflare:             &Cloudflare{},
 		Frp:                    &Frp{},
