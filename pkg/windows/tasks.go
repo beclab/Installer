@@ -1,6 +1,7 @@
 package windows
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,6 +23,8 @@ const (
 	windowsAppPath = "AppData\\Local\\Microsoft\\WindowsApps"
 	// ubuntu22exe    = "ubuntu2204.exe"
 	ubuntuexe = "ubuntu.exe"
+
+	OLARES_WINDOWS_FIREWALL_RULE_NAME = "OlaresRule"
 )
 
 var ubuntuTool string
@@ -245,6 +248,64 @@ func (c *ConfigWSLHostsAndDns) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type ConfigWindowsFirewallRule struct {
+	common.KubeAction
+}
+
+func (c *ConfigWindowsFirewallRule) Execute(runtime connector.Runtime) error {
+	var setFirewallRule bool = false
+	var autoSetFirewallRule = os.Getenv(common.ENV_AUTO_ADD_FIREWALL_RULES)
+	autoSetFirewallRule = strings.TrimSpace(autoSetFirewallRule)
+
+	switch {
+	case autoSetFirewallRule != "":
+		setFirewallRule = true
+		break
+	default:
+		scanner := bufio.NewScanner(os.Stdin)
+
+		for {
+			fmt.Print("\nAccessing Olares requires setting up firewall rules, specifically adding TCP inbound rules for ports 80, 443, and 30180.\nDo you want to set up the firewall rules? (yes/no): ")
+			scanner.Scan()
+			confirmation := scanner.Text()
+			confirmation = strings.TrimSpace(confirmation)
+			confirmation = strings.ToLower(confirmation)
+
+			switch confirmation {
+			case "y", "yes":
+				setFirewallRule = true
+				break
+			case "n", "no":
+				break
+			default:
+				continue
+			}
+			break
+		}
+	}
+
+	if !setFirewallRule {
+		fmt.Printf("\nFirewall settings have been skipped. \nIf you want to access the Olares application, please go to the Windows Defender Firewall rules and add an inbound rule for TCP protocol with port numbers 80, 443, and 30180.\n\n\n")
+		return nil
+	}
+
+	var ps = &utils.PowerShellCommandExecutor{
+		Commands: []string{fmt.Sprintf("Get-NetFirewallRule | Where-Object { $_.DisplayName -eq \"%s\" -and $_.Enabled -eq 'True'} | Get-NetFirewallPortFilter | Where-Object { $_.LocalPort -eq 80 -and $_.LocalPort -eq 443 -and $_.LocalPort -eq 30180 -and $_.Protocol -eq 'TCP' } ", OLARES_WINDOWS_FIREWALL_RULE_NAME)},
+	}
+	rules, _ := ps.Run()
+	rules = strings.TrimSpace(rules)
+	if rules == "" {
+		ps = &utils.PowerShellCommandExecutor{
+			Commands: []string{fmt.Sprintf("New-NetFirewallRule -DisplayName \"%s\" -Direction Inbound -Protocol TCP -LocalPort 80,443,30180 -Action Allow", OLARES_WINDOWS_FIREWALL_RULE_NAME)},
+		}
+		if _, err := ps.Run(); err != nil {
+			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config windows firewall rule %s failed", OLARES_WINDOWS_FIREWALL_RULE_NAME))
+		}
+	}
+
+	return nil
+}
+
 type InstallTerminus struct {
 	common.KubeAction
 }
@@ -318,6 +379,32 @@ func (u *UninstallOlares) Execute(runtime connector.Runtime) error {
 		Commands: []string{"wsl", "--unregister", "Ubuntu"},
 	}
 	_, _ = cmd.Run()
+
+	return nil
+}
+
+type RemoveFirewallRule struct {
+	common.KubeAction
+}
+
+func (r *RemoveFirewallRule) Execute(runtime connector.Runtime) error {
+	(&utils.PowerShellCommandExecutor{
+		Commands: []string{fmt.Sprintf("Remove-NetFirewallRule -DisplayName \"%s\"", OLARES_WINDOWS_FIREWALL_RULE_NAME)},
+	}).Run()
+
+	return nil
+}
+
+type RemovePortProxy struct {
+	common.KubeAction
+}
+
+func (r *RemovePortProxy) Execute(runtime connector.Runtime) error {
+	var ports = []string{"80", "443", "30180"}
+	for _, port := range ports {
+		(&utils.DefaultCommandExecutor{
+			Commands: []string{fmt.Sprintf("netsh interface portproxy delete v4tov4 listenport=%s listenaddress=0.0.0.0", port)}}).Run()
+	}
 
 	return nil
 }
