@@ -120,6 +120,8 @@ type Argument struct {
 	ConsoleLogFileName string   `json:"console_log_file_name"`
 	ConsoleLogTruncate bool     `json:"console_log_truncate"`
 	HostIP             string   `json:"host_ip"`
+
+	CudaVersion string `json:"cuda_version"`
 }
 
 type PublicNetworkInfo struct {
@@ -344,6 +346,13 @@ func (a *Argument) SetBaseDir(dir string) {
 		if dir != "" {
 			a.BaseDir = dir
 		}
+	}
+}
+
+func (a *Argument) SetCudaVersion(cudaVersion string) {
+	a.CudaVersion = DefaultCudaVersion
+	if cudaVersion != "" {
+		a.CudaVersion = cudaVersion
 	}
 }
 

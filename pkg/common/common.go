@@ -26,6 +26,7 @@ const (
 	DefaultKubernetesVersion = ""
 	DefaultKubeSphereVersion = "v3.3.0"
 	DefaultTokenMaxAge       = 31536000
+	DefaultCudaVersion       = "12.4"
 )
 
 const (

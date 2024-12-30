@@ -3,10 +3,12 @@ package gpu
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
+	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -14,7 +16,15 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	k3sGpuTemplates "bytetrade.io/web3os/installer/pkg/gpu/templates"
 	"bytetrade.io/web3os/installer/pkg/manifest"
+	"bytetrade.io/web3os/installer/pkg/utils"
+	criconfig "github.com/containerd/containerd/pkg/cri/config"
+	cdsrvconfig "github.com/containerd/containerd/services/server/config"
+	"github.com/pelletier/go-toml"
+
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 )
 
 type CheckWslGPU struct {
@@ -353,6 +363,286 @@ func (g *GetCudaVersion) Execute(runtime connector.Runtime) error {
 	}
 	if cudaVersion != "" {
 		common.TerminusGlobalEnvs["CUDA_VERSION"] = cudaVersion
+	}
+
+	return nil
+}
+
+type UpdateNodeLabels struct {
+	common.KubeAction
+}
+
+func (u *UpdateNodeLabels) Execute(runtime connector.Runtime) error {
+	client, err := clientset.NewKubeClient()
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
+	}
+
+	gpuInfo, installed, err := utils.ExecNvidiaSmi(runtime)
+	if err != nil {
+		return err
+	}
+
+	if !installed {
+		logger.Info("nvidia-smi not exists")
+		return nil
+	}
+
+	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), &gpuInfo.DriverVersion, &gpuInfo.CudaVersion)
+}
+
+type RemoveNodeLabels struct {
+	common.KubeAction
+}
+
+func (u *RemoveNodeLabels) Execute(runtime connector.Runtime) error {
+	client, err := clientset.NewKubeClient()
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
+	}
+
+	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), nil, nil)
+}
+
+// update k8s node labels gpu.bytetrade.io/driver and gpu.bytetrade.io/cuda.
+// if labels are not exists, create it.
+func UpdateNodeGpuLabel(ctx context.Context, client kubernetes.Interface, driver, cuda *string) error {
+	// get node name from hostname
+	nodeName, err := os.Hostname()
+	if err != nil {
+		logger.Error("get hostname error, ", err)
+		return err
+	}
+
+	node, err := client.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
+	if err != nil {
+		logger.Error("get node error, ", err)
+		return err
+	}
+
+	labels := node.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	update := false
+	for _, label := range []struct {
+		key   string
+		value *string
+	}{
+		{GpuDriverLabel, driver},
+		{GpuCudaLabel, cuda},
+	} {
+		old, ok := labels[label.key]
+		switch {
+		case ok && label.value == nil: // delete label
+			delete(labels, label.key)
+			update = true
+
+		case ok && *label.value != "" && old != *label.value: // update label
+			labels[label.key] = *label.value
+			update = true
+
+		case !ok && label.value != nil && *label.value != "": // create label
+			labels[label.key] = *label.value
+			update = true
+		}
+	}
+
+	if update {
+		node.SetLabels(labels)
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			logger.Infof("updating node gpu labels, %s, %s", *driver, *cuda)
+			_, err := client.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
+			return err
+		})
+
+		if err != nil {
+			logger.Error("update node error, ", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+type RemoveContainerRuntimeConfig struct {
+	common.KubeAction
+}
+
+func (t *RemoveContainerRuntimeConfig) Execute(runtime connector.Runtime) error {
+	var configFile = "/etc/containerd/config.toml"
+	var nvidiaRuntime = "nvidia"
+	var criPluginUri = "io.containerd.grpc.v1.cri"
+
+	if !util.IsExist(configFile) {
+		logger.Infof("containerd config file not found")
+		return nil
+	}
+
+	config := &cdsrvconfig.Config{}
+	err := cdsrvconfig.LoadConfig(configFile, config)
+	if err != nil {
+		return fmt.Errorf("failed to load containerd config: %w", err)
+	}
+	plugins := config.Plugins[criPluginUri]
+	var criConfig criconfig.PluginConfig
+	if err := plugins.Unmarshal(&criConfig); err != nil {
+		logger.Error("unmarshal cri config error: ", err)
+		return err
+	}
+
+	// found nvidia runtime, remove it
+	if _, ok := criConfig.ContainerdConfig.Runtimes[nvidiaRuntime]; ok {
+		delete(criConfig.ContainerdConfig.Runtimes, nvidiaRuntime)
+		criConfig.DefaultRuntimeName = "runc"
+
+		// save config
+		criConfigData, err := toml.Marshal(criConfig)
+		if err != nil {
+			return fmt.Errorf("failed to marshal containerd cri plugin config: %w", err)
+		}
+
+		criPluginConfigTree, err := toml.LoadBytes(criConfigData)
+		if err != nil {
+			return fmt.Errorf("failed to load containerd cri plugin config: %w", err)
+		}
+
+		config.Plugins[criPluginUri] = *criPluginConfigTree
+
+		// save config to file
+		tmpConfigFile, err := os.OpenFile(configFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to open minikube containerd config temp file for writing: %w", err)
+		}
+		defer tmpConfigFile.Close()
+		if err := toml.NewEncoder(tmpConfigFile).Encode(config); err != nil {
+			return fmt.Errorf("failed to write minikube containerd config temp file: %w", err)
+		}
+
+	}
+
+	return nil
+}
+
+type UninstallNvidiaDrivers struct {
+	common.KubeAction
+}
+
+func (t *UninstallNvidiaDrivers) Execute(runtime connector.Runtime) error {
+
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y uninstall nvidia*", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get uninstall nvidia*")
+	}
+
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y uninstall libnvidia", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get uninstall libnvidia*")
+	}
+
+	logger.Infof("uninstall nvidia drivers success, please reboot the system to take effect if you reinstall the new nvidia drivers")
+	return nil
+}
+
+type PrintGpuStatus struct {
+	common.KubeAction
+}
+
+func (t *PrintGpuStatus) Execute(runtime connector.Runtime) error {
+	gpuInfo, installed, err := utils.ExecNvidiaSmi(runtime)
+	if err != nil {
+		return err
+	}
+
+	if !installed {
+		logger.Info("cuda not exists")
+		return nil
+	}
+
+	logger.Infof("GPU Driver Version: %s", gpuInfo.DriverVersion)
+	logger.Infof("CUDA Version: %s", gpuInfo.CudaVersion)
+
+	return nil
+}
+
+type PrintPluginsStatus struct {
+	common.KubeAction
+}
+
+func (t *PrintPluginsStatus) Execute(runtime connector.Runtime) error {
+	client, err := clientset.NewKubeClient()
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
+	}
+
+	plugins, err := client.Kubernetes().CoreV1().Pods("kube-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvidia-device-plugin-ds"})
+	if err != nil {
+		logger.Error("get plugin status error, ", err)
+		return err
+	}
+
+	if len(plugins.Items) == 0 {
+		logger.Info("nvidia-device-plugin not exists")
+
+	} else {
+		for _, plugin := range plugins.Items {
+			logger.Infof("nvidia-device-plugin status: %s", plugin.Status.Phase)
+			break
+		}
+	}
+
+	nvsharePlugins, err := client.Kubernetes().CoreV1().Pods("nvshare-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvshare-device-plugin"})
+	if err != nil {
+		logger.Error("get nvshare plugin status error, ", err)
+		return err
+	}
+
+	if len(nvsharePlugins.Items) == 0 {
+		logger.Info("nvshare-device-plugin not exists")
+
+	} else {
+		for _, plugin := range nvsharePlugins.Items {
+			logger.Infof("nvshare-device-plugin status: %s", plugin.Status.Phase)
+			break
+		}
+	}
+
+	nvshareScheduler, err := client.Kubernetes().CoreV1().Pods("nvshare-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvshare-scheduler"})
+	if err != nil {
+		logger.Error("get nvshare scheduler status error, ", err)
+	}
+
+	if len(nvshareScheduler.Items) == 0 {
+		logger.Info("nvshare-scheduler not exists")
+	} else {
+		for _, scheduler := range nvshareScheduler.Items {
+			logger.Infof("nvshare-scheduler status: %s", scheduler.Status.Phase)
+			break
+		}
+	}
+
+	return nil
+}
+
+type RestartPlugin struct {
+	common.KubeAction
+}
+
+func (t *RestartPlugin) Execute(runtime connector.Runtime) error {
+	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	if err != nil {
+		return fmt.Errorf("kubectl not found")
+	}
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s scale ds nvshare-device-plugin -n nvshare-system", kubectlpath), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-device-plugin")
+	}
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s scale ds nvshare-scheduler -n nvshare-system", kubectlpath), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-scheduler")
+	}
+
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s scale ds nvidia-device-plugin -n kube-system", kubectlpath), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to restart nvidia-device-plugin")
 	}
 
 	return nil

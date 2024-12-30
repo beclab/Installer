@@ -1,9 +1,10 @@
 package system
 
 import (
-	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"path"
 	"strings"
+
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 
 	"bytetrade.io/web3os/installer/pkg/daemon"
 
@@ -94,10 +95,11 @@ func (l *wslPhaseBuilder) build() []module.Module {
 		}).
 		addModule(gpuModuleBuilder(func() []module.Module {
 			return []module.Module{
-				&gpu.InstallDepsModule{
+				// on wsl, only install container toolkit. cuda driver is already installed in windows
+				&gpu.InstallContainerToolkitModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.baseDir,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
 					},
 				},
 				&gpu.RestartContainerdModule{},
