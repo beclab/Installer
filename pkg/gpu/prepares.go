@@ -7,6 +7,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
+	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,4 +92,24 @@ func (p *K8sNodeInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 
 	return true, nil
+}
+
+type NvidiaGraphicsCard struct {
+	common.KubePrepare
+}
+
+func (p *NvidiaGraphicsCard) PreCheck(runtime connector.Runtime) (bool, error) {
+	if runtime.GetRunner().Host.GetOs() == common.Darwin {
+		return false, nil
+	}
+	output, err := runtime.GetRunner().Host.SudoCmd(
+		"lspci | grep VGA | grep -i nvidia", false, false)
+	if err != nil {
+		logger.Error("try to find nvidia graphics card error", err)
+		logger.Error("ignore card driver installation")
+		return false, nil
+	}
+
+	logger.Info("find nvidia graphics card", output)
+	return output != "", nil
 }

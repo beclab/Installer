@@ -32,6 +32,7 @@ func (m *InstallDriversModule) Init() {
 					SupportedCudaVersion: []string{common.DefaultCudaVersion},
 				},
 			},
+			new(NvidiaGraphicsCard),
 		},
 		Action: &InstallCudaDeps{
 			ManifestAction: manifest.ManifestAction{
@@ -52,6 +53,7 @@ func (m *InstallDriversModule) Init() {
 					SupportedCudaVersion: []string{common.DefaultCudaVersion},
 				},
 			},
+			new(NvidiaGraphicsCard),
 		},
 		Action:   new(InstallCudaDriver),
 		Parallel: false,
@@ -80,6 +82,13 @@ func (m *InstallContainerToolkitModule) Init() {
 	updateCudaSource := &task.RemoteTask{
 		Name:  "UpdateNvidiaToolkitSource",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+				},
+			},
+		},
 		Action: &UpdateCudaSource{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
@@ -91,8 +100,15 @@ func (m *InstallContainerToolkitModule) Init() {
 	}
 
 	installNvidiaContainerToolkit := &task.RemoteTask{
-		Name:     "InstallNvidiaToolkit",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Name:  "InstallNvidiaToolkit",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+				},
+			},
+		},
 		Action:   new(InstallNvidiaContainerToolkit),
 		Parallel: false,
 		Retry:    1,
