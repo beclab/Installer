@@ -81,6 +81,7 @@ spec:
   serviceAccountName: prometheus-k8s
   serviceMonitorNamespaceSelector: {}
   serviceMonitorSelector: {}
+  retention: 7d
   storage:
     volumeClaimTemplate:
       spec:
