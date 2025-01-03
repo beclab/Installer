@@ -3,39 +3,37 @@ package gpu
 import (
 	"time"
 
+	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 )
 
-type InstallDepsModule struct {
+type InstallDriversModule struct {
 	common.KubeModule
 	manifest.ManifestModule
 	Skip bool // enableGPU && ubuntuVersionSupport
 }
 
-func (m *InstallDepsModule) IsSkip() bool {
+func (m *InstallDriversModule) IsSkip() bool {
 	return m.Skip
 }
 
-func (m *InstallDepsModule) Init() {
-	m.Name = "InstallGPU"
-
-	// copyEmbedGpuFiles := &task.RemoteTask{
-	// 	Name:  "CopyFiles",
-	// 	Hosts: m.Runtime.GetHostsByRole(common.Master),
-	// 	Prepare: &prepare.PrepareCollection{
-	// 		new(common.OnlyFirstMaster),
-	// 	},
-	// 	Action:   new(CopyEmbedGpuFiles),
-	// 	Parallel: false,
-	// 	Retry:    1,
-	// }
+func (m *InstallDriversModule) Init() {
+	m.Name = "InstallGPUDriver"
 
 	installCudaDeps := &task.RemoteTask{
 		Name:  "InstallCudaKeyRing",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaNotInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(NvidiaGraphicsCard),
+		},
 		Action: &InstallCudaDeps{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
@@ -50,18 +48,47 @@ func (m *InstallDepsModule) Init() {
 		Name:  "InstallNvidiaDriver",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&common.Skip{
-				Not: m.KubeConf.Arg.SystemInfo.IsWsl(),
+			&CudaNotInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
 			},
+			new(NvidiaGraphicsCard),
 		},
 		Action:   new(InstallCudaDriver),
 		Parallel: false,
 		Retry:    1,
 	}
 
+	m.Tasks = []task.Interface{
+		installCudaDeps,
+		installCudaDriver,
+	}
+}
+
+type InstallContainerToolkitModule struct {
+	common.KubeModule
+	manifest.ManifestModule
+	Skip bool // enableGPU && ubuntuVersionSupport
+}
+
+func (m *InstallContainerToolkitModule) IsSkip() bool {
+	return m.Skip
+}
+
+func (m *InstallContainerToolkitModule) Init() {
+	m.Name = "InstallContainerToolkit"
+
 	updateCudaSource := &task.RemoteTask{
 		Name:  "UpdateNvidiaToolkitSource",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+		},
 		Action: &UpdateCudaSource{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
@@ -73,20 +100,43 @@ func (m *InstallDepsModule) Init() {
 	}
 
 	installNvidiaContainerToolkit := &task.RemoteTask{
-		Name:     "InstallNvidiaToolkit",
-		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Name:  "InstallNvidiaToolkit",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(ContainerdInstalled),
+		},
 		Action:   new(InstallNvidiaContainerToolkit),
 		Parallel: false,
 		Retry:    1,
 	}
 
+	configureContainerdRuntime := &task.RemoteTask{
+		Name:  "ConfigureContainerdRuntime",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(ContainerdInstalled),
+		},
+		Action:   new(ConfigureContainerdRuntime),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	m.Tasks = []task.Interface{
-		// copyEmbedGpuFiles,
-		installCudaDeps,
-		installCudaDriver,
 		updateCudaSource,
 		installNvidiaContainerToolkit,
+		configureContainerdRuntime,
 	}
+
 }
 
 type RestartK3sServiceModule struct {
@@ -132,9 +182,9 @@ func (m *RestartContainerdModule) Init() {
 	restartContainerd := &task.RemoteTask{
 		Name:  "RestartContainerd",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		// Prepare: &prepare.PrepareCollection{
-		// 	new(common.OnlyFirstMaster),
-		// },
+		Prepare: &prepare.PrepareCollection{
+			new(ContainerdInstalled),
+		},
 		Action:   new(RestartContainerd),
 		Parallel: false,
 		Retry:    1,
@@ -156,6 +206,18 @@ func (m *InstallPluginModule) IsSkip() bool {
 
 func (m *InstallPluginModule) Init() {
 	m.Name = "InstallPlugin"
+
+	// update node with gpu labels, to make plugins enabled
+	updateNode := &task.RemoteTask{
+		Name:  "UpdateNode",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+		},
+		Action:   new(UpdateNodeLabels),
+		Parallel: false,
+		Retry:    1,
+	}
 
 	installPlugin := &task.RemoteTask{
 		Name:  "InstallPlugin",
@@ -193,6 +255,7 @@ func (m *InstallPluginModule) Init() {
 	}
 
 	m.Tasks = []task.Interface{
+		updateNode,
 		installPlugin,
 		checkGpuState,
 		installGPUShared,
@@ -214,4 +277,133 @@ func (g *GetCudaVersionModule) Init() {
 	g.Tasks = []task.Interface{
 		getCudaVersion,
 	}
+}
+
+type NodeLabelingModule struct {
+	common.KubeModule
+}
+
+func (l *NodeLabelingModule) Init() {
+	l.Name = "NodeLabeling"
+
+	updateNode := &task.RemoteTask{
+		Name:  "UpdateNode",
+		Hosts: l.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(K8sNodeInstalled),
+		},
+		Action:   new(UpdateNodeLabels),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	restartPlugin := &task.RemoteTask{
+		Name:  "RestartPlugin",
+		Hosts: l.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(K8sNodeInstalled),
+		},
+		Action:   new(RestartPlugin),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	l.Tasks = []task.Interface{
+		updateNode,
+		restartPlugin,
+	}
+}
+
+type NodeUnlabelingModule struct {
+	common.KubeModule
+}
+
+func (l *NodeUnlabelingModule) Init() {
+	l.Name = "NodeUnlabeling"
+
+	removeNode := &task.RemoteTask{
+		Name:  "RemoveNodeLabels",
+		Hosts: l.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			new(K8sNodeInstalled),
+		},
+		Action:   new(RemoveNodeLabels),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	restartPlugin := &task.RemoteTask{
+		Name:  "RestartPlugin",
+		Hosts: l.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(K8sNodeInstalled),
+		},
+		Action:   new(RestartPlugin),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	l.Tasks = []task.Interface{
+		removeNode,
+		restartPlugin,
+	}
+}
+
+type UninstallCudaModule struct {
+	common.KubeModule
+}
+
+func (l *UninstallCudaModule) Init() {
+	l.Name = "UninstallCuda"
+
+	uninstallCuda := &task.RemoteTask{
+		Name:  "UninstallCuda",
+		Hosts: l.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+		},
+		Action:   new(UninstallNvidiaDrivers),
+		Parallel: false,
+		Retry:    1,
+	}
+
+	removeRuntime := &task.RemoteTask{
+		Name:  "RemoveRuntime",
+		Hosts: l.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			new(common.OnlyFirstMaster),
+			new(ContainerdInstalled),
+		},
+		Action: new(RemoveContainerRuntimeConfig),
+	}
+
+	l.Tasks = []task.Interface{
+		uninstallCuda,
+		removeRuntime,
+	}
+
 }

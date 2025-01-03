@@ -21,11 +21,12 @@ import (
 )
 
 const (
-	DefaultK8sVersion        = "v1.22.10"
-	DefaultK3sVersion        = "v1.21.5-k3s" //"v1.22.16-k3s"
-	DefaultKubernetesVersion = ""
-	DefaultKubeSphereVersion = "v3.3.0"
-	DefaultTokenMaxAge       = 31536000
+	DefaultK8sVersion          = "v1.22.10"
+	DefaultK3sVersion          = "v1.21.5-k3s" //"v1.22.16-k3s"
+	DefaultKubernetesVersion   = ""
+	DefaultKubeSphereVersion   = "v3.3.0"
+	DefaultTokenMaxAge         = 31536000
+	CurrentVerifiedCudaVersion = "12.4"
 )
 
 const (
@@ -166,8 +167,9 @@ const (
 )
 
 var (
-	CloudVendor = os.Getenv("CLOUD_VENDOR")
-	ResolvProxy = os.Getenv("PROXY")
+	CloudVendor                 = os.Getenv("CLOUD_VENDOR")
+	ResolvProxy                 = os.Getenv("PROXY")
+	DefaultCudaVersion []string = []string{"12.4", "12.5", "12.6"}
 )
 
 const (
@@ -256,14 +258,14 @@ const (
 )
 
 const (
-	ENV_TERMINUS_IS_CLOUD_VERSION   = "TERMINUS_IS_CLOUD_VERSION"
-	ENV_KUBE_TYPE                   = "KUBE_TYPE"
-	ENV_REGISTRY_MIRRORS            = "REGISTRY_MIRRORS"
-	ENV_DOWNLOAD_CDN_URL            = "DOWNLOAD_CDN_URL"
-	ENV_STORAGE                     = "STORAGE"
-	ENV_S3_BUCKET                   = "S3_BUCKET"
-	ENV_LOCAL_GPU_ENABLE            = "LOCAL_GPU_ENABLE"
-	ENV_LOCAL_GPU_SHARE             = "LOCAL_GPU_SHARE"
+	ENV_TERMINUS_IS_CLOUD_VERSION = "TERMINUS_IS_CLOUD_VERSION"
+	ENV_KUBE_TYPE                 = "KUBE_TYPE"
+	ENV_REGISTRY_MIRRORS          = "REGISTRY_MIRRORS"
+	ENV_DOWNLOAD_CDN_URL          = "DOWNLOAD_CDN_URL"
+	ENV_STORAGE                   = "STORAGE"
+	ENV_S3_BUCKET                 = "S3_BUCKET"
+	ENV_LOCAL_GPU_ENABLE          = "LOCAL_GPU_ENABLE"
+	// ENV_LOCAL_GPU_SHARE             = "LOCAL_GPU_SHARE"
 	ENV_CLOUDFLARE_ENABLE           = "CLOUDFLARE_ENABLE"
 	ENV_FRP_ENABLE                  = "FRP_ENABLE"
 	ENV_FRP_SERVER                  = "FRP_SERVER"

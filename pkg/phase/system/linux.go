@@ -91,7 +91,13 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 		}).withoutCloud(l.runtime)...).
 		addModule(gpuModuleBuilder(func() []module.Module {
 			return []module.Module{
-				&gpu.InstallDepsModule{
+				&gpu.InstallDriversModule{
+					ManifestModule: manifest.ManifestModule{
+						Manifest: l.manifestMap,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
+					},
+				},
+				&gpu.InstallContainerToolkitModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
 						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
