@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/xml"
+	"errors"
 	"os"
 	"os/exec"
 	"runtime"
@@ -171,7 +172,7 @@ func ExecNvidiaSmi(execRuntime connector.Runtime) (gpuInfo *NvidiaGpuInfo, insta
 
 	cmdPath, err := exec.LookPath(cmd)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(err) || errors.Is(err, exec.ErrNotFound) {
 			// try to find wsl nvidia-smi
 			var nvidiaSmiFile = "/usr/lib/wsl/lib/nvidia-smi"
 			_, e := os.Stat(nvidiaSmiFile)

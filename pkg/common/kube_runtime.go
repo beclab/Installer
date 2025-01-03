@@ -350,7 +350,7 @@ func (a *Argument) SetBaseDir(dir string) {
 }
 
 func (a *Argument) SetCudaVersion(cudaVersion string) {
-	a.CudaVersion = DefaultCudaVersion
+	a.CudaVersion = CurrentVerifiedCudaVersion
 	if cudaVersion != "" {
 		a.CudaVersion = cudaVersion
 	}

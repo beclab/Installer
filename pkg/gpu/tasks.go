@@ -531,12 +531,12 @@ type UninstallNvidiaDrivers struct {
 
 func (t *UninstallNvidiaDrivers) Execute(runtime connector.Runtime) error {
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y uninstall nvidia*", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get uninstall nvidia*")
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y remove nvidia*", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get remove nvidia*")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y uninstall libnvidia", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get uninstall libnvidia*")
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y remove libnvidia", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get remove libnvidia*")
 	}
 
 	logger.Infof("uninstall nvidia drivers success, please reboot the system to take effect if you reinstall the new nvidia drivers")

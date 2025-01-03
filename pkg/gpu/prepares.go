@@ -113,3 +113,17 @@ func (p *NvidiaGraphicsCard) PreCheck(runtime connector.Runtime) (bool, error) {
 	logger.Info("find nvidia graphics card", output)
 	return output != "", nil
 }
+
+type ContainerdInstalled struct {
+	common.KubePrepare
+}
+
+func (p *ContainerdInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
+	containerdCheck := precheck.ConflictingContainerdCheck{}
+	if err := containerdCheck.Check(runtime); err != nil {
+		return true, nil
+	}
+
+	logger.Info("containerd is not installed, ignore task")
+	return false, nil
+}

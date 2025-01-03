@@ -21,12 +21,12 @@ import (
 )
 
 const (
-	DefaultK8sVersion        = "v1.22.10"
-	DefaultK3sVersion        = "v1.21.5-k3s" //"v1.22.16-k3s"
-	DefaultKubernetesVersion = ""
-	DefaultKubeSphereVersion = "v3.3.0"
-	DefaultTokenMaxAge       = 31536000
-	DefaultCudaVersion       = "12.4"
+	DefaultK8sVersion          = "v1.22.10"
+	DefaultK3sVersion          = "v1.21.5-k3s" //"v1.22.16-k3s"
+	DefaultKubernetesVersion   = ""
+	DefaultKubeSphereVersion   = "v3.3.0"
+	DefaultTokenMaxAge         = 31536000
+	CurrentVerifiedCudaVersion = "12.4"
 )
 
 const (
@@ -167,8 +167,9 @@ const (
 )
 
 var (
-	CloudVendor = os.Getenv("CLOUD_VENDOR")
-	ResolvProxy = os.Getenv("PROXY")
+	CloudVendor                 = os.Getenv("CLOUD_VENDOR")
+	ResolvProxy                 = os.Getenv("PROXY")
+	DefaultCudaVersion []string = []string{"12.4", "12.5", "12.6"}
 )
 
 const (

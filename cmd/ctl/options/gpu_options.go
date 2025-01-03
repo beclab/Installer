@@ -5,9 +5,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type InstallGpuOptions struct {
+type GpuOptions struct {
 	Version string
 	BaseDir string
+}
+
+func (o *GpuOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+}
+
+type InstallGpuOptions struct {
+	GpuOptions
+	Cuda string
 }
 
 func NewInstallGpuOptions() *InstallGpuOptions {
@@ -15,6 +25,6 @@ func NewInstallGpuOptions() *InstallGpuOptions {
 }
 
 func (o *InstallGpuOptions) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&o.Version, "version", "", "The version of the CUDA driver, current supported versions are 12.4")
-	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+	o.GpuOptions.AddFlags(cmd)
+	cmd.Flags().StringVar(&o.Cuda, "cuda", "", "The version of the CUDA driver, current supported versions are 12.4")
 }

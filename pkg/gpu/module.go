@@ -29,7 +29,7 @@ func (m *InstallDriversModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			&CudaNotInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 			new(NvidiaGraphicsCard),
@@ -50,7 +50,7 @@ func (m *InstallDriversModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			&CudaNotInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 			new(NvidiaGraphicsCard),
@@ -85,7 +85,7 @@ func (m *InstallContainerToolkitModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			&CudaInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 		},
@@ -105,9 +105,10 @@ func (m *InstallContainerToolkitModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			&CudaInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
+			new(ContainerdInstalled),
 		},
 		Action:   new(InstallNvidiaContainerToolkit),
 		Parallel: false,
@@ -164,9 +165,9 @@ func (m *RestartContainerdModule) Init() {
 	restartContainerd := &task.RemoteTask{
 		Name:  "RestartContainerd",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		// Prepare: &prepare.PrepareCollection{
-		// 	new(common.OnlyFirstMaster),
-		// },
+		Prepare: &prepare.PrepareCollection{
+			new(ContainerdInstalled),
+		},
 		Action:   new(RestartContainerd),
 		Parallel: false,
 		Retry:    1,
@@ -275,7 +276,7 @@ func (l *NodeLabelingModule) Init() {
 			new(common.OnlyFirstMaster),
 			&CudaInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 			new(K8sNodeInstalled),
@@ -292,7 +293,7 @@ func (l *NodeLabelingModule) Init() {
 			new(common.OnlyFirstMaster),
 			&CudaInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 			new(K8sNodeInstalled),
@@ -334,7 +335,7 @@ func (l *NodeUnlabelingModule) Init() {
 			new(common.OnlyFirstMaster),
 			&CudaInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 			new(K8sNodeInstalled),
@@ -364,7 +365,7 @@ func (l *UninstallCudaModule) Init() {
 			new(common.OnlyFirstMaster),
 			&CudaInstalled{
 				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: []string{common.DefaultCudaVersion},
+					SupportedCudaVersion: common.DefaultCudaVersion,
 				},
 			},
 		},
@@ -378,6 +379,7 @@ func (l *UninstallCudaModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
+			new(ContainerdInstalled),
 		},
 		Action: new(RemoveContainerRuntimeConfig),
 	}
