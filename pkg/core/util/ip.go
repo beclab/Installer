@@ -155,6 +155,31 @@ func IsValidIPv4Addr(ip net.IP) bool {
 	return ip4 != nil && ip4.IsGlobalUnicast()
 }
 
+func GetValidIPv4AddrsFromOS() ([]net.IP, error) {
+	var ifAddrs []net.Addr
+	infs, err := net.Interfaces()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get network interfaces")
+	}
+	for _, inf := range infs {
+		if inf.Flags&net.FlagPointToPoint != 0 {
+			continue
+		}
+		addrs, err := inf.Addrs()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get addresses of network interface: %s", inf.Name)
+		}
+		ifAddrs = append(ifAddrs, addrs...)
+	}
+	var validIfIPs []net.IP
+	for _, ifAddr := range ifAddrs {
+		if ipNet, ok := ifAddr.(*net.IPNet); ok && IsValidIPv4Addr(ipNet.IP) {
+			validIfIPs = append(validIfIPs, ipNet.IP.To4())
+		}
+	}
+	return validIfIPs, nil
+}
+
 // GetLocalIP gets the local ip
 // either by getting the "OS_LOCALIP" environment variable
 // or by resolving the local hostname to IP address if the env is not set
@@ -164,15 +189,9 @@ func IsValidIPv4Addr(ip net.IP) bool {
 // the explicitly specified env var takes precedence than the hostname
 // if a valid IP is not found in both cases, a default IP is selected as a fallback
 func GetLocalIP() (net.IP, error) {
-	ifAddrs, err := net.InterfaceAddrs()
+	validIfIPs, err := GetValidIPv4AddrsFromOS()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get local interface IP addresses")
-	}
-	var validIfIPs []net.IP
-	for _, ifAddr := range ifAddrs {
-		if ipNet, ok := ifAddr.(*net.IPNet); ok && IsValidIPv4Addr(ipNet.IP) {
-			validIfIPs = append(validIfIPs, ipNet.IP.To4())
-		}
+		return nil, err
 	}
 	if len(validIfIPs) == 0 {
 		return nil, errors.New("no valid IP can be found from local network interfaces")
@@ -236,21 +255,17 @@ func GetLocalIP() (net.IP, error) {
 // GetPublicIPsFromOS gets a list of public ips by looking at the local network interfaces
 // if any
 func GetPublicIPsFromOS() ([]net.IP, error) {
-	ifAddrs, err := net.InterfaceAddrs()
+	var validIfPublicIPs []net.IP
+	validIfIPs, err := GetValidIPv4AddrsFromOS()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get local interface IP addresses")
+		return nil, err
 	}
-	var validIfIPs []net.IP
-	for _, ifAddr := range ifAddrs {
-		ipNet, ok := ifAddr.(*net.IPNet)
-		if !ok || !IsValidIPv4Addr(ipNet.IP) {
-			continue
-		}
-		if !ipNet.IP.To4().IsPrivate() {
-			validIfIPs = append(validIfIPs, ipNet.IP)
+	for _, ip := range validIfIPs {
+		if !ip.IsPrivate() {
+			validIfPublicIPs = append(validIfPublicIPs, ip)
 		}
 	}
-	return validIfIPs, nil
+	return validIfPublicIPs, nil
 }
 
 func GetPublicIPFromAWSIMDS() (net.IP, error) {
