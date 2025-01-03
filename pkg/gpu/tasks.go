@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
@@ -229,15 +230,23 @@ func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type ConfigureContainerdRuntime struct {
+	common.KubeAction
+}
+
+func (t *ConfigureContainerdRuntime) Execute(runtime connector.Runtime) error {
+	if _, err := runtime.GetRunner().Host.SudoCmd("nvidia-ctk runtime configure --runtime=containerd --set-as-default --config-source=command", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to nvidia-ctk runtime configure")
+	}
+
+	return nil
+}
+
 type RestartContainerd struct {
 	common.KubeAction
 }
 
 func (t *RestartContainerd) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("nvidia-ctk runtime configure --runtime=containerd --set-as-default --config-source=command", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to nvidia-ctk runtime configure")
-	}
-
 	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl restart containerd", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart containerd")
 	}
@@ -388,7 +397,12 @@ func (u *UpdateNodeLabels) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 
-	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), &gpuInfo.DriverVersion, &gpuInfo.CudaVersion)
+	supported := "false"
+	if slices.Contains(common.DefaultCudaVersion, gpuInfo.CudaVersion) {
+		supported = "true"
+	}
+
+	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), &gpuInfo.DriverVersion, &gpuInfo.CudaVersion, &supported)
 }
 
 type RemoveNodeLabels struct {
@@ -401,12 +415,12 @@ func (u *RemoveNodeLabels) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
 	}
 
-	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), nil, nil)
+	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), nil, nil, nil)
 }
 
 // update k8s node labels gpu.bytetrade.io/driver and gpu.bytetrade.io/cuda.
 // if labels are not exists, create it.
-func UpdateNodeGpuLabel(ctx context.Context, client kubernetes.Interface, driver, cuda *string) error {
+func UpdateNodeGpuLabel(ctx context.Context, client kubernetes.Interface, driver, cuda *string, supported *string) error {
 	// get node name from hostname
 	nodeName, err := os.Hostname()
 	if err != nil {
@@ -432,6 +446,7 @@ func UpdateNodeGpuLabel(ctx context.Context, client kubernetes.Interface, driver
 	}{
 		{GpuDriverLabel, driver},
 		{GpuCudaLabel, cuda},
+		{GpuCudaSupportedLabel, supported},
 	} {
 		old, ok := labels[label.key]
 		switch {
@@ -535,7 +550,7 @@ func (t *UninstallNvidiaDrivers) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "Failed to apt-get remove nvidia*")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y remove libnvidia", false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y remove libnvidia*", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to apt-get remove libnvidia*")
 	}
 

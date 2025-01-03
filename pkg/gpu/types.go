@@ -5,6 +5,7 @@ const (
 )
 
 var (
-	GpuDriverLabel = GpuLabelGroup + "/driver"
-	GpuCudaLabel   = GpuLabelGroup + "/cuda"
+	GpuDriverLabel        = GpuLabelGroup + "/driver"
+	GpuCudaLabel          = GpuLabelGroup + "/cuda"
+	GpuCudaSupportedLabel = GpuLabelGroup + "/cuda-supported"
 )

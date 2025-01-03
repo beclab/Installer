@@ -115,9 +115,26 @@ func (m *InstallContainerToolkitModule) Init() {
 		Retry:    1,
 	}
 
+	configureContainerdRuntime := &task.RemoteTask{
+		Name:  "ConfigureContainerdRuntime",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Prepare: &prepare.PrepareCollection{
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
+			new(ContainerdInstalled),
+		},
+		Action:   new(ConfigureContainerdRuntime),
+		Parallel: false,
+		Retry:    1,
+	}
+
 	m.Tasks = []task.Interface{
 		updateCudaSource,
 		installNvidiaContainerToolkit,
+		configureContainerdRuntime,
 	}
 
 }
