@@ -333,6 +333,14 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		fmt.Sprintf("export %s=%s", common.ENV_DOWNLOAD_CDN_URL, i.KubeConf.Arg.DownloadCdnUrl),
 	}
 
+	var defaultDomainName = os.Getenv(common.ENV_TERMINUS_OS_DOMAINNAME)
+	if !utils.IsValidDomain(defaultDomainName) {
+		defaultDomainName = ""
+	}
+	if defaultDomainName != "" {
+		envs = append(envs, fmt.Sprintf("export %s=%s", common.ENV_TERMINUS_OS_DOMAINNAME, defaultDomainName))
+	}
+
 	for key, val := range common.TerminusGlobalEnvs {
 		envs = append(envs, fmt.Sprintf("export %s=%s", key, val))
 	}
