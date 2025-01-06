@@ -43,7 +43,7 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 	}
 
 	publicNetworkInfo := p.KubeConf.Arg.PublicNetworkInfo
-	if len(publicNetworkInfo.OSPublicIPs) > 0 || publicNetworkInfo.AWSPublicIP != nil {
+	if publicNetworkInfo.AWSPublicIP != nil {
 		selfhosted = false
 	}
 
