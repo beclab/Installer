@@ -120,6 +120,8 @@ type Argument struct {
 	ConsoleLogFileName string   `json:"console_log_file_name"`
 	ConsoleLogTruncate bool     `json:"console_log_truncate"`
 	HostIP             string   `json:"host_ip"`
+
+	CudaVersion string `json:"cuda_version"`
 }
 
 type PublicNetworkInfo struct {
@@ -184,8 +186,8 @@ func NewArgument() *Argument {
 			StorageType: ManagedMinIO,
 		},
 		GPU: &GPU{
-			Enable: strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "1"),
-			Share:  strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_SHARE), "1"),
+			Enable: !strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "0"), // default enable GPU, not set or 1 means enable
+			Share:  !strings.EqualFold(os.Getenv(ENV_LOCAL_GPU_ENABLE), "0"), // default share GPU
 		},
 		Cloudflare:             &Cloudflare{},
 		Frp:                    &Frp{},
@@ -344,6 +346,13 @@ func (a *Argument) SetBaseDir(dir string) {
 		if dir != "" {
 			a.BaseDir = dir
 		}
+	}
+}
+
+func (a *Argument) SetCudaVersion(cudaVersion string) {
+	a.CudaVersion = CurrentVerifiedCudaVersion
+	if cudaVersion != "" {
+		a.CudaVersion = cudaVersion
 	}
 }
 

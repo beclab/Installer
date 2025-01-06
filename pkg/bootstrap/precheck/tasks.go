@@ -23,6 +23,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	"bytetrade.io/web3os/installer/pkg/utils"
 	"bytetrade.io/web3os/installer/pkg/version/kubernetes"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"github.com/pkg/errors"
@@ -139,6 +141,25 @@ func (t *SystemdCheck) Check(runtime connector.Runtime) error {
 	}
 	return errors.New("this system is not inited by systemd, which is required by Olares")
 }
+
+type CudaChecker struct {
+	CudaCheckTask
+}
+
+func (c *CudaChecker) Check(runtime connector.Runtime) error {
+	err := c.CudaCheckTask.Execute(runtime)
+
+	// the command `precheck` will check the cuda version,
+	// only if the cuda is installed and the current version is not supported, it will return an error
+	if err == ErrCudaInstalled {
+		return nil
+	}
+
+	return err
+}
+
+//////////////////////////////////////////////
+// precheck - task
 
 type GreetingsTask struct {
 	action.BaseAction
@@ -499,4 +520,42 @@ func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
 	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/hosts", false, true)
 	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/resolv.conf", false, true)
 	return nil
+}
+
+var ErrUnsupportedCudaVersion = errors.New("unsupported cuda version, please uninstall the current version")
+var ErrCudaInstalled = errors.New("cuda is installed")
+
+// CudaCheckTask checks the cuda version, if the current version is not supported, it will return an error
+// before executing the command `olares-cli gpu install`, we need to check the cuda version
+// if the cuda if not installed, it will return nil and the command can be executed.
+// if the cuda is installed and the version is unsupported, the command can not be executed,
+// or the cuda version is supported, executing the command is unnecessary.
+type CudaCheckTask struct {
+	SupportedCudaVersion []string
+}
+
+func (t *CudaCheckTask) Name() string {
+	return "Cuda"
+}
+
+func (t *CudaCheckTask) Execute(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsLinux() {
+		return nil
+	}
+
+	info, installed, err := utils.ExecNvidiaSmi(runtime)
+	switch {
+	case err != nil:
+		return err
+	case !installed:
+		logger.Info("NVIDIA driver is not installed")
+		return nil
+	default:
+		logger.Infof("NVIDIA driver is installed, version: %s, cuda version: %s", info.DriverVersion, info.CudaVersion)
+		if slices.Contains(t.SupportedCudaVersion, info.CudaVersion) {
+			return ErrCudaInstalled
+		} else {
+			return ErrUnsupportedCudaVersion
+		}
+	}
 }
