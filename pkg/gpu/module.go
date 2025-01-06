@@ -235,6 +235,11 @@ func (m *InstallPluginModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
+			&CudaInstalled{
+				CudaCheckTask: precheck.CudaCheckTask{
+					SupportedCudaVersion: common.DefaultCudaVersion,
+				},
+			},
 		},
 		Action:   new(CheckGpuStatus),
 		Parallel: false,
