@@ -32,21 +32,24 @@ type ChownFileAndDir struct {
 }
 
 func (c *ChownFileAndDir) Execute(runtime connector.Runtime) error {
-	exist := runtime.GetRunner().Host.FileExist(c.Path)
+	exist, err := runtime.GetRunner().FileExist(c.Path)
+	if err != nil {
+		return err
+	}
 
 	if exist {
-		userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
+		userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user id failed")
 		}
 
-		userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
+		userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		}
 
 		chownKubeConfig := fmt.Sprintf("chown -R %s:%s %s", userId, userGroupId, c.Path)
-		if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
 			return errors.Wrapf(errors.WithStack(err), "chown user %s failed", c.Path)
 		}
 	}

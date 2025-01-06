@@ -43,7 +43,7 @@ func NewKubernetesStatus() *KubernetesStatus {
 
 func (k *KubernetesStatus) SearchVersion(runtime connector.Runtime) error {
 	cmd := "sudo cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'image:' | awk -F '[:]' '{print $(NF-0)}'"
-	if output, err := runtime.GetRunner().Host.Cmd(cmd, false, true); err != nil {
+	if output, err := runtime.GetRunner().Cmd(cmd, false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "search current version failed")
 	} else {
 		if !strings.Contains(output, "No such file or directory") {
@@ -54,7 +54,7 @@ func (k *KubernetesStatus) SearchVersion(runtime connector.Runtime) error {
 }
 
 func (k *KubernetesStatus) SearchJoinInfo(runtime connector.Runtime) error {
-	checkKubeadmConfig, err := runtime.GetRunner().Host.SudoCmd("cat /etc/kubernetes/kubeadm-config.yaml", false, false)
+	checkKubeadmConfig, err := runtime.GetRunner().SudoCmd("cat /etc/kubernetes/kubeadm-config.yaml", false, false)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (k *KubernetesStatus) SearchJoinInfo(runtime connector.Runtime) error {
 	}
 
 	uploadCertsCmd := "/usr/local/bin/kubeadm init phase upload-certs --upload-certs"
-	output, err := runtime.GetRunner().Host.SudoCmd(uploadCertsCmd, false, true)
+	output, err := runtime.GetRunner().SudoCmd(uploadCertsCmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to upload kubeadm certs")
 	}
@@ -77,7 +77,7 @@ func (k *KubernetesStatus) SearchJoinInfo(runtime connector.Runtime) error {
 	}
 
 	tokenCreateMasterCmd := "/usr/local/bin/kubeadm token create"
-	token, err := runtime.GetRunner().Host.SudoCmd(tokenCreateMasterCmd, false, true)
+	token, err := runtime.GetRunner().SudoCmd(tokenCreateMasterCmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to get join node cmd")
 	}
@@ -88,7 +88,7 @@ func (k *KubernetesStatus) SearchJoinInfo(runtime connector.Runtime) error {
 }
 
 func (k *KubernetesStatus) SearchClusterInfo(runtime connector.Runtime) error {
-	output, err := runtime.GetRunner().Host.SudoCmd(
+	output, err := runtime.GetRunner().SudoCmd(
 		"/usr/local/bin/kubectl --kubeconfig=/etc/kubernetes/admin.conf --no-headers=true get nodes -o custom-columns=:metadata.name,:status.nodeInfo.kubeletVersion,:status.addresses",
 		false, true)
 	if err != nil {
@@ -128,7 +128,7 @@ func (k *KubernetesStatus) SearchNodesInfo(_ connector.Runtime) error {
 
 func (k *KubernetesStatus) SearchKubeConfig(runtime connector.Runtime) error {
 	kubeCfgCmd := "cat /etc/kubernetes/admin.conf"
-	if kubeConfigStr, err := runtime.GetRunner().Host.SudoCmd(kubeCfgCmd, false, false); err != nil {
+	if kubeConfigStr, err := runtime.GetRunner().SudoCmd(kubeCfgCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "search cluster kubeconfig failed")
 	} else {
 		k.KubeConfig = kubeConfigStr
@@ -150,12 +150,17 @@ func (k *KubernetesStatus) LoadKubeConfig(runtime connector.Runtime, kubeConf *c
 	return nil
 }
 
+func (k *KubernetesStatus) GetNodesInfo() map[string]string {
+	return k.NodesInfo
+}
+
 // PatchKubeadmSecret is used to patch etcd's certs for kubeadm-certs secret.
 func patchKubeadmSecret(runtime connector.Runtime) error {
 	externalEtcdCerts := []string{"external-etcd-ca.crt", "external-etcd.crt", "external-etcd.key"}
 	for _, cert := range externalEtcdCerts {
-		_, err := runtime.GetRunner().Host.SudoCmd(
-			fmt.Sprintf("/usr/local/bin/kubectl --kubeconfig=/etc/kubernetes/admin.conf patch -n kube-system secret kubeadm-certs -p '{\\\"data\\\": {\\\"%s\\\": \\\"\\\"}}'", cert),
+		patchData := fmt.Sprintf(`{"data": {"%s": ""}}`, cert)
+		_, err := runtime.GetRunner().SudoCmd(
+			fmt.Sprintf("/usr/local/bin/kubectl --kubeconfig=/etc/kubernetes/admin.conf patch -n kube-system secret kubeadm-certs -p '%s'", patchData),
 			false, true)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "patch kubeadm secret failed")

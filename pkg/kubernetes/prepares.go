@@ -42,6 +42,10 @@ func (n *NoClusterInfo) PreCheck(_ connector.Runtime) (bool, error) {
 	return false, nil
 }
 
+type NodesInfoGetter interface {
+	GetNodesInfo() map[string]string
+}
+
 type NodeInCluster struct {
 	common.KubePrepare
 	Not         bool
@@ -54,18 +58,22 @@ func (n *NodeInCluster) PreCheck(runtime connector.Runtime) (bool, error) {
 	}
 	host := runtime.RemoteHost()
 	if v, ok := n.PipelineCache.Get(common.ClusterStatus); ok {
-		cluster := v.(*KubernetesStatus)
+		nodesInfoGetter, ok := v.(NodesInfoGetter)
+		if !ok {
+			return false, errors.New("get cluster status by pipeline cache failed")
+		}
+		nodesInfo := nodesInfoGetter.GetNodesInfo()
 		var versionOk bool
-		if res, ok := cluster.NodesInfo[host.GetName()]; ok && res != "" {
+		if res, ok := nodesInfo[host.GetName()]; ok && res != "" {
 			versionOk = true
 		}
-		_, ipOk := cluster.NodesInfo[host.GetInternalAddress()]
+		_, ipOk := nodesInfo[host.GetInternalAddress()]
 		if n.Not {
 			return !(versionOk || ipOk), nil
 		}
 		return versionOk || ipOk, nil
 	} else {
-		return false, errors.New("get kubernetes cluster status by pipeline cache failed")
+		return false, errors.New("get cluster status by pipeline cache failed")
 	}
 }
 
@@ -145,7 +153,7 @@ type GetKubeletVersion struct {
 }
 
 func (g *GetKubeletVersion) PreCheck(runtime connector.Runtime) (bool, error) {
-	kubeletVersion, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'", false, true)
+	kubeletVersion, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'", false, true)
 	if err != nil {
 		logger.Errorf("failed to get kubelet version: %v", err)
 		return false, fmt.Errorf("failed to get kubelet version: %v", err)

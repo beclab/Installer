@@ -25,7 +25,6 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/core/action"
 	"bytetrade.io/web3os/installer/pkg/core/cache"
-	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/ending"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
@@ -101,13 +100,7 @@ func (l *LocalTask) Execute() *ending.TaskResult {
 		return l.TaskResult
 	}
 
-	si := l.Runtime.GetSystemInfo()
-	host := &connector.BaseHost{
-		Name: common.LocalHost,
-		Arch: si.GetOsArch(),
-		Os:   si.GetOsType(),
-	}
-
+	host := l.Runtime.GetLocalHost()
 	selfRuntime := l.Runtime.Copy()
 	l.RunWithTimeout(selfRuntime, host)
 

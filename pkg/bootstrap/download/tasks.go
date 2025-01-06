@@ -114,7 +114,10 @@ func (d *CheckDownload) Execute(runtime connector.Runtime) error {
 func isRealExists(runtime connector.Runtime, item *manifest.ManifestItem, baseDir string) (bool, error) {
 	arch := runtime.GetSystemInfo().GetOsArch()
 	targetPath := getDownloadTargetPath(item, baseDir)
-	exists := runtime.GetRunner().Host.FileExist(targetPath)
+	exists, err := runtime.GetRunner().FileExist(targetPath)
+	if err != nil {
+		return false, err
+	}
 	if !exists {
 		return false, nil
 	}
@@ -140,7 +143,7 @@ func (d *PackageDownload) downloadItem(runtime connector.Runtime, baseDir string
 
 	downloadPath := component.Path()
 	if utils.IsExist(downloadPath) {
-		_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", downloadPath), false, false)
+		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", downloadPath), false, false)
 	}
 
 	if !utils.IsExist(component.BaseDir) {

@@ -82,7 +82,7 @@ func (m *WelcomeModule) Init() {
 	waitServicesReady := &task.LocalTask{
 		Name:   "WaitServicesReady",
 		Action: new(CheckKeyPodsRunning),
-		Retry:  30,
+		Retry:  60,
 		Delay:  15 * time.Second,
 	}
 

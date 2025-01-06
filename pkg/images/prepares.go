@@ -42,10 +42,10 @@ type ContainerdInstalled struct {
 }
 
 func (c *ContainerdInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
-	if runtime.GetRunner().Host.GetOs() == common.Darwin {
+	if runtime.RemoteHost().GetOs() == common.Darwin {
 		return true, nil
 	}
-	output, err := runtime.GetRunner().Host.SudoCmd(
+	output, err := runtime.GetRunner().SudoCmd(
 		"if [ -z $(which containerd) ] || [ ! -e /run/containerd/containerd.sock ]; "+
 			"then echo 'not exist'; "+
 			"fi", false, false)

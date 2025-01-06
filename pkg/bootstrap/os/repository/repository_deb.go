@@ -32,15 +32,15 @@ func NewDeb() Interface {
 }
 
 func (d *Debian) Backup(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("mv /etc/apt/sources.list /etc/apt/sources.list.kubekey.bak", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list /etc/apt/sources.list.kubekey.bak", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("mv /etc/apt/sources.list.d /etc/apt/sources.list.d.kubekey.bak", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list.d /etc/apt/sources.list.d.kubekey.bak", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("mkdir -p /etc/apt/sources.list.d", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("mkdir -p /etc/apt/sources.list.d", false, false); err != nil {
 		return err
 	}
 	d.backup = true
@@ -56,11 +56,11 @@ func (d *Debian) Add(runtime connector.Runtime, path string) error {
 		return fmt.Errorf("linux repository must be backuped before")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("rm -rf /etc/apt/sources.list.d/*", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("rm -rf /etc/apt/sources.list.d/*", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo 'deb [trusted=yes]  file://%s   /' > /etc/apt/sources.list.d/kubekey.list", path),
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("echo 'deb [trusted=yes]  file://%s   /' > /etc/apt/sources.list.d/kubekey.list", path),
 		true, false); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (d *Debian) Add(runtime connector.Runtime, path string) error {
 }
 
 func (d *Debian) Update(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.Cmd("sudo apt-get update", true, false); err != nil {
+	if _, err := runtime.GetRunner().Cmd("sudo apt-get update", true, false); err != nil {
 		return err
 	}
 	return nil
@@ -83,22 +83,22 @@ func (d *Debian) Install(runtime connector.Runtime, pkg ...string) error {
 	}
 
 	str := strings.Join(pkg, " ")
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("apt install -y %s", str), true, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("apt install -y %s", str), true, false); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (d *Debian) Reset(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("rm -rf /etc/apt/sources.list.d", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("rm -rf /etc/apt/sources.list.d", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("mv /etc/apt/sources.list.kubekey.bak /etc/apt/sources.list", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list.kubekey.bak /etc/apt/sources.list", false, false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd("mv /etc/apt/sources.list.d.kubekey.bak /etc/apt/sources.list.d", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list.d.kubekey.bak /etc/apt/sources.list.d", false, false); err != nil {
 		return err
 	}
 

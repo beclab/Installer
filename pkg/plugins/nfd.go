@@ -693,7 +693,7 @@ type ApplyNodeFeatureDiscoveryManifests struct {
 }
 
 func (a *ApplyNodeFeatureDiscoveryManifests) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl apply -f /etc/kubernetes/addons/node-feature-discovery.yaml", true, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl apply -f /etc/kubernetes/addons/node-feature-discovery.yaml", true, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "apply node-feature-discovery manifests failed")
 	}
 	return nil

@@ -227,11 +227,13 @@ func (m *ChangeIPModule) Init() {
 			Command: "stop",
 		}
 		if m.KubeConf.Arg.Kubetype == common.K3s {
-			stopKubeAction.UnitNames = []string{"k3s", "backup-etcd", "etcd"}
+			stopKubeAction.UnitNames = []string{"k3s"}
 		} else {
-			stopKubeAction.UnitNames = []string{"kubelet", "backup-etcd", "etcd"}
+			stopKubeAction.UnitNames = []string{"kubelet"}
 		}
-		// why does k8s not need this?
+		if util.IsExist("/etc/systemd/system/etcd.service") {
+			stopKubeAction.UnitNames = append(stopKubeAction.UnitNames, "etcd", "backup-etcd")
+		}
 		stopKubeTask.Action = stopKubeAction
 		m.Tasks = append(m.Tasks, stopKubeTask)
 	}
@@ -244,16 +246,27 @@ func (m *ChangeIPModule) Init() {
 		m.addKubernetesTasks()
 		m.addRestartTasks()
 	}
+	if m.KubeConf.Arg.MasterHost != "" {
+		m.Tasks = append(m.Tasks,
+			&task.LocalTask{
+				Name:   "SaveMasterHostConfig",
+				Action: new(SaveMasterHostConfig),
+			})
+	}
 }
 
 func (m *ChangeIPModule) addStorageTasks() {
 	var storageComponents []string
 	juiceFSExists := util.IsExist(storage.JuiceFsServiceFile)
 	if juiceFSExists {
-		storageComponents = append(storageComponents, "juicefs", "redis-server")
+		storageComponents = append(storageComponents, "juicefs")
 	} else {
 		logger.Info("JuiceFS is not installed, no storage component needs IP reconfiguration.")
 		return
+	}
+	redisExists := util.IsExist(storage.RedisServiceFile)
+	if redisExists {
+		storageComponents = append(storageComponents, "redis-server")
 	}
 	minioExists := util.IsExist(storage.MinioServiceFile)
 	if minioExists {
@@ -267,27 +280,33 @@ func (m *ChangeIPModule) addStorageTasks() {
 				UnitNames: storageComponents,
 			},
 			Retry: 3,
-		})
-	m.Tasks = append(m.Tasks,
-		&task.LocalTask{
-			Name:   "GetOrSetRedisPassword",
-			Action: new(storage.GetOrSetRedisPassword),
 		},
-		&task.LocalTask{
-			Name:   "ReConfigureRedis",
-			Action: new(storage.ConfigRedis),
-		},
-		&task.LocalTask{
-			Name:   "EnableRedisService",
-			Action: new(storage.EnableRedisService),
-			Retry:  3,
-		},
-		&task.LocalTask{
-			Name:   "CheckRedisState",
-			Action: new(storage.CheckRedisServiceState),
-			Retry:  20,
+
+		&task.RemoteTask{
+			Name:   "GetRedisConfig",
+			Hosts:  m.Runtime.GetHostsByRole(common.Master),
+			Action: new(storage.GetOrSetRedisConfig),
+			Retry:  1,
 		},
 	)
+	if redisExists {
+		m.Tasks = append(m.Tasks,
+			&task.LocalTask{
+				Name:   "ReGenerateRedisService",
+				Action: new(storage.GenerateRedisService),
+			},
+			&task.LocalTask{
+				Name:   "EnableRedisService",
+				Action: new(storage.EnableRedisService),
+				Retry:  3,
+			},
+			&task.LocalTask{
+				Name:   "CheckRedisState",
+				Action: new(storage.CheckRedisServiceState),
+				Retry:  20,
+			},
+		)
+	}
 
 	if minioExists {
 		m.Tasks = append(m.Tasks,
@@ -330,6 +349,9 @@ func (m *ChangeIPModule) addStorageTasks() {
 }
 
 func (m *ChangeIPModule) addEtcdTasks() {
+	if !util.IsExist("/etc/systemd/system/etcd.service") {
+		return
+	}
 	m.Tasks = append(m.Tasks,
 		&task.RemoteTask{
 			Name:   "GetETCDStatus",
@@ -381,16 +403,25 @@ func (m *ChangeIPModule) addKubernetesTasks() {
 	if m.KubeConf.Arg.Kubetype == common.K3s {
 		cluster := k3s.NewK3sStatus()
 		m.PipelineCache.GetOrSet(common.ClusterStatus, cluster)
+		if !m.Runtime.GetLocalHost().IsRole(common.Master) {
+			m.Tasks = append(m.Tasks,
+				&task.RemoteTask{
+					Name:     "GetClusterStatus(k3s)",
+					Desc:     "Get k3s cluster status",
+					Hosts:    m.Runtime.GetHostsByRole(common.Master),
+					Action:   new(k3s.GetClusterStatus),
+					Parallel: false,
+				},
+			)
+		}
 		m.Tasks = append(m.Tasks,
-			&task.RemoteTask{
+			&task.LocalTask{
 				Name:   "RegenerateK3sService",
 				Action: new(k3s.GenerateK3sService),
-				Hosts:  m.Runtime.GetHostsByRole(common.Master),
 			},
-			&task.RemoteTask{
+			&task.LocalTask{
 				Name:   "RegenerateK3sServiceEnv",
 				Action: new(k3s.GenerateK3sServiceEnv),
-				Hosts:  m.Runtime.GetHostsByRole(common.Master),
 			},
 			&task.LocalTask{
 				Name:   "EnableK3sService",
@@ -399,6 +430,24 @@ func (m *ChangeIPModule) addKubernetesTasks() {
 			},
 		)
 	} else {
+		m.Tasks = append(m.Tasks,
+			&task.LocalTask{
+				Name:   "RegenerateKubeletServiceEnv",
+				Action: new(kubernetes.GenerateKubeletEnv),
+			})
+		// worker node, no need to reconfigure control-plane components
+		if !util.IsExist("/etc/kubernetes/manifests/kube-apiserver.yaml") {
+			m.Tasks = append(m.Tasks,
+				&task.LocalTask{
+					Name: "RestartKubelet",
+					Action: &SystemctlCommand{
+						Command:             "start",
+						UnitNames:           []string{"kubelet"},
+						DaemonReloadPreExec: true,
+					},
+				})
+			return
+		}
 		m.Tasks = append(m.Tasks,
 			&task.LocalTask{
 				Name:   "PrepareK8sFiles",
@@ -428,7 +477,9 @@ func (m *ChangeIPModule) addRestartTasks() {
 	restartPodsTasks := []task.Interface{
 		&task.LocalTask{
 			Name:   "RestartAllPods",
-			Action: new(DeleteAllPods),
+			Action: &DeleteAllPods{Node: m.Runtime.GetLocalHost().GetName()},
+			Retry:  5,
+			Delay:  15 * time.Second,
 		},
 	}
 	if !utils.IsExist(storage.JuiceFsServiceFile) {
@@ -459,7 +510,7 @@ func (m *ChangeIPModule) addRestartTasks() {
 
 	m.Tasks = append(m.Tasks, &task.LocalTask{
 		Name:   "EnsurePodsUpAndRunningAgain",
-		Action: new(CheckKeyPodsRunning),
+		Action: &CheckKeyPodsRunning{Node: m.Runtime.GetLocalHost().GetName()},
 		Delay:  10 * time.Second,
 		Retry:  60,
 	})
@@ -486,4 +537,37 @@ func (m *ChangeHostIPModule) Init() {
 			Action: new(UpdateNATGatewayForUser),
 		},
 	)
+}
+
+type GetMasterInfoModule struct {
+	common.KubeModule
+	Print bool
+}
+
+func (m *GetMasterInfoModule) Init() {
+	m.Name = "GetMasterInfo"
+	m.Tasks = append(m.Tasks,
+		&task.RemoteTask{
+			Name:   "GetMasterInfo",
+			Action: &GetMasterInfo{Print: m.Print},
+			Hosts:  m.Runtime.GetHostsByRole(common.Master),
+		},
+		&task.LocalTask{
+			Name:   "AddNodePrecheck",
+			Action: new(AddNodePrecheck),
+		},
+	)
+}
+
+type SaveMasterHostConfigModule struct {
+	common.KubeModule
+}
+
+func (m *SaveMasterHostConfigModule) Init() {
+	m.Name = "SaveMasterHostConfig"
+	m.Tasks = append(m.Tasks,
+		&task.LocalTask{
+			Name:   "SaveMasterHostConfig",
+			Action: new(SaveMasterHostConfig),
+		})
 }

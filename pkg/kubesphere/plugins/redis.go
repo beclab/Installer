@@ -34,7 +34,7 @@ func (t *CreateRedisSecret) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("get redis password from module cache failed")
 	}
 
-	if stdout, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s -n %s create secret generic redis-secret --from-literal=auth=%s", kubectlpath, common.NamespaceKubesphereSystem, redisPwd), false, true); err != nil {
+	if stdout, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s -n %s create secret generic redis-secret --from-literal=auth=%s", kubectlpath, common.NamespaceKubesphereSystem, redisPwd), false, true); err != nil {
 		if err != nil && !strings.Contains(stdout, "already exists") {
 			return errors.Wrap(errors.WithStack(err), "create redis secret failed")
 		}
@@ -53,7 +53,7 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	rver, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s get pod -n %s -l app=%s,tier=database,version=%s-4.0 | wc -l",
+	rver, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s get pod -n %s -l app=%s,tier=database,version=%s-4.0 | wc -l",
 		kubectlpath, common.NamespaceKubesphereSystem, common.ChartNameRedis, common.ChartNameRedis), false, false)
 
 	if err != nil || strings.Contains(rver, "No resources found") {
@@ -70,7 +70,7 @@ func (t *BackupRedisManifests) Execute(runtime connector.Runtime) error {
 			kubectlpath,
 			common.NamespaceKubesphereSystem, common.ChartNameRedis)
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("failed to backup %s svc: %v", common.ChartNameRedis, err)
 			return errors.Wrap(errors.WithStack(err), "backup redis svc failed")
 		}
@@ -125,11 +125,11 @@ func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	var jsonPatch = fmt.Sprintf(`{\"status\": {\"redis\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`,
+	var jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`,
 		time.Now().Format("2006-01-02T15:04:05Z"))
 	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
 
-	_, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+	_, err = runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch redis status failed")
 	}

@@ -30,7 +30,10 @@ type AutoRenewCertsEnabled struct {
 }
 
 func (a *AutoRenewCertsEnabled) PreCheck(runtime connector.Runtime) (bool, error) {
-	exist := runtime.GetRunner().Host.FileExist(filepath.Join("/etc/systemd/system/", templates.K8sCertsRenewService.Name()))
+	exist, err := runtime.GetRunner().FileExist(filepath.Join("/etc/systemd/system/", templates.K8sCertsRenewService.Name()))
+	if err != nil {
+		return false, err
+	}
 	if exist {
 		return !a.Not, nil
 	}

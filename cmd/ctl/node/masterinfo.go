@@ -7,13 +7,13 @@ import (
 	"log"
 )
 
-func NewCmdAddNode() *cobra.Command {
-	o := options.NewAddNodeOptions()
+func NewCmdMasterInfo() *cobra.Command {
+	o := options.NewMasterInfoOptions()
 	cmd := &cobra.Command{
-		Use:   "add",
-		Short: "add worker node to the cluster",
+		Use:   "masterinfo",
+		Short: "get information about master node, and check whether current node can be added to the cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := pipelines.AddNodePipeline(o); err != nil {
+			if err := pipelines.MasterInfoPipeline(o); err != nil {
 				log.Fatal(err)
 			}
 		},

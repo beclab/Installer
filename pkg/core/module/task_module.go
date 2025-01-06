@@ -40,6 +40,10 @@ func (b *BaseTaskModule) Is() string {
 	return TaskModuleType
 }
 
+func (b *BaseTaskModule) GetTasks() []task.Interface {
+	return b.Tasks
+}
+
 func (b *BaseTaskModule) Run(result *ending.ModuleResult) {
 	for i := range b.Tasks {
 		t := b.Tasks[i]
