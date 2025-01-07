@@ -1,7 +1,7 @@
 package gpu
 
 const (
-	GpuLabelGroup = "gpu.bytetrade.io/driver"
+	GpuLabelGroup = "gpu.bytetrade.io"
 )
 
 var (
