@@ -466,8 +466,14 @@ func UpdateNodeGpuLabel(ctx context.Context, client kubernetes.Interface, driver
 
 	if update {
 		node.SetLabels(labels)
+		safeString := func(s *string) string {
+			if s == nil {
+				return "nil"
+			}
+			return *s
+		}
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			logger.Infof("updating node gpu labels, %s, %s", *driver, *cuda)
+			logger.Infof("updating node gpu labels, %s, %s", safeString(driver), safeString(cuda))
 			_, err := client.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
 			return err
 		})
