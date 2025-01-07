@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"slices"
 	"strings"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
+	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
@@ -379,6 +379,7 @@ func (g *GetCudaVersion) Execute(runtime connector.Runtime) error {
 
 type UpdateNodeLabels struct {
 	common.KubeAction
+	precheck.CudaCheckTask
 }
 
 func (u *UpdateNodeLabels) Execute(runtime connector.Runtime) error {
@@ -398,8 +399,18 @@ func (u *UpdateNodeLabels) Execute(runtime connector.Runtime) error {
 	}
 
 	supported := "false"
-	if slices.Contains(common.DefaultCudaVersion, gpuInfo.CudaVersion) {
+
+	err = u.CudaCheckTask.Execute(runtime)
+	switch {
+	case err == precheck.ErrCudaInstalled:
 		supported = "true"
+	case err == precheck.ErrUnsupportedCudaVersion:
+		// bypass
+	case err != nil:
+		return err
+	case err == nil:
+		// impossible
+		logger.Warn("check impossible")
 	}
 
 	return UpdateNodeGpuLabel(context.Background(), client.Kubernetes(), &gpuInfo.DriverVersion, &gpuInfo.CudaVersion, &supported)
