@@ -20,10 +20,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/Masterminds/semver/v3"
 	"net"
 	"os"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -552,10 +552,15 @@ func (t *CudaCheckTask) Execute(runtime connector.Runtime) error {
 		return nil
 	default:
 		logger.Infof("NVIDIA driver is installed, version: %s, cuda version: %s", info.DriverVersion, info.CudaVersion)
-		if slices.Contains(t.SupportedCudaVersion, info.CudaVersion) {
-			return ErrCudaInstalled
-		} else {
+		oldestVer := semver.MustParse(t.SupportedCudaVersion[0])
+		newestVer := semver.MustParse(t.SupportedCudaVersion[len(t.SupportedCudaVersion)-1])
+		currentVer := semver.MustParse(info.CudaVersion)
+		if oldestVer.GreaterThan(currentVer) {
 			return ErrUnsupportedCudaVersion
 		}
+		if newestVer.LessThan(currentVer) {
+			logger.Info("CUDA version is too new, there might be compatibility issues with some applications, use at your own risk")
+		}
+		return ErrCudaInstalled
 	}
 }
