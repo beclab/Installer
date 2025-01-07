@@ -56,6 +56,7 @@ func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 		output := util.LocalMd5Sum(p)
 		if output != appx.Md5sum {
 			util.RemoveFile(p)
+			exists = false
 		}
 	}
 
@@ -151,11 +152,11 @@ func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
 		PrintLine: true,
 	}
 	if _, err := cmd.Run(); err != nil {
-		fmt.Printf("Install Ubuntu failed, please check if %s is already installed.\nyou can uninstall it by \"wsl --unregister <Distro>\".\n\n", distro)
-		return err
+		fmt.Printf("Install WSL Ubuntu Distro failed, please check if it is already installed.\nyou can uninstall it by \"olares-cli.exe olares uninstall\".\n\n")
+		return fmt.Errorf("install WSL Ubuntu Distro error %v", err)
 	}
 
-	logger.Infof("Install Ubuntu Distro %s successd\n", distro)
+	logger.Infof("Install WSL Ubuntu Distro %s successd\n", distro)
 
 	return nil
 }
