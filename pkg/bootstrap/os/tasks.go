@@ -232,7 +232,7 @@ func (n *NodeConfigureOS) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	_, err1 := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s && sed -i '/^127.0.1.1/s/.*/127.0.1.1      %s/g' /etc/hosts", host.GetName(), host.GetName()), false, false)
+	_, err1 := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s && echo \"$(sed '/^127.0.1.1/s/.*/127.0.1.1      %s/g' /etc/hosts)\" > /etc/hosts", host.GetName(), host.GetName()), false, false)
 	if err1 != nil {
 		return errors.Wrap(errors.WithStack(err1), "Failed to override hostname")
 	}
