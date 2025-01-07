@@ -662,7 +662,7 @@ func (t *RestartPlugin) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-scheduler")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s rollout restart ds nvidia-device-plugin -n kube-system", kubectlpath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s rollout restart ds nvidia-device-plugin-daemonset -n kube-system", kubectlpath), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart nvidia-device-plugin")
 	}
 
