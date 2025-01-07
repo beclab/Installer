@@ -648,15 +648,15 @@ func (t *RestartPlugin) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s scale ds nvshare-device-plugin -n nvshare-system", kubectlpath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s rollout restart ds nvshare-device-plugin -n nvshare-system", kubectlpath), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-device-plugin")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s scale ds nvshare-scheduler -n nvshare-system", kubectlpath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s rollout restart ds nvshare-scheduler -n nvshare-system", kubectlpath), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-scheduler")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s scale ds nvidia-device-plugin -n kube-system", kubectlpath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s rollout restart ds nvidia-device-plugin -n kube-system", kubectlpath), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart nvidia-device-plugin")
 	}
 

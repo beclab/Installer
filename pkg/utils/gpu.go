@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"k8s.io/klog/v2"
@@ -191,6 +192,10 @@ func ExecNvidiaSmi(execRuntime connector.Runtime) (gpuInfo *NvidiaGpuInfo, insta
 
 	out, err := execRuntime.GetRunner().Host.SudoCmd(cmdPath+" -q -x", false, false)
 	if err != nil {
+		// when nvidia-smi command is installed but cuda is not installed
+		if strings.Contains(out, "couldn't communicate with the NVIDIA driver") {
+			return nil, false, nil
+		}
 		klog.Error("Error running nvidia-smi:", err)
 		return nil, false, err
 	}
