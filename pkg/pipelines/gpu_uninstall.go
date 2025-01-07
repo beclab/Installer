@@ -21,6 +21,7 @@ func UninstallGpuDrivers() error {
 		Name:    "UninstallGpuDrivers",
 		Runtime: runtime,
 		Modules: []module.Module{
+			&gpu.NodeUnlabelingModule{},
 			&gpu.UninstallCudaModule{},
 			&gpu.RestartContainerdModule{},
 		},

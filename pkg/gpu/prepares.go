@@ -76,7 +76,8 @@ type K8sNodeInstalled struct {
 func (p *K8sNodeInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
 	client, err := clientset.NewKubeClient()
 	if err != nil {
-		return false, errors.Wrap(errors.WithStack(err), "kubeclient create error")
+		logger.Debug(errors.Wrap(errors.WithStack(err), "kubeclient create error"))
+		return false, nil
 	}
 
 	node, err := client.Kubernetes().CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
@@ -84,7 +85,9 @@ func (p *K8sNodeInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
-		return false, errors.Wrap(errors.WithStack(err), "list nodes error")
+
+		logger.Debug(errors.Wrap(errors.WithStack(err), "list nodes error"))
+		return false, nil
 	}
 
 	if len(node.Items) == 0 {
@@ -126,4 +129,24 @@ func (p *ContainerdInstalled) PreCheck(runtime connector.Runtime) (bool, error) 
 
 	logger.Info("containerd is not installed, ignore task")
 	return false, nil
+}
+
+type GpuDevicePluginInstalled struct {
+	common.KubePrepare
+}
+
+func (p *GpuDevicePluginInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
+	client, err := clientset.NewKubeClient()
+	if err != nil {
+		logger.Debug(errors.Wrap(errors.WithStack(err), "kubeclient create error"))
+		return false, nil
+	}
+
+	plugins, err := client.Kubernetes().CoreV1().Pods("kube-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvidia-device-plugin-ds"})
+	if err != nil {
+		logger.Debug(err)
+		return false, nil
+	}
+
+	return len(plugins.Items) > 0, nil
 }
