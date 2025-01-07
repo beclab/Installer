@@ -361,6 +361,7 @@ func (l *NodeUnlabelingModule) Init() {
 				},
 			},
 			new(K8sNodeInstalled),
+			new(GpuDevicePluginInstalled),
 		},
 		Action:   new(RestartPlugin),
 		Parallel: false,
