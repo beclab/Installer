@@ -522,7 +522,7 @@ func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-var ErrUnsupportedCudaVersion = errors.New("unsupported cuda version, please uninstall the current version")
+var ErrUnsupportedCudaVersion = errors.New("cuda version is too old, please install at least version 12.4")
 var ErrCudaInstalled = errors.New("cuda is installed")
 
 // CudaCheckTask checks the cuda version, if the current version is not supported, it will return an error
