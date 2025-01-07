@@ -99,7 +99,7 @@ func (l *wslPhaseBuilder) build() []module.Module {
 				&gpu.InstallContainerToolkitModule{
 					ManifestModule: manifest.ManifestModule{
 						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
+						BaseDir:  l.baseDir,
 					},
 				},
 				&gpu.RestartContainerdModule{},
