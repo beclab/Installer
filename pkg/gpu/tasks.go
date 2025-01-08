@@ -189,6 +189,9 @@ type PatchK3sDriver struct { // patch k3s on wsl
 }
 
 func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsWsl() {
+		return nil
+	}
 	var cmd = "find /usr/lib/wsl/drivers/ -name libcuda.so.1.1|head -1"
 	driverPath, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
 	if err != nil {

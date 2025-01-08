@@ -524,15 +524,14 @@ func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
 
 var ErrUnsupportedCudaVersion = errors.New("cuda version is too old, please install at least version 12.4")
 var ErrCudaInstalled = errors.New("cuda is installed")
+var supportedCudaVersions = []string{"12.4", "12.5", "12.6"}
 
 // CudaCheckTask checks the cuda version, if the current version is not supported, it will return an error
 // before executing the command `olares-cli gpu install`, we need to check the cuda version
 // if the cuda if not installed, it will return nil and the command can be executed.
 // if the cuda is installed and the version is unsupported, the command can not be executed,
 // or the cuda version is supported, executing the command is unnecessary.
-type CudaCheckTask struct {
-	SupportedCudaVersion []string
-}
+type CudaCheckTask struct{}
 
 func (t *CudaCheckTask) Name() string {
 	return "Cuda"
@@ -552,8 +551,8 @@ func (t *CudaCheckTask) Execute(runtime connector.Runtime) error {
 		return nil
 	default:
 		logger.Infof("NVIDIA driver is installed, version: %s, cuda version: %s", info.DriverVersion, info.CudaVersion)
-		oldestVer := semver.MustParse(t.SupportedCudaVersion[0])
-		newestVer := semver.MustParse(t.SupportedCudaVersion[len(t.SupportedCudaVersion)-1])
+		oldestVer := semver.MustParse(supportedCudaVersions[0])
+		newestVer := semver.MustParse(supportedCudaVersions[len(supportedCudaVersions)-1])
 		currentVer := semver.MustParse(info.CudaVersion)
 		if oldestVer.GreaterThan(currentVer) {
 			return ErrUnsupportedCudaVersion

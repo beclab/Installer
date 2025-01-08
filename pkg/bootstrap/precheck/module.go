@@ -83,7 +83,7 @@ func (m *RunPrechecksModule) Init() {
 		new(SystemdCheck),
 		new(RequiredPortsCheck),
 		new(ConflictingContainerdCheck),
-		&CudaChecker{CudaCheckTask{SupportedCudaVersion: common.DefaultCudaVersion}},
+		new(CudaChecker),
 	}
 	runPreChecks := &task.LocalTask{
 		Name: "RunPrechecks",
