@@ -230,6 +230,10 @@ func (t *PatchK3sDriver) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
+	if _, err := runtime.GetRunner().Host.SudoCmd(dstName, false, false); err != nil {
+		return errors.Wrap(err, "failed to apply CUDA patch for WSL")
+	}
+
 	return nil
 }
 
