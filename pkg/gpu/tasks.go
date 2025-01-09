@@ -1,13 +1,13 @@
 package gpu
 
 import (
+	"bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"context"
 	"fmt"
 	"os"
 	"path"
 	"strings"
 
-	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/clientset"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -67,9 +67,28 @@ type InstallCudaDeps struct {
 
 func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
 	var systemInfo = runtime.GetSystemInfo()
+	var cudaKeyringVersion string
+	var osVersion string
+	switch {
+	case systemInfo.IsUbuntu():
+		cudaKeyringVersion = v1alpha2.CudaKeyringVersion1_0
+		if systemInfo.IsUbuntuVersionEqual(connector.Ubuntu24) {
+			osVersion = "24.04"
+		} else if systemInfo.IsUbuntuVersionEqual(connector.Ubuntu22) {
+			osVersion = "22.04"
+		} else {
+			osVersion = "20.04"
+		}
+	case systemInfo.IsDebian():
+		cudaKeyringVersion = v1alpha2.CudaKeyringVersion1_1
+		if systemInfo.IsDebianVersionEqual(connector.Debian12) {
+			osVersion = connector.Debian12.String()
+		} else {
+			osVersion = connector.Debian11.String()
+		}
+	}
 	var fileId = fmt.Sprintf("%s-%s_cuda-keyring_%s-1",
-		strings.ToLower(systemInfo.GetOsPlatformFamily()), systemInfo.GetOsVersion(),
-		kubekeyapiv1alpha2.DefaultCudaKeyringVersion)
+		strings.ToLower(systemInfo.GetOsPlatformFamily()), osVersion, cudaKeyringVersion)
 
 	cudakeyring, err := t.Manifest.Get(fileId)
 	if err != nil {
@@ -82,7 +101,7 @@ func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("Failed to find %s binary in %s", cudakeyring.Filename, path)
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("dpkg -i %s", path), false, true); err != nil {
+	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("dpkg -i --force all %s", path), false, true); err != nil {
 		return err
 	}
 
@@ -96,6 +115,11 @@ type InstallCudaDriver struct {
 func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get update", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to apt-get update")
+	}
+
+	if runtime.GetSystemInfo().IsDebian() {
+		_, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-open-560", false, true)
+		return errors.Wrap(err, "failed to apt-get install nvidia-open-560")
 	}
 
 	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-kernel-open-550", false, true); err != nil {
@@ -119,18 +143,8 @@ type UpdateCudaSource struct {
 }
 
 func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
-	// only for ubuntu20.04  ubunt22.04
-	systemInfo := runtime.GetSystemInfo()
-
-	var version string
-	if strings.Contains(systemInfo.GetOsVersion(), "22.") {
-		version = "22.04"
-	} else {
-		version = "20.04"
-	}
-
 	var cmd string
-	gpgkey, err := t.Manifest.Get("gpgkey")
+	gpgkey, err := t.Manifest.Get("libnvidia-gpgkey")
 	if err != nil {
 		return err
 	}
@@ -146,14 +160,7 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	if strings.Contains(systemInfo.GetOsVersion(), "24.") {
-		return nil
-	}
-
-	var fileId = fmt.Sprintf("%s_%s_libnvidia-container.list",
-		strings.ToLower(systemInfo.GetOsPlatformFamily()), version)
-
-	libnvidia, err := t.Manifest.Get(fileId)
+	libnvidia, err := t.Manifest.Get("libnvidia-container.list")
 	if err != nil {
 		return err
 	}

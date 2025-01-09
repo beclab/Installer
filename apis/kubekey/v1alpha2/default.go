@@ -68,7 +68,8 @@ const (
 	DefaultMinioOperatorVersion    = "0.0.1"
 	DefaultRedisVersion            = "5.0.14"
 	DefaultJuiceFsVersion          = "v11.1.0"
-	DefaultCudaKeyringVersion      = "1.0"
+	CudaKeyringVersion1_0          = "1.0"
+	CudaKeyringVersion1_1          = "1.1"
 	DefaultVeleroVersion           = "v1.11.3"
 
 	DefaultMaxPods             = 200
