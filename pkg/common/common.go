@@ -167,9 +167,8 @@ const (
 )
 
 var (
-	CloudVendor                 = os.Getenv("CLOUD_VENDOR")
-	ResolvProxy                 = os.Getenv("PROXY")
-	DefaultCudaVersion []string = []string{"12.4", "12.5", "12.6"}
+	CloudVendor = os.Getenv("CLOUD_VENDOR")
+	ResolvProxy = os.Getenv("PROXY")
 )
 
 const (

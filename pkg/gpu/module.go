@@ -3,7 +3,6 @@ package gpu
 import (
 	"time"
 
-	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
@@ -27,11 +26,7 @@ func (m *InstallDriversModule) Init() {
 		Name:  "InstallCudaKeyRing",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&CudaNotInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaNotInstalled),
 			new(NvidiaGraphicsCard),
 		},
 		Action: &InstallCudaDeps{
@@ -48,11 +43,7 @@ func (m *InstallDriversModule) Init() {
 		Name:  "InstallNvidiaDriver",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&CudaNotInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaNotInstalled),
 			new(NvidiaGraphicsCard),
 		},
 		Action:   new(InstallCudaDriver),
@@ -80,15 +71,9 @@ func (m *InstallContainerToolkitModule) Init() {
 	m.Name = "InstallContainerToolkit"
 
 	updateCudaSource := &task.RemoteTask{
-		Name:  "UpdateNvidiaToolkitSource",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
-		},
+		Name:    "UpdateNvidiaToolkitSource",
+		Hosts:   m.Runtime.GetHostsByRole(common.Master),
+		Prepare: new(CudaInstalled),
 		Action: &UpdateCudaSource{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
@@ -103,11 +88,7 @@ func (m *InstallContainerToolkitModule) Init() {
 		Name:  "InstallNvidiaToolkit",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 			new(ContainerdInstalled),
 		},
 		Action:   new(InstallNvidiaContainerToolkit),
@@ -119,11 +100,7 @@ func (m *InstallContainerToolkitModule) Init() {
 		Name:  "ConfigureContainerdRuntime",
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 			new(ContainerdInstalled),
 		},
 		Action:   new(ConfigureContainerdRuntime),
@@ -235,11 +212,7 @@ func (m *InstallPluginModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 		},
 		Action:   new(CheckGpuStatus),
 		Parallel: false,
@@ -296,11 +269,7 @@ func (l *NodeLabelingModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 			new(K8sNodeInstalled),
 		},
 		Action:   new(UpdateNodeLabels),
@@ -313,11 +282,7 @@ func (l *NodeLabelingModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 			new(K8sNodeInstalled),
 		},
 		Action:   new(RestartPlugin),
@@ -355,11 +320,7 @@ func (l *NodeUnlabelingModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 			new(K8sNodeInstalled),
 			new(GpuDevicePluginInstalled),
 		},
@@ -386,11 +347,7 @@ func (l *UninstallCudaModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			&CudaInstalled{
-				CudaCheckTask: precheck.CudaCheckTask{
-					SupportedCudaVersion: common.DefaultCudaVersion,
-				},
-			},
+			new(CudaInstalled),
 		},
 		Action:   new(UninstallNvidiaDrivers),
 		Parallel: false,

@@ -142,10 +142,10 @@ func (i *InstallVeleroPlugin) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "velero install plugin error")
 	}
 
-	cmd = fmt.Sprintf("%s plugin add beclab/velero-plugin-for-terminus:%s -n %s", velero, veleroPluginVersion, ns)
-	if stdout, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, true); stdout != "" && !strings.Contains(stdout, "Duplicate") {
-		logger.Debug(stdout)
-	}
+	// cmd = fmt.Sprintf("%s plugin add beclab/velero-plugin-for-terminus:%s -n %s", velero, veleroPluginVersion, ns)
+	// if stdout, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, true); stdout != "" && !strings.Contains(stdout, "Duplicate") {
+	// 	logger.Debug(stdout)
+	// }
 
 	return nil
 }
