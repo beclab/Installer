@@ -106,7 +106,7 @@ func (p *NvidiaGraphicsCard) PreCheck(runtime connector.Runtime) (bool, error) {
 		return false, nil
 	}
 	output, err := runtime.GetRunner().Host.SudoCmd(
-		"lspci | grep VGA | grep -i nvidia", false, false)
+		"lspci | grep -i vga | grep -i nvidia", false, false)
 	if err != nil {
 		logger.Error("try to find nvidia graphics card error", err)
 		logger.Error("ignore card driver installation")

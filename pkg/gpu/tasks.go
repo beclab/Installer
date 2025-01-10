@@ -73,6 +73,7 @@ func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
 	case systemInfo.IsUbuntu():
 		cudaKeyringVersion = v1alpha2.CudaKeyringVersion1_0
 		if systemInfo.IsUbuntuVersionEqual(connector.Ubuntu24) {
+			cudaKeyringVersion = v1alpha2.CudaKeyringVersion1_1
 			osVersion = "24.04"
 		} else if systemInfo.IsUbuntuVersionEqual(connector.Ubuntu22) {
 			osVersion = "22.04"
@@ -118,8 +119,8 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 	}
 
 	if runtime.GetSystemInfo().IsDebian() {
-		_, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-open-560", false, true)
-		return errors.Wrap(err, "failed to apt-get install nvidia-open-560")
+		_, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-open", false, true)
+		return errors.Wrap(err, "failed to apt-get install nvidia-open")
 	}
 
 	if _, err := runtime.GetRunner().Host.SudoCmd("apt-get -y install nvidia-kernel-open-550", false, true); err != nil {
@@ -171,6 +172,11 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("Failed to find %s binary in %s", libnvidia.Filename, libPath)
 	}
 
+	// remove any conflicting libnvidia-container.list
+	_, err = runtime.GetRunner().Host.SudoCmd("rm -rf /etc/apt/sources.list.d/*libnvidia-container.list", false, false)
+	if err != nil {
+		return err
+	}
 	cmd = fmt.Sprintf("cp %s %s", libPath, "/etc/apt/sources.list.d/")
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
