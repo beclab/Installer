@@ -272,7 +272,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	switch runtime.GetSystemInfo().GetOsPlatformFamily() {
 	case common.Ubuntu, common.Debian:
 		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
-		if stdout != "active" {
+		if stdout == "active" {
 			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
 			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl disable systemd-resolved.service", false, true)
 
@@ -300,6 +300,15 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				logger.Errorf("backup /etc/resolv.conf error %v", err)
 				return err
 			}
+
+			httpCode, _ := utils.GetHttpStatus("https://download.docker.com/linux/ubuntu")
+			if httpCode != 200 {
+				if err := ConfigResolvConf(runtime); err != nil {
+					logger.Errorf("config /etc/resolv.conf error %v", err)
+					return err
+				}
+			}
+
 		}
 	}
 
@@ -309,20 +318,6 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
 		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
 			return errors.Wrap(err, "failed to set hostname mapping")
-		}
-	}
-
-	httpCode, _ := utils.GetHttpStatus("https://download.docker.com/linux/ubuntu")
-	if httpCode != 200 {
-		if err := ConfigResolvConf(runtime); err != nil {
-			logger.Errorf("config /etc/resolv.conf error %v", err)
-			return err
-		}
-		if utils.IsExist("/etc/resolv.conf.bak") {
-			if err := utils.DeleteFile("/etc/resolv.conf.bak"); err != nil {
-				logger.Errorf("remove /etc/resolv.conf.bak error %v", err)
-				return err
-			}
 		}
 	}
 
@@ -336,22 +331,28 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 func ConfigResolvConf(runtime connector.Runtime) error {
 	var err error
 	var cmd string
+	var secondNameserverOp string
+	overrideOp := ">"
+	appendOp := ">>"
 
 	if common.CloudVendor == common.CloudVendorAliYun {
-		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
+		secondNameserverOp = appendOp
+		cmd = `echo 'nameserver 100.100.2.136' > /etc/resolv.conf`
 		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("exec %s error %v", cmd, err)
 			return err
 		}
+	} else {
+		secondNameserverOp = overrideOp
 	}
 
-	cmd = `echo "nameserver 1.0.0.1" >> /etc/resolv.conf`
+	cmd = fmt.Sprintf("echo 'nameserver 1.1.1.1' %s /etc/resolv.conf", secondNameserverOp)
 	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
 
-	cmd = `echo "nameserver 1.1.1.1" >> /etc/resolv.conf`
+	cmd = `echo 'nameserver 114.114.114.114' >> /etc/resolv.conf`
 	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
