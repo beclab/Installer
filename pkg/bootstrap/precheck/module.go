@@ -84,7 +84,6 @@ func (m *RunPrechecksModule) Init() {
 		new(RequiredPortsCheck),
 		new(ConflictingContainerdCheck),
 		new(CudaChecker),
-		new(ValidResolvConfCheck),
 	}
 	runPreChecks := &task.LocalTask{
 		Name: "RunPrechecks",
