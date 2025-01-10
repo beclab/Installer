@@ -17,6 +17,7 @@
 package precheck
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -140,6 +141,48 @@ func (t *SystemdCheck) Check(runtime connector.Runtime) error {
 		return nil
 	}
 	return errors.New("this system is not inited by systemd, which is required by Olares")
+}
+
+type ValidResolvConfCheck struct{}
+
+func (t *ValidResolvConfCheck) Name() string {
+	return "ResolvConf"
+}
+
+func (t *ValidResolvConfCheck) Check(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsLinux() {
+		return nil
+	}
+	resolvConfFiles := []string{"/etc/resolv.conf", "/run/systemd/resolve/resolv.conf"}
+	searchDomainPrefix := "search"
+	for _, f := range resolvConfFiles {
+		file, err := os.Open(f)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("failed to open resolv.conf file %s for validity check", f)
+			}
+			continue
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if !strings.HasPrefix(line, searchDomainPrefix) {
+				continue
+			}
+			logger.Debugf("found search domain list line in file %s: %s", f, line)
+			searchDomains := strings.Fields(strings.TrimPrefix(line, searchDomainPrefix))
+			if len(searchDomains) == 0 {
+				return fmt.Errorf("invalid resolv.conf file %s: syntax error: empty search domain list", f)
+			}
+			for _, searchDomain := range searchDomains {
+				if searchDomain != "" && searchDomain != "." {
+					return fmt.Errorf("invalid resolv.conf file %s: search domain other than \".\" causes the malfunction of cluster DNS, please empty it before installation", f)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 type CudaChecker struct {
