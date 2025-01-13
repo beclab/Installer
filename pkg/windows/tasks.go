@@ -3,6 +3,7 @@ package windows
 import (
 	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -152,7 +153,7 @@ func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
 		PrintLine: true,
 	}
 	if _, err := cmd.Run(); err != nil {
-		fmt.Printf("Install WSL Ubuntu Distro failed, please check if it is already installed.\nyou can uninstall it by \"olares-cli.exe olares uninstall\".\n\n")
+		fmt.Printf("Install WSL Ubuntu Distro failed, please check if it is already installed.\nyou can uninstall it by \"wsl --unregister Ubuntu\".\n\n")
 		return fmt.Errorf("install WSL Ubuntu Distro error %v", err)
 	}
 
@@ -187,6 +188,32 @@ type ConfigWSLForwardRules struct {
 	common.KubeAction
 }
 
+func (c *ConfigWSLForwardRules) ipFormat(wslIp string) string {
+	var pip net.IP
+	var ipStrs = strings.Split(wslIp, "\r")
+	if len(ipStrs) == 0 {
+		return ""
+	}
+
+	for _, ipStr := range ipStrs {
+		var tmp = strings.TrimSpace(ipStr)
+		if tmp == "" {
+			continue
+		}
+
+		pip = net.ParseIP(tmp)
+		if pip != nil {
+			break
+		}
+	}
+
+	if pip == nil {
+		return ""
+	}
+
+	return pip.To4().String()
+}
+
 func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 	var cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{"wsl", "-d", distro, "bash", "-c", "ip address show eth0 | grep inet | grep -v inet6 | cut -d ' ' -f 6 | cut -d '/' -f 1"},
@@ -197,6 +224,12 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("get wsl %s ip failed", distro))
 	}
 
+	ip = c.ipFormat(ip)
+
+	if ip == "" {
+		return fmt.Errorf("wsl ip address not found")
+	}
+
 	logger.Infof("wsl %s, ip: %s", distro, ip)
 
 	cmd = &utils.DefaultCommandExecutor{
@@ -205,7 +238,7 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 
 	if _, err = cmd.Run(); err != nil {
 		logger.Debugf("set portproxy listenport 80 failed, maybe it's already exist %v", err)
-		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
@@ -213,7 +246,7 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 	}
 	if _, err = cmd.Run(); err != nil {
 		logger.Debugf("set portproxy listenport 443 failed, maybe it's already exist %v", err)
-		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
@@ -222,7 +255,7 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 
 	if _, err = cmd.Run(); err != nil {
 		logger.Debugf("set portproxy listenport 30180 failed, maybe it's already exist %v", err)
-		// return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	return nil
