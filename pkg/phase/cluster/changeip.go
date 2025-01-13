@@ -12,6 +12,7 @@ func ChangeIP(runtime *common.KubeRuntime) *pipeline.Pipeline {
 	var modules []module.Module
 	si := runtime.GetSystemInfo()
 	if si.IsDarwin() || si.IsWindows() {
+		runtime.Arg.HostIP = si.GetLocalIp()
 		modules = []module.Module{&terminus.ChangeHostIPModule{}}
 	} else {
 		logger.Infof("changing the Olares OS IP to %s ...", si.GetLocalIp())
