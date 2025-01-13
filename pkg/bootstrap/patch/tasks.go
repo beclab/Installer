@@ -301,7 +301,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 
-			httpCode, _ := utils.GetHttpStatus("https://download.docker.com/linux/ubuntu")
+			httpCode, _ := utils.GetHttpStatus("https://www.apple.com")
 			if httpCode != 200 {
 				if err := ConfigResolvConf(runtime); err != nil {
 					logger.Errorf("config /etc/resolv.conf error %v", err)
