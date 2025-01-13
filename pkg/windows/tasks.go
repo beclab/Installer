@@ -332,6 +332,7 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		fmt.Sprintf("export %s=%s", common.ENV_HOST_IP, systemInfo.GetLocalIp()),
 		fmt.Sprintf("export %s=%s", common.ENV_DISABLE_HOST_IP_PROMPT, os.Getenv(common.ENV_DISABLE_HOST_IP_PROMPT)),
 		fmt.Sprintf("export %s=%s", common.ENV_DOWNLOAD_CDN_URL, i.KubeConf.Arg.DownloadCdnUrl),
+		fmt.Sprintf("export %s=%s", common.ENV_NVIDIA_CONTAINER_REPO_MIRROR, os.Getenv(common.ENV_NVIDIA_CONTAINER_REPO_MIRROR)),
 	}
 
 	var defaultDomainName = os.Getenv(common.ENV_TERMINUS_OS_DOMAINNAME)
