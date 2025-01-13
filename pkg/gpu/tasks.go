@@ -4,8 +4,10 @@ import (
 	"bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
@@ -173,16 +175,35 @@ func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
 	}
 
 	// remove any conflicting libnvidia-container.list
-	_, err = runtime.GetRunner().Host.SudoCmd("rm -rf /etc/apt/sources.list.d/*libnvidia-container.list", false, false)
+	_, err = runtime.GetRunner().Host.SudoCmd("rm -rf /etc/apt/sources.list.d/*nvidia-container*.list", false, false)
 	if err != nil {
 		return err
 	}
-	cmd = fmt.Sprintf("cp %s %s", libPath, "/etc/apt/sources.list.d/")
+
+	dstPath := filepath.Join("/etc/apt/sources.list.d", filepath.Base(libPath))
+	cmd = fmt.Sprintf("cp %s %s", libPath, dstPath)
 	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
+	mirrorRepo := os.Getenv(common.ENV_NVIDIA_CONTAINER_REPO_MIRROR)
+	if mirrorRepo == "" {
+		return nil
+	}
+	mirrorRepoRawURL := mirrorRepo
+	if !strings.HasPrefix(mirrorRepoRawURL, "http") {
+		mirrorRepoRawURL = "https://" + mirrorRepoRawURL
+	}
+	mirrorRepoURL, err := url.Parse(mirrorRepoRawURL)
+	if err != nil || mirrorRepoURL.Host == "" {
+		return fmt.Errorf("invalid mirror for nvidia container: %s", mirrorRepo)
+	}
+	cmd = fmt.Sprintf("sed -i 's#nvidia.github.io#%s#g' %s", mirrorRepoURL.Host, dstPath)
+	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		return errors.Wrap(errors.WithStack(err), "failed to switch nvidia container repo to mirror site")
+	}
 	return nil
+
 }
 
 type InstallNvidiaContainerToolkit struct {
