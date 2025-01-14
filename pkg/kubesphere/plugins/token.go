@@ -37,15 +37,15 @@ func (t *GenerateKubeSphereToken) Execute(runtime connector.Runtime) error {
 	}
 
 	var cmd = fmt.Sprintf("%s get secrets -n %s --no-headers", kubectlpath, common.NamespaceKubesphereSystem)
-	stdout, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	stdout, _ := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if strings.Contains(stdout, "kubesphere-secret") {
 		cmd = fmt.Sprintf("%s delete secrets -n %s kubesphere-secret", kubectlpath, common.NamespaceKubesphereSystem)
-		runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+		runtime.GetRunner().SudoCmd(cmd, false, true)
 	}
 
 	cmd = fmt.Sprintf("%s create secret generic kubesphere-secret --from-literal=token=%s --from-literal=secret=%s -n %s", kubectlpath,
 		token, random, common.NamespaceKubesphereSystem)
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "create kubesphere token failed")
 	}
 

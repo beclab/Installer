@@ -29,7 +29,7 @@ type CoreDNSExist struct {
 }
 
 func (c *CoreDNSExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	_, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get svc -n kube-system coredns", false, false)
+	_, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get svc -n kube-system coredns", false, false)
 	if err != nil {
 		if strings.Contains(err.Error(), "NotFound") {
 			return c.Not, nil
@@ -55,7 +55,7 @@ type NodeLocalDNSConfigMapNotExist struct {
 }
 
 func (n *NodeLocalDNSConfigMapNotExist) PreCheck(runtime connector.Runtime) (bool, error) {
-	if _, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get cm -n kube-system nodelocaldns", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get cm -n kube-system nodelocaldns", false, false); err != nil {
 		if strings.Contains(err.Error(), "NotFound") {
 			return true, nil
 		}

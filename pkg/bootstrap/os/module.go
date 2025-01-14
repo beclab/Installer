@@ -17,6 +17,7 @@
 package os
 
 import (
+	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"path/filepath"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
@@ -125,6 +126,7 @@ func (c *ConfigureOSModule) Init() {
 		Name:     "GetOSData",
 		Desc:     "Get OS release",
 		Hosts:    c.Runtime.GetAllHosts(),
+		Prepare:  &kubernetes.NodeInCluster{Not: true},
 		Action:   new(GetOSData),
 		Parallel: true,
 	}
@@ -133,14 +135,16 @@ func (c *ConfigureOSModule) Init() {
 		Name:     "InitOS",
 		Desc:     "Prepare to init OS",
 		Hosts:    c.Runtime.GetAllHosts(),
+		Prepare:  &kubernetes.NodeInCluster{Not: true},
 		Action:   new(NodeConfigureOS),
 		Parallel: true,
 	}
 
 	GenerateScript := &task.RemoteTask{
-		Name:  "GenerateScript",
-		Desc:  "Generate init os script",
-		Hosts: c.Runtime.GetAllHosts(),
+		Name:    "GenerateScript",
+		Desc:    "Generate init os script",
+		Hosts:   c.Runtime.GetAllHosts(),
+		Prepare: &kubernetes.NodeInCluster{Not: true},
 		Action: &action.Template{
 			Name:     "GenerateScript",
 			Template: templates.InitOsScriptTmpl,
@@ -156,15 +160,19 @@ func (c *ConfigureOSModule) Init() {
 		Name:     "ExecScript",
 		Desc:     "Exec init os script",
 		Hosts:    c.Runtime.GetAllHosts(),
+		Prepare:  &kubernetes.NodeInCluster{Not: true},
 		Action:   new(NodeExecScript),
 		Parallel: true,
 	}
 
 	ConfigureNtpServer := &task.RemoteTask{
-		Name:     "ConfigureNtpServer",
-		Desc:     "configure the ntp server for each node",
-		Hosts:    c.Runtime.GetAllHosts(),
-		Prepare:  new(NodeConfigureNtpCheck),
+		Name:  "ConfigureNtpServer",
+		Desc:  "configure the ntp server for each node",
+		Hosts: c.Runtime.GetAllHosts(),
+		Prepare: &prepare.PrepareCollection{
+			new(NodeConfigureNtpCheck),
+			&kubernetes.NodeInCluster{Not: true},
+		},
 		Action:   new(NodeConfigureNtpServer),
 		Parallel: true,
 	}

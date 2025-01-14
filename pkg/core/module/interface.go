@@ -20,11 +20,12 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/cache"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/ending"
+	"bytetrade.io/web3os/installer/pkg/core/task"
 )
 
 type Module interface {
 	IsSkip() bool
-	Default(runtime connector.Runtime, pipelineCache *cache.Cache, moduleCache *cache.Cache)
+	Default(runtime connector.ModuleRuntime, pipelineCache *cache.Cache, moduleCache *cache.Cache)
 	Init()
 	Is() string
 	Run(result *ending.ModuleResult)
@@ -34,4 +35,9 @@ type Module interface {
 	AppendPostHook(h PostHookInterface)
 	CallPostHook(result *ending.ModuleResult) error
 	GetName() string
+}
+
+type TaskModule interface {
+	Module
+	GetTasks() []task.Interface
 }

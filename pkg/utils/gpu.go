@@ -190,7 +190,7 @@ func ExecNvidiaSmi(execRuntime connector.Runtime) (gpuInfo *NvidiaGpuInfo, insta
 		}
 	}
 
-	out, err := execRuntime.GetRunner().Host.SudoCmd(cmdPath+" -q -x", false, false)
+	out, err := execRuntime.GetRunner().SudoCmd(cmdPath+" -q -x", false, false)
 	if err != nil {
 		// when nvidia-smi command is installed but cuda is not installed
 		if strings.Contains(out, "couldn't communicate with the NVIDIA driver") {

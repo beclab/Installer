@@ -25,28 +25,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type NodeInCluster struct {
-	common.KubePrepare
-	Not bool
-}
-
-func (n *NodeInCluster) PreCheck(runtime connector.Runtime) (bool, error) {
-	host := runtime.RemoteHost()
-	if v, ok := n.PipelineCache.Get(common.ClusterStatus); ok {
-		cluster := v.(*K3sStatus)
-		var versionOk bool
-		if res, ok := cluster.NodesInfo[host.GetName()]; ok && res != "" {
-			versionOk = true
-		}
-		_, ipOk := cluster.NodesInfo[host.GetInternalAddress()]
-		if n.Not {
-			return !(versionOk || ipOk), nil
-		}
-		return versionOk || ipOk, nil
-	}
-	return false, errors.New("get k3s cluster status by pipeline cache failed")
-}
-
 type ClusterIsExist struct {
 	common.KubePrepare
 	Not bool

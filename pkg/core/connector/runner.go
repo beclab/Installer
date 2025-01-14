@@ -17,6 +17,7 @@
 package connector
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,7 +25,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
-	"github.com/pkg/errors"
 )
 
 type Runner struct {
@@ -34,9 +34,9 @@ type Runner struct {
 	Index int
 }
 
-func (r *Runner) Exec(cmd string, printOutput bool) (string, int, error) {
+func (r *Runner) Exec(cmd string, printOutput, printLine bool) (string, int, error) {
 	if r.Conn == nil {
-		return "", 1, errors.New("no ssh connection available")
+		return r.Host.ExecExt(cmd, printOutput, printLine)
 	}
 
 	stdout, code, err := r.Conn.Exec(cmd, r.Host)
@@ -57,25 +57,32 @@ func (r *Runner) Exec(cmd string, printOutput bool) (string, int, error) {
 	return stdout, code, err
 }
 
-func (r *Runner) Cmd(cmd string, printOutput bool) (string, error) {
-	stdout, _, err := r.Exec(cmd, printOutput)
+func (r *Runner) Cmd(cmd string, printOutput, printLine bool) (string, error) {
+	stdout, _, err := r.Exec(cmd, printOutput, printLine)
 	if err != nil {
 		return stdout, err
 	}
 	return stdout, nil
 }
 
-func (r *Runner) SudoExec(cmd string, printOutput bool) (string, int, error) {
-	return r.Exec(cmd, printOutput)
-}
-
-func (r *Runner) SudoCmd(cmd string, printOutput bool) (string, error) {
-	return r.Cmd(SudoPrefix(cmd), printOutput)
-}
-
-func (r *Runner) Fetch(local, remote string, printOutput bool) error {
+func (r *Runner) CmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error) {
 	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+		return r.Host.CmdExtWithContext(ctx, cmd, printOutput, printLine)
+	}
+	return r.Cmd(cmd, printOutput, printLine)
+}
+
+func (r *Runner) SudoCmd(cmd string, printOutput, printLine bool) (string, error) {
+	return r.Cmd(r.Host.SudoPrefixIfNecessary(cmd), printOutput, printLine)
+}
+
+func (r *Runner) SudoCmdContext(ctx context.Context, cmd string, printOutput, printLine bool) (string, error) {
+	return r.CmdContext(ctx, r.Host.SudoPrefixIfNecessary(cmd), printOutput, printLine)
+}
+
+func (r *Runner) Fetch(local, remote string, printOutput, printLine bool) error {
+	if r.Conn == nil {
+		return r.Host.Fetch(local, remote, printOutput, printLine)
 	}
 
 	if err := r.Conn.Fetch(local, remote, r.Host); err != nil {
@@ -88,7 +95,7 @@ func (r *Runner) Fetch(local, remote string, printOutput bool) error {
 
 func (r *Runner) Scp(local, remote string) error {
 	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+		return r.Host.Scp(local, remote)
 	}
 
 	if err := r.Conn.Scp(local, remote, r.Host); err != nil {
@@ -101,7 +108,7 @@ func (r *Runner) Scp(local, remote string) error {
 
 func (r *Runner) SudoScp(local, remote string) error {
 	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+		return r.Host.SudoScp(local, remote)
 	}
 
 	// scp to tmp dir
@@ -119,11 +126,11 @@ func (r *Runner) SudoScp(local, remote string) error {
 		return err
 	}
 
-	if _, err := r.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false); err != nil {
+	if _, err := r.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false, false); err != nil {
 		return err
 	}
 
-	if _, err := r.SudoCmd(fmt.Sprintf("rm -rf %s", filepath.Join(common.TmpDir, "*")), false); err != nil {
+	if _, err := r.SudoCmd(fmt.Sprintf("rm -rf %s", filepath.Join(common.TmpDir, "*")), false, false); err != nil {
 		return err
 	}
 	return nil
@@ -131,7 +138,7 @@ func (r *Runner) SudoScp(local, remote string) error {
 
 func (r *Runner) FileExist(remote string) (bool, error) {
 	if r.Conn == nil {
-		return false, errors.New("no ssh connection available")
+		return r.Host.FileExist(remote)
 	}
 
 	ok := r.Conn.RemoteFileExist(remote, r.Host)
@@ -141,7 +148,7 @@ func (r *Runner) FileExist(remote string) (bool, error) {
 
 func (r *Runner) DirExist(remote string) (bool, error) {
 	if r.Conn == nil {
-		return false, errors.New("no ssh connection available")
+		return r.Host.DirExist(remote)
 	}
 
 	ok, err := r.Conn.RemoteDirExist(remote, r.Host)
@@ -155,7 +162,7 @@ func (r *Runner) DirExist(remote string) (bool, error) {
 
 func (r *Runner) MkDir(path string) error {
 	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+		return r.Host.MkDir(path)
 	}
 
 	if err := r.Conn.MkDirAll(path, "", r.Host); err != nil {
@@ -167,7 +174,7 @@ func (r *Runner) MkDir(path string) error {
 
 func (r *Runner) Chmod(path string, mode os.FileMode) error {
 	if r.Conn == nil {
-		return errors.New("no ssh connection available")
+		return r.Host.Chmod(path, mode)
 	}
 
 	if err := r.Conn.Chmod(path, mode); err != nil {
@@ -179,7 +186,7 @@ func (r *Runner) Chmod(path string, mode os.FileMode) error {
 
 func (r *Runner) FileMd5(path string) (string, error) {
 	if r.Conn == nil {
-		return "", errors.New("no ssh connection available")
+		return r.Host.FileMd5(path)
 	}
 
 	cmd := fmt.Sprintf("md5sum %s | cut -d\" \" -f1", path)

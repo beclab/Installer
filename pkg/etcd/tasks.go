@@ -59,7 +59,10 @@ type GetStatus struct {
 }
 
 func (g *GetStatus) Execute(runtime connector.Runtime) error {
-	exist := runtime.GetRunner().Host.FileExist("/etc/etcd.env")
+	exist, err := runtime.GetRunner().FileExist("/etc/etcd.env")
+	if err != nil {
+		return err
+	}
 
 	host := runtime.RemoteHost()
 	cluster := &EtcdCluster{
@@ -69,7 +72,7 @@ func (g *GetStatus) Execute(runtime connector.Runtime) error {
 	}
 
 	if exist {
-		etcdEnv, err := runtime.GetRunner().Host.SudoCmd("cat /etc/etcd.env | grep ETCD_NAME", false, true)
+		etcdEnv, err := runtime.GetRunner().SudoCmd("cat /etc/etcd.env | grep ETCD_NAME", false, true)
 		if err != nil {
 			return err
 		}
@@ -120,7 +123,7 @@ func (s *SyncCertsFile) Execute(runtime connector.Runtime) error {
 	fileList := files.([]string)
 
 	for _, fileName := range fileList {
-		if err := runtime.GetRunner().Host.SudoScp(filepath.Join(dir, fileName), filepath.Join(common.ETCDCertDir, fileName)); err != nil {
+		if err := runtime.GetRunner().SudoScp(filepath.Join(dir, fileName), filepath.Join(common.ETCDCertDir, fileName)); err != nil {
 			return errors.Wrap(errors.WithStack(err), "scp etcd certs file failed")
 		}
 	}
@@ -146,13 +149,13 @@ func (g *InstallETCDBinary) Execute(runtime connector.Runtime) error {
 	path := binary.FilePath(g.BaseDir)
 
 	dst := filepath.Join(common.TmpDir, binary.Filename)
-	if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
+	if err := runtime.GetRunner().Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync etcd tar.gz failed")
 	}
 
 	etcdDir := strings.TrimSuffix(binary.Filename, ".tar.gz")
 	installCmd := fmt.Sprintf("tar -zxf %s && cp -f %s-*/etcd* /usr/local/bin/ && chmod +x /usr/local/bin/etcd* && rm -rf %s-*", dst, etcdDir, etcdDir)
-	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install etcd binaries failed")
 	}
 	return nil
@@ -203,7 +206,7 @@ func healthCheck(runtime connector.Runtime, cluster *EtcdCluster) error {
 		"export ETCDCTL_CA_FILE='/etc/ssl/etcd/ssl/ca.pem';"+
 		"%s/etcdctl --endpoints=%s cluster-health | grep -q 'cluster is healthy'",
 		host.GetName(), host.GetName(), common.BinDir, cluster.accessAddresses)
-	if _, err := runtime.GetRunner().Host.SudoCmd(checkHealthCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(checkHealthCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "etcd health check failed")
 	}
 	return nil
@@ -329,7 +332,7 @@ func (j *JoinMember) Execute(runtime connector.Runtime) error {
 			host.GetName(), host.GetName(), common.BinDir, cluster.accessAddresses, etcdName,
 			fmt.Sprintf("https://%s:2380", host.GetInternalAddress()))
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(joinMemberCmd, true, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(joinMemberCmd, true, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "add etcd member failed")
 		}
 	} else {
@@ -351,7 +354,7 @@ func (c *CheckMember) Execute(runtime connector.Runtime) error {
 			"export ETCDCTL_KEY_FILE='/etc/ssl/etcd/ssl/admin-%s-key.pem';"+
 			"export ETCDCTL_CA_FILE='/etc/ssl/etcd/ssl/ca.pem';"+
 			"%s/etcdctl --no-sync --endpoints=%s member list", host.GetName(), host.GetName(), common.BinDir, cluster.accessAddresses)
-		memberList, err := runtime.GetRunner().Host.SudoCmd(checkMemberCmd, true, false)
+		memberList, err := runtime.GetRunner().SudoCmd(checkMemberCmd, true, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "list etcd member failed")
 		}
@@ -369,7 +372,7 @@ type RestartETCD struct {
 }
 
 func (r *RestartETCD) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload && systemctl restart etcd && systemctl enable etcd", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload && systemctl restart etcd && systemctl enable etcd", false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "start etcd failed")
 	}
 	return nil
@@ -398,7 +401,7 @@ func (b *BackupETCD) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("chmod +x %s/etcd-backup.sh", b.KubeConf.Cluster.Etcd.BackupScriptDir), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("chmod +x %s/etcd-backup.sh", b.KubeConf.Cluster.Etcd.BackupScriptDir), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "chmod etcd backup script failed")
 	}
 	return nil
@@ -409,7 +412,7 @@ type EnableBackupETCDService struct {
 }
 
 func (e *EnableBackupETCDService) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable --now backup-etcd.timer",
+	if _, err := runtime.GetRunner().SudoCmd("systemctl enable --now backup-etcd.timer",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "enable backup-etcd.service failed")
 	}

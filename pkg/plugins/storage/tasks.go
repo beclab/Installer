@@ -31,7 +31,7 @@ type DeployLocalVolume struct {
 
 func (d *DeployLocalVolume) Execute(runtime connector.Runtime) error {
 	cmd := fmt.Sprintf("/usr/local/bin/kubectl apply -f %s", filepath.Join(common.KubeAddonsDir, "local-volume.yaml"))
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "deploy local-volume.yaml failed")
 	}
 	return nil

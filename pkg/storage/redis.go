@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -30,7 +29,7 @@ func (t *CheckRedisServiceState) Execute(runtime connector.Runtime) error {
 	var localIp = systemInfo.GetLocalIp()
 	var rpwd, _ = t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 	var cmd = fmt.Sprintf("%s -h %s -a %s ping", RedisCliFile, localIp, rpwd)
-	if pong, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false); !strings.Contains(pong, "PONG") {
+	if pong, _ := runtime.GetRunner().SudoCmd(cmd, false, false); !strings.Contains(pong, "PONG") {
 		return fmt.Errorf("failed to connect redis server: %s:6379", localIp)
 	}
 
@@ -42,43 +41,49 @@ type EnableRedisService struct {
 }
 
 func (t *EnableRedisService) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("sysctl -w vm.overcommit_memory=1 net.core.somaxconn=10240", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("sysctl -w vm.overcommit_memory=1 net.core.somaxconn=10240", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl restart redis-server", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl restart redis-server", false, false); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable redis-server", false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl enable redis-server", false, false); err != nil {
 		return err
 	}
 
 	var cmd = "( sleep 10 && systemctl --no-pager status redis-server ) || ( systemctl restart redis-server && sleep 3 && systemctl --no-pager status redis-server ) || ( systemctl restart redis-server && sleep 3 && systemctl --no-pager status redis-server )"
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-type GetOrSetRedisPassword struct {
+type GetOrSetRedisConfig struct {
 	common.KubeAction
 }
 
-func (t *GetOrSetRedisPassword) Execute(runtime connector.Runtime) (err error) {
+func (t *GetOrSetRedisConfig) Execute(runtime connector.Runtime) (err error) {
 	var redisPassword string
+	redisAddress := runtime.RemoteHost().GetInternalAddress()
 	defer func() {
 		if err == nil {
 			t.PipelineCache.Set(common.CacheHostRedisPassword, redisPassword)
+			t.PipelineCache.Set(common.CacheHostRedisAddress, redisAddress)
 		}
 	}()
-	if !util.IsExist(RedisConfigFile) {
+	exist, err := runtime.GetRunner().FileExist(RedisConfigFile)
+	if err != nil {
+		return err
+	}
+	if !exist {
 		redisPassword, _ = utils.GeneratePassword(16)
 		return
 	}
-	redisPassword, err = getRedisPwdFromConfigFile()
+	redisPassword, err = getRedisPwdFromConfigFile(runtime)
 	if err != nil {
 		return
 	}
@@ -91,20 +96,20 @@ func (t *GetOrSetRedisPassword) Execute(runtime connector.Runtime) (err error) {
 	return
 }
 
-func getRedisPwdFromConfigFile() (string, error) {
+func getRedisPwdFromConfigFile(runtime connector.Runtime) (string, error) {
 	var cmd = fmt.Sprintf("cat %s 2>&1 |grep requirepass |cut -d' ' -f2 |tr -d '\n'", RedisConfigFile)
-	if res, _, err := util.Exec(context.Background(), cmd, false, false); err != nil {
+	if res, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return "", errors.Wrap(err, "failed to get redis password")
 	} else {
 		return res, nil
 	}
 }
 
-type ConfigRedis struct {
+type GenerateRedisService struct {
 	common.KubeAction
 }
 
-func (t *ConfigRedis) Execute(runtime connector.Runtime) error {
+func (t *GenerateRedisService) Execute(runtime connector.Runtime) error {
 	redisPassword, ok := t.PipelineCache.GetMustString(common.CacheHostRedisPassword)
 	if !ok || redisPassword == "" {
 		return errors.New("redis password not set")
@@ -186,31 +191,39 @@ func (t *InstallRedis) Execute(runtime connector.Runtime) error {
 
 	path := redis.FilePath(t.BaseDir)
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf /tmp/redis-* && cp -f %s /tmp/%s && cd /tmp && tar xf ./%s", path, redis.Filename, redis.Filename), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf /tmp/redis-* && cp -f %s /tmp/%s && cd /tmp && tar xf ./%s", path, redis.Filename, redis.Filename), false, false); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "untar redis failed")
 	}
 
 	unpackPath := strings.TrimSuffix(redis.Filename, ".tar.gz")
 	var cmd = fmt.Sprintf("cd /tmp/%s && cp ./* /usr/local/bin/ && rm -rf ./%s",
 		unpackPath, unpackPath)
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		return err
 	}
-	// if _, err := runtime.GetRunner().Host.SudoCmd("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
+	// if _, err := runtime.GetRunner().SudoCmd("[[ ! -f /usr/local/bin/redis-sentinel ]] && /usr/local/bin/redis-server /usr/local/bin/redis-sentinel || true", false, true); err != nil {
 	// 	return err
 	// }
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisServerFile, RedisServerInstalledFile, RedisServerFile), false, true); err != nil {
+	if exist, err := runtime.GetRunner().FileExist(RedisServerFile); err != nil {
 		return err
+	} else if !exist {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("ln -s %s %s", RedisServerInstalledFile, RedisServerFile), false, true); err != nil {
+			return err
+		}
 	}
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("[[ ! -f %s ]] && ln -s %s %s || true", RedisCliFile, RedisCliInstalledFile, RedisCliFile), false, true); err != nil {
+	if exist, err := runtime.GetRunner().FileExist(RedisCliFile); err != nil {
 		return err
+	} else if !exist {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("ln -s %s %s", RedisCliInstalledFile, RedisCliFile), false, true); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (t *InstallRedis) getGlibcVersion(runtime connector.Runtime) (GlibcVersion, error) {
-	output, err := runtime.GetRunner().Host.SudoCmd("ldd --version", false, false)
+	output, err := runtime.GetRunner().SudoCmd("ldd --version", false, false)
 	if err != nil {
 		return "", err
 	}
@@ -294,15 +307,15 @@ func (m *InstallRedisModule) Init() {
 	}
 
 	getOrSetRedisPassword := &task.LocalTask{
-		Name:   "GetOrSetRedisPassword",
-		Action: new(GetOrSetRedisPassword),
+		Name:   "GetOrSetRedisConfig",
+		Action: new(GetOrSetRedisConfig),
 		Retry:  1,
 	}
 
 	configRedis := &task.RemoteTask{
 		Name:     "Config",
 		Hosts:    m.Runtime.GetAllHosts(),
-		Action:   new(ConfigRedis),
+		Action:   new(GenerateRedisService),
 		Parallel: false,
 		Retry:    0,
 	}
