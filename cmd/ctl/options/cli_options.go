@@ -70,6 +70,7 @@ func (o *CliPrepareSystemOptions) AddFlags(cmd *cobra.Command) {
 type ChangeIPOptions struct {
 	Version         string
 	BaseDir         string
+	NewMasterHost   string
 	WSLDistribution string
 	MinikubeProfile string
 }
@@ -81,6 +82,7 @@ func NewChangeIPOptions() *ChangeIPOptions {
 func (o *ChangeIPOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+	cmd.Flags().StringVar(&o.NewMasterHost, "new-master-host", "", "Update the master node's IP if it's changed, only in Linux worker node")
 	cmd.Flags().StringVarP(&o.WSLDistribution, "distribution", "d", "", "Set WSL distribution name, only in Windows platform, defaults to "+common.WSLDefaultDistribution)
 	cmd.Flags().StringVarP(&o.MinikubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
 }
@@ -111,4 +113,34 @@ func NewInstallStorageOptions() *InstallStorageOptions {
 func (o *InstallStorageOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+}
+
+type AddNodeOptions struct {
+	common.MasterHostConfig
+	Version string
+	BaseDir string
+}
+
+func NewAddNodeOptions() *AddNodeOptions {
+	return &AddNodeOptions{}
+}
+
+func (o *AddNodeOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set Olares version, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+	(&o.MasterHostConfig).AddFlags(cmd.Flags())
+}
+
+type MasterInfoOptions struct {
+	BaseDir string
+	common.MasterHostConfig
+}
+
+func NewMasterInfoOptions() *MasterInfoOptions {
+	return &MasterInfoOptions{}
+}
+
+func (o *MasterInfoOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+	(&o.MasterHostConfig).AddFlags(cmd.Flags())
 }

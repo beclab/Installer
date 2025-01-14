@@ -68,8 +68,8 @@ func NewK3sCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.
 	}
 
 	m := []module.Module{
-		&os.ConfigureOSModule{},
 		&k3s.StatusModule{},
+		&os.ConfigureOSModule{},
 		&etcd.PreCheckModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{
@@ -130,8 +130,8 @@ func NewCreateClusterPhase(runtime *common.KubeRuntime, manifestMap manifest.Ins
 	m := []module.Module{
 		&precheck.NodePreCheckModule{},
 		&confirm.InstallConfirmModule{Skip: runtime.Arg.SkipConfirmCheck},
-		&os.ConfigureOSModule{},
 		&kubernetes.StatusModule{},
+		&os.ConfigureOSModule{},
 		&etcd.PreCheckModule{Skip: runtime.Cluster.Etcd.Type != kubekeyapiv1alpha2.KubeKey},
 		&etcd.CertsModule{},
 		&etcd.InstallETCDBinaryModule{

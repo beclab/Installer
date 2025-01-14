@@ -52,11 +52,11 @@ func (s *SyncDockerBinaries) Execute(runtime connector.Runtime) error {
 	}
 
 	dst := filepath.Join(common.TmpDir, docker.FileName)
-	if err := runtime.GetRunner().Host.Scp(docker.Path(), dst); err != nil {
+	if err := runtime.GetRunner().Scp(docker.Path(), dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync docker binaries failed"))
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(
+	if _, err := runtime.GetRunner().SudoCmd(
 		fmt.Sprintf("mkdir -p /usr/bin && tar -zxf %s && mv docker/* /usr/bin && rm -rf docker", dst),
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install container runtime docker binaries failed"))
@@ -69,7 +69,7 @@ type EnableDocker struct {
 }
 
 func (e *EnableDocker) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd(
+	if _, err := runtime.GetRunner().SudoCmd(
 		"systemctl daemon-reload && systemctl enable docker && systemctl start docker",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("enable and start docker failed"))
@@ -90,18 +90,18 @@ func (p *DockerLoginRegistry) Execute(runtime connector.Runtime) error {
 			continue
 		}
 		cmd := fmt.Sprintf("docker login --username \"%s\" --password \"%s\" %s", entry.Username, entry.Password, repo)
-		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 			return errors.Wrapf(err, "login registry failed, cmd: %v, err:%v", cmd, err)
 		}
 	}
 
-	if output, err := runtime.GetRunner().Host.SudoCmd(
+	if output, err := runtime.GetRunner().SudoCmd(
 		"if [ -e $HOME/.docker/config.json ]; "+
 			"then echo 'exist'; "+
 			"fi", false, false); err == nil && strings.Contains(output, "exist") {
 
 		cmd := "mkdir -p /.docker && cp -f $HOME/.docker/config.json /.docker/ && chmod 0644 /.docker/config.json "
-		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 			return errors.Wrapf(err, "copy docker auths failed cmd: %v, err:%v", cmd, err)
 		}
 	}
@@ -114,7 +114,7 @@ type DisableDocker struct {
 }
 
 func (d *DisableDocker) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl disable docker && systemctl stop docker",
+	if _, err := runtime.GetRunner().SudoCmd("systemctl disable docker && systemctl stop docker",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("disable and stop docker failed"))
 	}
@@ -135,7 +135,7 @@ func (d *DisableDocker) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, file := range files {
-		_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
+		_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", file), false, true)
 	}
 	return nil
 }

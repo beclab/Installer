@@ -209,15 +209,13 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 		return nil, err
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to get hostname: %v\n", err))
-	}
+	ip := d.arg.SystemInfo.GetLocalIp()
+	hostname := d.arg.SystemInfo.GetHostname()
 
 	allInOne.Spec.Hosts = append(allInOne.Spec.Hosts, kubekeyapiv1alpha2.HostCfg{
 		Name:            hostname,
-		Address:         d.arg.SystemInfo.GetLocalIp(),
-		InternalAddress: d.arg.SystemInfo.GetLocalIp(),
+		Address:         ip,
+		InternalAddress: ip,
 		Port:            kubekeyapiv1alpha2.DefaultSSHPort,
 		User:            user,
 		Password:        "",
@@ -225,11 +223,29 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 		Arch:            d.arg.SystemInfo.GetOsArch(),
 	})
 
-	allInOne.Spec.RoleGroups = map[string][]string{
-		Master:   {hostname},
-		ETCD:     {hostname},
-		Worker:   {hostname},
-		Registry: {hostname},
+	if d.arg.MasterHost == "" {
+		allInOne.Spec.RoleGroups = map[string][]string{
+			Master:   {hostname},
+			ETCD:     {hostname},
+			Worker:   {hostname},
+			Registry: {hostname},
+		}
+	} else {
+		allInOne.Spec.Hosts = append(allInOne.Spec.Hosts, kubekeyapiv1alpha2.HostCfg{
+			Name:            d.arg.MasterNodeName,
+			Address:         d.arg.MasterHost,
+			InternalAddress: d.arg.MasterHost,
+			Port:            d.arg.MasterSSHPort,
+			User:            d.arg.MasterSSHUser,
+			Password:        d.arg.MasterSSHPassword,
+			PrivateKeyPath:  d.arg.MasterSSHPrivateKeyPath,
+		})
+		allInOne.Spec.RoleGroups = map[string][]string{
+			Master:   {d.arg.MasterNodeName},
+			ETCD:     {d.arg.MasterNodeName},
+			Worker:   {d.arg.MasterNodeName, hostname},
+			Registry: {d.arg.MasterNodeName},
+		}
 	}
 
 	if ver := normalizedBuildVersion(d.KubernetesVersion); ver != "" {

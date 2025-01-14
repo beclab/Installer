@@ -30,7 +30,7 @@ type CheckDefaultStorageClass struct {
 }
 
 func (c *CheckDefaultStorageClass) PreCheck(runtime connector.Runtime) (bool, error) {
-	output, err := runtime.GetRunner().Host.SudoCmd(
+	output, err := runtime.GetRunner().SudoCmd(
 		"/usr/local/bin/kubectl get sc --no-headers | grep '(default)' | wc -l", false, false)
 	if err != nil {
 		return false, errors.Wrap(errors.WithStack(err), "check default storageClass failed")

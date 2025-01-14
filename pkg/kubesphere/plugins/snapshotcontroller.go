@@ -31,7 +31,7 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 	var buildFilesDir = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir)
 	var scrd = path.Join(buildFilesDir, "snapshot-controller", "crds", "snapshot.storage.k8s.io_volumesnapshot.yaml")
 	var cmd = fmt.Sprintf("%s apply -f %s --force", kubectlpath, scrd)
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("Install snapshot controller failed: %v", err)
 	}
 

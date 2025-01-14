@@ -55,10 +55,10 @@ func (t *InstallMinioOperator) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar zxvf %s", binary.Path()), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar zxvf %s", binary.Path()), false, true); err != nil {
 		return err
 	}
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("install -m 755 %s/minio-operator %s", binary.BaseDir, MinioOperatorFile), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("install -m 755 %s/minio-operator %s", binary.BaseDir, MinioOperatorFile), false, true); err != nil {
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (t *InstallMinioOperator) Execute(runtime connector.Runtime) error {
 		MinioOperatorFile, localIp, runtime.RemoteHost().GetName(),
 		runtime.RemoteHost().GetName(), minioData, minioPassword)
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 

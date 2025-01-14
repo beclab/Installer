@@ -207,6 +207,23 @@ func (b *BaseRuntime) GetHostsByRole(role string) []Host {
 	}
 }
 
+func (b *BaseRuntime) GetLocalHost() Host {
+	si := b.GetSystemInfo()
+	for i := range b.allHosts {
+		if b.allHosts[i].GetName() == si.GetHostname() {
+			return b.allHosts[i]
+		}
+	}
+	return &BaseHost{
+		Name:            common.LocalHost,
+		User:            si.GetUsername(),
+		Address:         si.GetLocalIp(),
+		InternalAddress: si.GetLocalIp(),
+		Arch:            si.GetOsArch(),
+		Os:              si.GetOsType(),
+	}
+}
+
 func (b *BaseRuntime) RemoteHost() Host {
 	return b.GetRunner().Host
 }
