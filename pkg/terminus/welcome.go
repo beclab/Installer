@@ -28,22 +28,37 @@ func (t *WelcomeMessage) Execute(runtime connector.Runtime) error {
 	}
 	var filteredPublicIPs []net.IP
 	for _, publicIP := range publicIPs {
-		if publicIP != nil && publicIP.String() != localIP {
-			filteredPublicIPs = append(filteredPublicIPs, publicIP)
+		if publicIP == nil {
+			continue
 		}
+		if publicIP.String() == localIP {
+			continue
+		}
+		for _, filteredIP := range filteredPublicIPs {
+			if filteredIP.String() == publicIP.String() {
+				continue
+			}
+		}
+		filteredPublicIPs = append(filteredPublicIPs, publicIP)
 	}
 
 	logger.InfoInstallationProgress("Installation wizard is complete")
 	logger.InfoInstallationProgress("All done")
 	fmt.Printf("\n\n\n\n------------------------------------------------\n\n")
-	logger.Info("Olares is running at:")
+	logger.Info("Olares is running locally at:")
 	logger.Infof("http://%s:%d", localIP, port)
 	if len(filteredPublicIPs) > 0 {
 		fmt.Println()
-		logger.Info("and publicly available at:")
+		logger.Info("and publicly accessible at:")
 		for _, publicIP := range filteredPublicIPs {
 			logger.Infof("http://%s:%d", publicIP, port)
 		}
+	} else if publicNetworkInfo.PubliclyAccessible && publicNetworkInfo.ExternalPublicIP != nil {
+		fmt.Println()
+		logger.Info("this machine is explicitly specified as publicly accessible")
+		logger.Info("but no public IP address can be found from the system")
+		logger.Info("a reflected public IP as seen by others on the internet is determined on a best effort basis:")
+		logger.Infof("http://%s:%d", localIP, port)
 	}
 	fmt.Println()
 	logger.Info("Open your browser and visit the above address")
