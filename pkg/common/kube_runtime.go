@@ -133,6 +133,18 @@ type PublicNetworkInfo struct {
 	// AWS contains the info retrieved from the AWS instance metadata service
 	// if any
 	AWSPublicIP net.IP `json:"aws"`
+
+	// ExternalPublicIP is the IP address seen by others on the internet
+	// it may not be an IP address
+	// that's directly bound to a local network interface, e.g. on an AWS EC2 instance
+	// or may not be an IP address
+	// that can be used to access the machine at all, e.g. a machine behind multiple NAT gateways
+	// this is used as a fallback method to determine the machine's public IP address
+	// if none can be found from the OS or AWS IMDS service
+	// but the user explicitly specifies that the machine is publicly accessible
+	ExternalPublicIP net.IP `json:"external_public_ip"`
+
+	PubliclyAccessible bool `json:"publicly_accessible"`
 }
 
 type User struct {
@@ -174,14 +186,13 @@ type Frp struct {
 }
 
 func NewArgument() *Argument {
-	return &Argument{
+	arg := &Argument{
 		KsEnable:         true,
 		KsVersion:        DefaultKubeSphereVersion,
 		InstallPackages:  false,
 		SKipPushImages:   false,
 		ContainerManager: Containerd,
 		SystemInfo:       connector.GetSystemInfo(),
-		IsCloudInstance:  strings.EqualFold(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION), TRUE),
 		Storage: &Storage{
 			StorageType: ManagedMinIO,
 		},
@@ -201,6 +212,9 @@ func NewArgument() *Argument {
 		HostIP:                 os.Getenv(ENV_HOST_IP),
 		Environment:            os.Environ(),
 	}
+	arg.IsCloudInstance, _ = strconv.ParseBool(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION))
+	arg.PublicNetworkInfo.PubliclyAccessible, _ = strconv.ParseBool(os.Getenv(ENV_PUBLICLY_ACCESSIBLE))
+	return arg
 }
 
 func (a *Argument) GetWslUserPath() string {
@@ -306,7 +320,7 @@ func (a *Argument) SetReverseProxy() {
 	if enableCloudflare == "" {
 		enableCloudflare = "1"
 	}
-	if a.IsCloudInstance {
+	if a.PublicNetworkInfo.PubliclyAccessible {
 		enableCloudflare = "0"
 	} else if os.Getenv("FRP_ENABLE") == "1" {
 		enableCloudflare = "0"
