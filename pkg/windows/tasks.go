@@ -110,9 +110,9 @@ func (u *UpdateWSL) Execute(runtime connector.Runtime) error {
 	}
 
 	var cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"wsl", "--update"},
+		Commands: []string{"--update"},
 	}
-	if _, err := cmd.Run(); err != nil {
+	if _, err := cmd.RunCmd("wsl", utils.DEFAULT); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("Update WSL failed"))
 	}
 
@@ -148,16 +148,71 @@ type InstallWSLDistro struct {
 }
 
 func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
-	var cmd = &utils.PowerShellCommandExecutor{
-		Commands:  []string{ubuntuTool, "install", "--root"},
+	var cmd = &utils.DefaultCommandExecutor{
+		Commands:  []string{"install", "--root"},
 		PrintLine: true,
 	}
-	if _, err := cmd.Run(); err != nil {
-		fmt.Printf("Install WSL Ubuntu Distro failed, please check if it is already installed.\nyou can uninstall it by \"wsl --unregister Ubuntu\".\n\n")
-		return fmt.Errorf("install WSL Ubuntu Distro error %v", err)
+	if _, err := cmd.RunCmd(ubuntuTool, utils.GBK); err != nil {
+		fmt.Printf("\nStop Installation !!!!!!!\n\n")
+		fmt.Printf("Installing Windows Olares will use the Ubuntu Distro. It has been detected that there is already an existing Ubuntu Distro in the system. \n\n")
+		fmt.Printf("You can use the 'wsl -l --all' command to view the list of WSL Distros.\n\n")
+		fmt.Printf("To proceed with the installation of Olares, you need to unregister the existing Ubuntu Distro. If your Ubuntu Distro contains important information, please back it up first, then unregister the Ubuntu Distro. \n\n")
+		fmt.Printf("Uninstallation command: 'wsl --unregister Ubuntu'\n\n")
+		fmt.Printf("After the unregister Ubuntu Distro is complete, please reinstall Olares.\n\n")
+
+		return fmt.Errorf("need to unregister Ubuntu Distro")
 	}
 
 	logger.Infof("Install WSL Ubuntu Distro %s successd\n", distro)
+
+	return nil
+}
+
+type MoveDistro struct {
+	common.KubeAction
+}
+
+func (m *MoveDistro) Execute(runtime connector.Runtime) error {
+	distroStoreDriver, _ := m.PipelineCache.GetMustString(common.CacheWindowsDistroStoreLocation)
+	if distroStoreDriver == "" {
+		return errors.New("get distro location failed")
+	}
+	var distroStorePath = fmt.Sprintf("%s:\\.olares\\distro", distroStoreDriver)
+	if !utils.IsExist(distroStorePath) {
+		utils.CreateDir(distroStorePath)
+	}
+
+	var si = runtime.GetSystemInfo()
+	var aclCmd = &utils.DefaultCommandExecutor{
+		Commands: []string{fmt.Sprintf("%s:\\.olares", distroStoreDriver), "/grant", fmt.Sprintf("Users:(OI)(CI)F")},
+	}
+
+	logger.Infof("distro store path: %s, user: %s", distroStorePath, si.GetUsername())
+
+	if aclRes, err := aclCmd.RunCmd("icacls", utils.GBK); err != nil {
+		logger.Debugf("icacls exec failed, err: %v, message: %s", err, aclRes)
+		return err
+	}
+
+	var cmd = &utils.DefaultCommandExecutor{
+		Commands: []string{"--shutdown"},
+	}
+
+	_, _ = cmd.RunCmd("wsl", utils.DEFAULT)
+
+	var removeCmd = &utils.DefaultCommandExecutor{
+		Commands: []string{"--manage", distro, "--move", distroStorePath},
+	}
+
+	if _, err := removeCmd.RunCmd("wsl", utils.DEFAULT); err != nil {
+		return err
+	}
+
+	cmd = &utils.DefaultCommandExecutor{
+		Commands: []string{"--shutdown"},
+	}
+
+	_, _ = cmd.RunCmd("wsl", utils.DEFAULT)
 
 	return nil
 }
@@ -168,16 +223,16 @@ type ConfigWslConf struct {
 
 func (c *ConfigWslConf) Execute(runtime connector.Runtime) error {
 	var cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"wsl", "-d", distro, "-u", "root", "bash", "-c", "echo -e '[boot]\\nsystemd=true\\ncommand=\"mount --make-rshared /\"\\n[network]\\ngenerateHosts=false\\ngenerateResolvConf=false\\nhostname=terminus' > /etc/wsl.conf"},
+		Commands: []string{"-d", distro, "-u", "root", "bash", "-c", "echo -e '[boot]\\nsystemd=true\\ncommand=\"mount --make-rshared /\"\\n[network]\\ngenerateHosts=false\\ngenerateResolvConf=false\\nhostname=terminus' > /etc/wsl.conf"},
 	}
-	if _, err := cmd.Run(); err != nil {
+	if _, err := cmd.RunCmd("wsl", utils.DEFAULT); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s hosts and dns failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"wsl", "--shutdown", distro},
+		Commands: []string{"--shutdown", distro},
 	}
-	if _, err := cmd.Run(); err != nil {
+	if _, err := cmd.RunCmd("wsl", utils.DEFAULT); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("shutdown wsl %s failed", distro))
 	}
 
@@ -190,6 +245,7 @@ type ConfigWSLForwardRules struct {
 
 func (c *ConfigWSLForwardRules) ipFormat(wslIp string) string {
 	var pip net.IP
+	wslIp = strings.ReplaceAll(wslIp, "\n", "\r")
 	var ipStrs = strings.Split(wslIp, "\r")
 	if len(ipStrs) == 0 {
 		return ""
@@ -225,7 +281,6 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 	}
 
 	ip = c.ipFormat(ip)
-
 	if ip == "" {
 		return fmt.Errorf("wsl ip address not found")
 	}
@@ -235,26 +290,24 @@ func (c *ConfigWSLForwardRules) Execute(runtime connector.Runtime) error {
 	cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{fmt.Sprintf("netsh interface portproxy add v4tov4 listenport=80 listenaddress=0.0.0.0 connectport=80 connectaddress=%s", ip)},
 	}
-
-	if _, err = cmd.Run(); err != nil {
-		logger.Debugf("set portproxy listenport 80 failed, maybe it's already exist %v", err)
+	if output, err := cmd.Run(); err != nil {
+		logger.Debugf("set portproxy listenport 80 failed %v, message: %s", err, output)
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{fmt.Sprintf("netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=443 connectaddress=%s", ip)},
 	}
-	if _, err = cmd.Run(); err != nil {
-		logger.Debugf("set portproxy listenport 443 failed, maybe it's already exist %v", err)
+	if output, err := cmd.Run(); err != nil {
+		logger.Debugf("set portproxy listenport 443 failed %v, message: %s", err, output)
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
 	cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{fmt.Sprintf("netsh interface portproxy add v4tov4 listenport=30180 listenaddress=0.0.0.0 connectport=30180 connectaddress=%s", ip)},
 	}
-
-	if _, err = cmd.Run(); err != nil {
-		logger.Debugf("set portproxy listenport 30180 failed, maybe it's already exist %v", err)
+	if output, err := cmd.Run(); err != nil {
+		logger.Debugf("set portproxy listenport 30180 failed %v, message: %s", err, output)
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s forward rules failed", distro))
 	}
 
@@ -267,15 +320,15 @@ type ConfigWSLHostsAndDns struct {
 
 func (c *ConfigWSLHostsAndDns) Execute(runtime connector.Runtime) error {
 	var cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"wsl", "-d", distro, "-u", "root", "bash", "-c", "chattr -i /etc/hosts /etc/resolv.conf && "},
+		Commands: []string{"-d", distro, "-u", "root", "bash", "-c", "chattr -i /etc/hosts /etc/resolv.conf && "},
 	}
-	_, _ = cmd.Run()
+	_, _ = cmd.RunCmd("wsl", utils.DEFAULT)
 
 	cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"wsl", "-d", distro, "-u", "root", "bash", "-c", "echo -e '127.0.0.1 localhost\\n$(ip -4 addr show eth0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}') $(hostname)' > /etc/hosts && echo -e 'nameserver 1.1.1.1\\nnameserver 1.0.0.1' > /etc/resolv.conf"},
+		Commands: []string{"-d", distro, "-u", "root", "bash", "-c", "echo -e '127.0.0.1 localhost\\n$(ip -4 addr show eth0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}') $(hostname)' > /etc/hosts && echo -e 'nameserver 1.1.1.1\\nnameserver 1.0.0.1' > /etc/resolv.conf"},
 	}
 
-	if _, err := cmd.Run(); err != nil {
+	if _, err := cmd.RunCmd("wsl", utils.DEFAULT); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("config wsl %s hosts and dns failed", distro))
 	}
 
@@ -368,23 +421,29 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		fmt.Sprintf("export %s=%s", common.ENV_NVIDIA_CONTAINER_REPO_MIRROR, os.Getenv(common.ENV_NVIDIA_CONTAINER_REPO_MIRROR)),
 	}
 
+	var bashUrl = fmt.Sprintf("https://%s", cc.DefaultBashUrl)
 	var defaultDomainName = os.Getenv(common.ENV_TERMINUS_OS_DOMAINNAME)
 	if !utils.IsValidDomain(defaultDomainName) {
 		defaultDomainName = ""
 	}
 	if defaultDomainName != "" {
 		envs = append(envs, fmt.Sprintf("export %s=%s", common.ENV_TERMINUS_OS_DOMAINNAME, defaultDomainName))
+		bashUrl = fmt.Sprintf("https://%s", defaultDomainName)
 	}
 
 	for key, val := range common.TerminusGlobalEnvs {
 		envs = append(envs, fmt.Sprintf("export %s=%s", key, val))
 	}
 
-	var installScript = fmt.Sprintf("curl -fsSL https://olares.sh | bash -")
+	var downloadUrl = i.KubeConf.Arg.DownloadCdnUrl
+	if downloadUrl == "" {
+		downloadUrl = cc.DownloadUrl
+	}
+	var installScript = fmt.Sprintf("curl -fsSL %s | bash -", bashUrl)
 	if i.KubeConf.Arg.TerminusVersion != "" {
 		var installFile = fmt.Sprintf("install-wizard-v%s.tar.gz", i.KubeConf.Arg.TerminusVersion)
 		installScript = fmt.Sprintf("curl -fsSLO %s/%s && tar -xf %s -C ./ ./install.sh && rm -rf %s && bash ./install.sh",
-			cc.DownloadUrl, installFile, installFile, installFile)
+			downloadUrl, installFile, installFile, installFile)
 	}
 
 	var params = strings.Join(envs, " && ")
@@ -419,9 +478,9 @@ type UninstallOlares struct {
 
 func (u *UninstallOlares) Execute(runtime connector.Runtime) error {
 	var cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"wsl", "--unregister", "Ubuntu"},
+		Commands: []string{"--unregister", "Ubuntu"},
 	}
-	_, _ = cmd.Run()
+	_, _ = cmd.RunCmd("wsl", utils.UTF16)
 
 	return nil
 }
@@ -446,8 +505,81 @@ func (r *RemovePortProxy) Execute(runtime connector.Runtime) error {
 	var ports = []string{"80", "443", "30180"}
 	for _, port := range ports {
 		(&utils.DefaultCommandExecutor{
-			Commands: []string{fmt.Sprintf("netsh interface portproxy delete v4tov4 listenport=%s listenaddress=0.0.0.0", port)}}).Run()
+			Commands: []string{"interface", "portproxy", "delete", "v4tov4", fmt.Sprintf("listenport=%s", port), "listenaddress=0.0.0.0"}}).RunCmd("netsh", utils.DEFAULT)
 	}
 
 	return nil
+}
+
+type GetDiskPartition struct {
+	common.KubeAction
+}
+
+func (g *GetDiskPartition) Execute(runtime connector.Runtime) error {
+	var partitions []string
+	paths := utils.GetDrives()
+	if paths == nil || len(paths) == 0 {
+		return fmt.Errorf("Unable to retrieve disk information")
+	}
+
+	for _, path := range paths {
+		_, free, err := utils.GetDiskSpace(path)
+		if err != nil {
+			continue
+		}
+		partitions = append(partitions, fmt.Sprintf("%s_%s", path, utils.FormatBytes(int64(free))))
+	}
+
+	if len(partitions) == 0 {
+		return fmt.Errorf("Unable to retrieve disk space information")
+	}
+	fmt.Printf("\nInstalling Olares will create a WSL Ubuntu Distro and occupy at least 80 GB of disk space. \nCurrent disk available space, please select the disk to store the WSL Ubuntu Distro: \n\n")
+	for _, v := range partitions {
+		var tmp = strings.Split(v, "_")
+		fmt.Printf("%s  Free Disk: %s\n", tmp[0], tmp[1])
+	}
+
+	var enterPath string
+	var useDefaultDisk = os.Getenv(common.ENV_DEFAULT_WSL_DISTRO_LOCATION)
+	useDefaultDisk = strings.TrimSpace(useDefaultDisk)
+
+	switch {
+	case useDefaultDisk != "":
+		enterPath = "C"
+		break
+	default:
+		scanner := bufio.NewScanner(os.Stdin)
+
+		for {
+			fmt.Printf("\nPlease enter the drive, such as C, D, ... : ")
+
+			scanner.Scan()
+			enterPath = scanner.Text()
+			enterPath = strings.TrimSpace(enterPath)
+			checkPathValid := g.checkEnter(enterPath, partitions)
+			if !checkPathValid {
+				continue
+			}
+			break
+		}
+	}
+
+	g.PipelineCache.Set(common.CacheWindowsDistroStoreLocation, enterPath)
+	fmt.Printf("\n")
+
+	return nil
+}
+
+func (g *GetDiskPartition) checkEnter(enterPath string, partitions []string) bool {
+	var res bool = false
+	for _, v := range partitions {
+		var tmp = fmt.Sprintf("%s:\\", enterPath)
+		var p = strings.Split(v, "_")
+		if tmp == p[0] {
+			res = true
+			break
+		}
+	}
+
+	return res
 }

@@ -14,6 +14,8 @@ func (w *windowsInstallPhaseBuilder) build() []module.Module {
 	return []module.Module{
 		&windows.InstallWSLModule{},
 		&windows.InstallWSLUbuntuDistroModule{},
+		&windows.GetDiskPartitionModule{},
+		&windows.MoveDistroModule{},
 		&windows.ConfigWslModule{},
 		&windows.InstallTerminusModule{},
 	}

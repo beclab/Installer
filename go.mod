@@ -36,6 +36,7 @@ replace (
 )
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/containerd/containerd v1.7.18
 	github.com/containers/image/v5 v5.32.2
@@ -76,7 +77,6 @@ require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -221,10 +221,10 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.5
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/sys v0.27.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/klog/v2 v2.120.1 // indirect
+	k8s.io/klog/v2 v2.120.1
 	sigs.k8s.io/controller-runtime v0.18.4
 )
