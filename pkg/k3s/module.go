@@ -552,6 +552,11 @@ func (d *DeleteClusterModule) Init() {
 	d.Name = "DeleteClusterModule"
 	d.Desc = "Delete k3s cluster"
 
+	deleteCurrentNode := &task.LocalTask{
+		Name:   "DeleteCurrentNode",
+		Action: new(kubernetes.KubectlDeleteCurrentWorkerNode),
+	}
+
 	killScript := &task.RemoteTask{
 		Name:     "ExecKillAllScript(k3s)",
 		Hosts:    d.Runtime.GetHostsByRole(common.K8s),
@@ -569,6 +574,7 @@ func (d *DeleteClusterModule) Init() {
 	}
 
 	d.Tasks = []task.Interface{
+		deleteCurrentNode,
 		killScript,
 		execScript,
 	}
