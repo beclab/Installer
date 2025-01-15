@@ -692,6 +692,34 @@ func (d *DrainNode) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type KubectlDeleteCurrentWorkerNode struct {
+	common.KubeAction
+	FailOnError bool
+}
+
+func (k *KubectlDeleteCurrentWorkerNode) Execute(runtime connector.Runtime) error {
+	// currently only master node has a redis server
+	if util.IsExist(storage.RedisServiceFile) {
+		return nil
+	}
+
+	kubectl, err := util.GetCommand(common.CommandKubectl)
+	// kubernetes very likely not installed
+	if err != nil {
+		return nil
+	}
+	nodeName := runtime.GetSystemInfo().GetHostname()
+	if _, _, err := util.Exec(context.Background(), fmt.Sprintf(
+		"%s delete node %s", kubectl, nodeName),
+		true, false); err != nil {
+		if k.FailOnError {
+			return err
+		}
+		logger.Infof("failed to delete current node from kubernetes metadata, if this is a worker node, please delete it manually by \"kubectl delete node %s\" on the master to clean up", nodeName)
+	}
+	return nil
+}
+
 type KubectlDeleteNode struct {
 	common.KubeAction
 }
