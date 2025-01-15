@@ -46,6 +46,23 @@ func (i *InstallWSLUbuntuDistroModule) Init() {
 	}
 }
 
+// Move the distro to another drive to avoid excessive system disk space usage.
+// If using the import method, you can directly specify the location, and it will later be switched to the import method
+type MoveDistroModule struct {
+	common.KubeModule
+}
+
+func (m *MoveDistroModule) Init() {
+	m.Name = "MoveDistro"
+
+	m.Tasks = []task.Interface{
+		&task.LocalTask{
+			Name:   "MoveDistro",
+			Action: &MoveDistro{},
+		},
+	}
+}
+
 type ConfigWslModule struct {
 	common.KubeModule
 }
@@ -113,6 +130,21 @@ func (u *UninstallOlaresModule) Init() {
 		&task.LocalTask{
 			Name:   "RemovePortProxy",
 			Action: &RemovePortProxy{},
+		},
+	}
+}
+
+type GetDiskPartitionModule struct {
+	common.KubeModule
+}
+
+func (g *GetDiskPartitionModule) Init() {
+	g.Name = "GetDiskPartition"
+
+	g.Tasks = []task.Interface{
+		&task.LocalTask{
+			Name:   "GetDiskPartition",
+			Action: &GetDiskPartition{},
 		},
 	}
 }

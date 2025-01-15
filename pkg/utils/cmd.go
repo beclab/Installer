@@ -10,14 +10,15 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"github.com/pkg/errors"
-	"golang.org/x/text/encoding/simplifiedchinese"
+	utilexec "k8s.io/utils/exec"
 )
 
 type Charset string
 
 const (
-	UTF8    = Charset("UTF-8")
-	GB18030 = Charset("GB18030")
+	DEFAULT Charset = "DEFAULT"
+	GBK     Charset = "GBK"
+	UTF16   Charset = "UTF16"
 )
 
 type CommandExecute interface {
@@ -70,6 +71,17 @@ func (d *DefaultCommandExecutor) Run() (string, error) {
 	return cmd.run()
 }
 
+func (d *DefaultCommandExecutor) RunCmd(name string, charset Charset) (string, error) {
+	var cmd = &CommandExecutor{
+		name:        name,
+		cmd:         d.Commands,
+		printOutput: d.PrintOutput,
+		printLine:   d.PrintLine,
+	}
+
+	return cmd.runcmd(charset)
+}
+
 func (d *DefaultCommandExecutor) Exec() (string, error) {
 	var cmd = &CommandExecutor{
 		name:        "cmd",
@@ -94,6 +106,29 @@ func NewCommandExecutor(name, prefix string, args []string, printOutput, printLi
 
 func (command *CommandExecutor) getCmd() string {
 	return strings.Join(command.cmd, " ")
+}
+
+func (command *CommandExecutor) runcmd(charset Charset) (string, error) {
+	var res string
+	var exec = utilexec.New()
+
+	output, err := exec.Command(command.name, command.cmd...).Output()
+	switch charset {
+	case UTF16:
+		res = Utf16ToUtf8(output)
+	case GBK:
+		tmp, _ := GbkToUtf8(output)
+		res = string(tmp)
+	default:
+		res = string(output)
+	}
+
+	if err != nil {
+		return res, err
+	}
+
+	logger.Debugf("[exec] CMD: %s, OUTPUT: %s", fmt.Sprintf("%s %v", command.name, command.cmd), res)
+	return res, nil
 }
 
 func (command *CommandExecutor) run() (string, error) {
@@ -232,18 +267,4 @@ func (command *CommandExecutor) exec() (string, error) {
 	}
 	logger.Debugf("[exec] CMD: %s, OUTPUT: %s", c.String(), res)
 	return res, errors.Wrapf(err, "Failed to exec command: %s \n%s", command.getCmd(), res)
-}
-
-func ConvertByte2String(byte []byte, charset Charset) string {
-	var str string
-	switch charset {
-	case GB18030:
-		decodeBytes, _ := simplifiedchinese.GB18030.NewDecoder().Bytes(byte)
-		str = string(decodeBytes)
-	case UTF8:
-		fallthrough
-	default:
-		str = string(byte)
-	}
-	return str
 }
