@@ -253,6 +253,8 @@ const (
 	CacheAppValues     = "app_built_in_values"
 
 	CacheCountPodsUsingHostIP = "count_pods_using_host_ip"
+
+	CacheWindowsDistroStoreLocation = "windows_distro_store_location"
 )
 
 const (
@@ -293,6 +295,7 @@ const (
 	ENV_DISABLE_HOST_IP_PROMPT      = "DISABLE_HOST_IP_PROMPT"
 	ENV_AUTO_ADD_FIREWALL_RULES     = "AUTO_ADD_FIREWALL_RULES"
 	ENV_TERMINUS_OS_DOMAINNAME      = "TERMINUS_OS_DOMAINNAME"
+	ENV_DEFAULT_WSL_DISTRO_LOCATION = "DEFAULT_WSL_DISTRO_LOCATION" // If set to 1, the default WSL distro storage will be used.
 )
 
 // TerminusGlobalEnvs holds a group of general environment variables
