@@ -374,24 +374,16 @@ type DeleteTerminusUserData struct {
 }
 
 func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
-	var userdata []string
-	filepath.WalkDir(OlaresJuiceFSRootDir, func(path string, d fs.DirEntry, err error) error {
-		if path != OlaresJuiceFSRootDir {
-			if d.IsDir() && d.Name() != ".trash" {
-				userdata = append(userdata, path)
-				return filepath.SkipDir
-			}
-		}
-
-		return nil
-	},
-	)
-
-	userdata = append(userdata, []string{
+	userdataDirs := []string{
 		OlaresUserDataDir,
-	}...)
+		JuiceFsCacheDir,
+	}
 
-	for _, d := range userdata {
+	if util.IsExist(RedisServiceFile) {
+		userdataDirs = append(userdataDirs, OlaresJuiceFSRootDir)
+	}
+
+	for _, d := range userdataDirs {
 		if util.IsExist(d) {
 			if err := util.RemoveDir(d); err != nil {
 				logger.Errorf("remove %s failed %v", d, err)

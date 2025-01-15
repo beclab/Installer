@@ -342,6 +342,11 @@ func (r *ResetClusterModule) Init() {
 	r.Name = "ResetClusterModule"
 	r.Desc = "Reset kubernetes cluster"
 
+	deleteCurrentNode := &task.LocalTask{
+		Name:   "DeleteCurrentNode",
+		Action: new(KubectlDeleteCurrentWorkerNode),
+	}
+
 	kubeadmReset := &task.RemoteTask{
 		Name:     "KubeadmReset(k8s)",
 		Desc:     "Reset the cluster using kubeadm",
@@ -352,6 +357,7 @@ func (r *ResetClusterModule) Init() {
 	}
 
 	r.Tasks = []task.Interface{
+		deleteCurrentNode,
 		kubeadmReset,
 	}
 }
