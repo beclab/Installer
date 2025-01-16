@@ -55,6 +55,7 @@ type Cfg struct {
 }
 
 const socketEnvPrefix = "env:"
+const SudoPasswordPrompt = "[sudo] password for %p: "
 
 type connection struct {
 	mu         sync.Mutex
@@ -366,7 +367,15 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 
 		line += string(b)
 
-		if (strings.HasPrefix(line, "[sudo] password for ") || strings.HasPrefix(line, "Password")) && strings.HasSuffix(line, ": ") {
+		// we explicitly specify a custom sudo prompt to avoid unexpected prompts at best effort
+		// which should fit in almost all the cases in our program,
+		// but other prompts are also possible
+		// e.g., because of a hardcoded "sudo" command string in the program
+		// or third-party scripts executed by us that contain the "sudo" command
+		// the Chinese colon suffix are checked to fit a machine with Chinese locale
+		// in very rare cases, if the native sudo prompt does not start with "[sudo]" and end with a colon,
+		// this match can still miss
+		if strings.HasPrefix(line, "[sudo]") && (strings.HasSuffix(line, ": ") || strings.HasSuffix(line, "： ")) {
 			_, err = in.Write([]byte(host.GetPassword() + "\n"))
 			if err != nil {
 				break
@@ -601,5 +610,5 @@ func (c *connection) Chmod(path string, mode os.FileMode) error {
 
 func SudoPrefix(cmd string) string {
 	cmd = strings.ReplaceAll(cmd, `"`, `\"`)
-	return fmt.Sprintf("sudo -E /bin/bash -c \"%s\"", cmd)
+	return fmt.Sprintf("sudo -p \"%s\" -E /bin/bash -c \"%s\"", SudoPasswordPrompt, cmd)
 }
