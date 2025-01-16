@@ -55,7 +55,6 @@ type Cfg struct {
 }
 
 const socketEnvPrefix = "env:"
-const SudoPasswordPrompt = "[sudo] password for %p: "
 
 type connection struct {
 	mu         sync.Mutex
@@ -347,9 +346,10 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 	}
 
 	var (
-		output []byte
-		line   = ""
-		r      = bufio.NewReader(out)
+		output     []byte
+		line       = ""
+		r          = bufio.NewReader(out)
+		trimPrefix = ""
 	)
 
 	for {
@@ -376,6 +376,7 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 		// in very rare cases, if the native sudo prompt does not start with "[sudo]" and end with a colon,
 		// this match can still miss
 		if strings.HasPrefix(line, "[sudo]") && (strings.HasSuffix(line, ": ") || strings.HasSuffix(line, "： ")) {
+			trimPrefix = line
 			_, err = in.Write([]byte(host.GetPassword() + "\n"))
 			if err != nil {
 				break
@@ -389,7 +390,7 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 			exitCode = exitErr.ExitStatus()
 		}
 	}
-	outStr := strings.TrimPrefix(string(output), fmt.Sprintf("[sudo] password for %s:", host.GetUser()))
+	outStr := strings.TrimPrefix(string(output), trimPrefix)
 
 	// preserve original error
 	return strings.TrimSpace(outStr), exitCode, errors.Wrapf(err, "Failed to exec command: %s \n%s", cmd, strings.TrimSpace(outStr))
@@ -610,5 +611,5 @@ func (c *connection) Chmod(path string, mode os.FileMode) error {
 
 func SudoPrefix(cmd string) string {
 	cmd = strings.ReplaceAll(cmd, `"`, `\"`)
-	return fmt.Sprintf("sudo -p \"%s\" -E /bin/bash -c \"%s\"", SudoPasswordPrompt, cmd)
+	return fmt.Sprintf("sudo -p \"[sudo] Passowrd: \" -E /bin/bash -c \"%s\"", cmd)
 }
