@@ -23,7 +23,7 @@ func (p *Ubuntu24AppArmorCheck) PreCheck(runtime connector.Runtime) (bool, error
 	}
 
 	cmd := "apparmor_parser --version"
-	stdout, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+	stdout, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		logger.Errorf("check apparmor version error %v", err)
 		return false, nil

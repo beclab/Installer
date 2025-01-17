@@ -37,20 +37,20 @@ func (t *CreateMiniKubeCluster) Execute(runtime connector.Runtime) error {
 	}
 
 	cmd := fmt.Sprintf("%s profile %s", minikube, t.KubeConf.Arg.MinikubeProfile)
-	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	stdout, err := runtime.GetRunner().Cmd(cmd, false, false)
 	if err != nil {
 		return errors.Wrap(err, "failed to check minikube profile")
 	} else if !strings.Contains(stdout, "not found") {
 		logger.Infof("found old minikube cluster %s, deleting...", t.KubeConf.Arg.MinikubeProfile)
 		cmd = fmt.Sprintf("%s delete -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
-		stdout, err = runtime.GetRunner().Host.CmdExt(cmd, false, true)
+		stdout, err = runtime.GetRunner().Cmd(cmd, false, true)
 		if err != nil {
 			return errors.Wrap(err, "failed to delete old minikube cluster")
 		}
 	}
 	logger.Infof("creating minikube cluster %s ...", t.KubeConf.Arg.MinikubeProfile)
 	cmd = fmt.Sprintf("%s start -p '%s' --kubernetes-version=v1.22.10 --container-runtime=containerd --network-plugin=cni --cni=calico --cpus='4' --memory='8g' --ports=30180:30180,443:443,80:80", minikube, t.KubeConf.Arg.MinikubeProfile)
-	if _, err := runtime.GetRunner().Host.CmdExt(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().Cmd(cmd, false, true); err != nil {
 		return errors.Wrap(err, "failed to create minikube cluster")
 	}
 
@@ -70,7 +70,7 @@ func (t *RetagMinikubeKubeImages) Execute(runtime connector.Runtime) error {
 	}
 
 	cmd := fmt.Sprintf("%s image ls -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
-	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	stdout, err := runtime.GetRunner().Cmd(cmd, false, false)
 	if err != nil {
 		return errors.Wrap(err, "failed to check list minikube images")
 	}
@@ -79,7 +79,7 @@ func (t *RetagMinikubeKubeImages) Execute(runtime connector.Runtime) error {
 		if strings.HasPrefix(image, legacyKubeImageRepo) {
 			newTag := strings.ReplaceAll(image, legacyKubeImageRepo, newKubeImageRepo)
 			cmd = fmt.Sprintf("%s image tag %s %s -p %s", minikube, image, newTag, t.KubeConf.Arg.MinikubeProfile)
-			_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+			_, err = runtime.GetRunner().Cmd(cmd, false, false)
 			if err != nil {
 				return errors.Wrap(err, "failed to retag minikube images")
 			}
@@ -103,7 +103,7 @@ func (t *GetMiniKubeContainerdConfig) Execute(runtime connector.Runtime) error {
 	}
 	t.ModuleCache.Set(common.CacheMinikubeTmpContainerdConfigFile, tmpConfigFile.Name())
 	cmd := fmt.Sprintf("%s ssh cat %s > %s -p %s", minikube, minikubeContainerdConfigFilePath, tmpConfigFile.Name(), t.KubeConf.Arg.MinikubeProfile)
-	_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	_, err = runtime.GetRunner().Cmd(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("failed to get minikube containerd config: %w", err)
 	}
@@ -202,13 +202,13 @@ func (t *ReloadMinikubeContainerdConfig) Execute(runtime connector.Runtime) erro
 		return errors.New("failed to get minikube containerd config temp file path")
 	}
 	cmd := fmt.Sprintf("%s cp %s %s -p %s", minikube, tmpConfigFilePath, minikubeContainerdConfigFilePath, t.KubeConf.Arg.MinikubeProfile)
-	_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	_, err = runtime.GetRunner().Cmd(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("failed to cp back minikube containerd config: %w", err)
 	}
 
 	cmd = fmt.Sprintf("%s ssh sudo systemctl restart containerd -p %s", minikube, t.KubeConf.Arg.MinikubeProfile)
-	_, err = runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	_, err = runtime.GetRunner().Cmd(cmd, false, false)
 	if err != nil {
 		return fmt.Errorf("failed to restart containerd in minikube: %w", err)
 	}
@@ -272,7 +272,7 @@ func (t *UninstallMinikube) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("minikube not found")
 	}
 
-	if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s stop --all && %s delete --all", minikubepath, minikubepath), false, true); err != nil {
+	if _, err := runtime.GetRunner().Cmd(fmt.Sprintf("%s stop --all && %s delete --all", minikubepath, minikubepath), false, true); err != nil {
 		return err
 	}
 
@@ -307,7 +307,7 @@ type Download struct {
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
-	var arch = runtime.GetRunner().Host.GetArch()
+	var arch = runtime.RemoteHost().GetArch()
 
 	var systemInfo = runtime.GetSystemInfo()
 	var osType = systemInfo.GetOsType()
@@ -366,8 +366,8 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 	if !ok || minikubecmd == "" {
 		minikubecmd = path.Join(common.BinDir, "minikube")
 	}
-	var cmd = fmt.Sprintf("%s -p %s profile list -o json --light=false", minikubecmd, runtime.GetRunner().Host.GetMinikubeProfile())
-	stdout, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+	var cmd = fmt.Sprintf("%s -p %s profile list -o json --light=false", minikubecmd, runtime.RemoteHost().GetMinikubeProfile())
+	stdout, err := runtime.GetRunner().Cmd(cmd, false, false)
 	if err != nil {
 		return err
 	}
@@ -383,7 +383,7 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 
 	var nodeIp string
 	for _, v := range p.Valid {
-		if v.Name != runtime.GetRunner().Host.GetMinikubeProfile() {
+		if v.Name != runtime.RemoteHost().GetMinikubeProfile() {
 			continue
 		}
 		if v.Config.Nodes == nil || len(v.Config.Nodes) == 0 {
@@ -397,7 +397,7 @@ func (t *GetMinikubeProfile) Execute(runtime connector.Runtime) error {
 	}
 
 	if !util.IsExist(common.KubeAddonsDir) {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", common.KubeAddonsDir), false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("mkdir -p %s", common.KubeAddonsDir), false, true); err != nil {
 			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("create dir %s failed", common.KubeAddonsDir))
 		}
 	}
@@ -419,7 +419,7 @@ func (t *PatchCoreDNSSVC) Execute(runtime connector.Runtime) error {
 	}
 
 	coreDNSSVCPatchFilePath := filepath.Join(runtime.GetInstallerDir(), "deploy/patch-k3s.yaml")
-	_, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s apply -f %s", kubectlcmd, coreDNSSVCPatchFilePath), false, true)
+	_, err := runtime.GetRunner().Cmd(fmt.Sprintf("%s apply -f %s", kubectlcmd, coreDNSSVCPatchFilePath), false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("failed to patch coredns service", err))
 	}
@@ -443,7 +443,7 @@ func (t *InitMinikubeNs) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, ns := range allNs {
-		if stdout, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("%s create ns %s", kubectlcmd, ns), false, true); err != nil {
+		if stdout, err := runtime.GetRunner().Cmd(fmt.Sprintf("%s create ns %s", kubectlcmd, ns), false, true); err != nil {
 			if !strings.Contains(stdout, "already exists") {
 				logger.Errorf("create ns %s failed: %v", ns, err)
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("create namespace %s failed: %v", ns, err))

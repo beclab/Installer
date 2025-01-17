@@ -19,6 +19,8 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 	"net"
 	"os"
 	"path/filepath"
@@ -40,7 +42,7 @@ type KubeRuntime struct {
 	Cluster     *kubekeyapiv1alpha2.ClusterSpec
 	Kubeconfig  string
 	ClientSet   *kubekeyclientset.Clientset
-	Arg         Argument
+	Arg         *Argument
 }
 
 type Argument struct {
@@ -79,13 +81,9 @@ type Argument struct {
 	DownloadCdnUrl  string `json:"download_cdn_url"`
 
 	// master node ssh config
-	MasterHost              string `json:"master_host"`
-	MasterNodeName          string `json:"master_node_name"`
-	MasterSSHPort           int    `json:"master_ssh_port"`
-	MasterSSHUser           string `json:"master_ssh_user"`
-	MasterSSHPassword       string `json:"-"`
-	MasterSSHPrivateKeyPath string `json:"-"`
-	LocalSSHPort            int    `json:"-"`
+	*MasterHostConfig
+
+	LocalSSHPort int `json:"-"`
 
 	SkipMasterPullImages bool `json:"skip_master_pull_images"`
 
@@ -122,6 +120,34 @@ type Argument struct {
 	HostIP             string   `json:"host_ip"`
 
 	CudaVersion string `json:"cuda_version"`
+}
+
+type MasterHostConfig struct {
+	MasterHost              string `json:"master_host"`
+	MasterNodeName          string `json:"master_node_name"`
+	MasterSSHUser           string `json:"master_ssh_user"`
+	MasterSSHPassword       string `json:"master_ssh_password"`
+	MasterSSHPrivateKeyPath string `json:"master_ssh_private_key_path"`
+	MasterSSHPort           int    `json:"master_ssh_port"`
+}
+
+func (cfg *MasterHostConfig) AddFlags(fs *pflag.FlagSet) {
+	fs.StringVar(&cfg.MasterHost, "master-host", "", "IP address of the master node")
+	fs.StringVar(&cfg.MasterNodeName, "master-node-name", "", "Name of the master node")
+	fs.StringVar(&cfg.MasterSSHUser, "master-ssh-user", "", "Username of the master node, defaults to root")
+	fs.StringVar(&cfg.MasterSSHPassword, "master-ssh-password", "", "Password of the master node")
+	fs.StringVar(&cfg.MasterSSHPrivateKeyPath, "master-ssh-private-key-path", "", "Path to the SSH key to access the master node, defaults to ~/.ssh/id_rsa")
+	fs.IntVar(&cfg.MasterSSHPort, "master-ssh-port", 0, "SSH Port of the master node, defaults to 22")
+}
+
+func (cfg *MasterHostConfig) Validate() error {
+	if cfg.MasterHost == "" {
+		return errors.New("--master-host is not provided")
+	}
+	if cfg.MasterSSHUser != "" && cfg.MasterSSHUser != "root" && cfg.MasterSSHPassword == "" {
+		return errors.New("--master-ssh-password must be provided for non-root user in order to execute sudo command")
+	}
+	return nil
 }
 
 type PublicNetworkInfo struct {
@@ -211,6 +237,7 @@ func NewArgument() *Argument {
 		TerminusDNSServiceAPI:  os.Getenv(ENV_TERMINUS_DNS_SERVICE_API),
 		HostIP:                 os.Getenv(ENV_HOST_IP),
 		Environment:            os.Environ(),
+		MasterHostConfig:       &MasterHostConfig{},
 	}
 	arg.IsCloudInstance, _ = strconv.ParseBool(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION))
 	arg.PublicNetworkInfo.PubliclyAccessible, _ = strconv.ParseBool(os.Getenv(ENV_PUBLICLY_ACCESSIBLE))
@@ -354,6 +381,9 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 }
 
 func (a *Argument) SetBaseDir(dir string) {
+	if dir == "" {
+		dir = a.SystemInfo.GetHomeDir()
+	}
 	a.BaseDir = dir
 	if dir != "" && !filepath.IsAbs(dir) {
 		dir, _ = filepath.Abs(dir)
@@ -377,6 +407,47 @@ func (a *Argument) SetManifest(manifest string) {
 func (a *Argument) SetConsoleLog(fileName string, truncate bool) {
 	a.ConsoleLogFileName = fileName
 	a.ConsoleLogTruncate = truncate
+}
+
+func (a *Argument) SetMasterHostOverride(config MasterHostConfig) {
+	if config.MasterHost != "" {
+		a.MasterHost = config.MasterHost
+	}
+	if config.MasterNodeName != "" {
+		a.MasterNodeName = config.MasterNodeName
+	}
+
+	// set a dummy name to bypass validity checks
+	// as it will be overridden later when the node name is fetched
+	if a.MasterNodeName == "" {
+		a.MasterNodeName = "master"
+	}
+	if config.MasterSSHPassword != "" {
+		a.MasterSSHPassword = config.MasterSSHPassword
+	}
+	if config.MasterSSHUser != "" {
+		a.MasterSSHUser = config.MasterSSHUser
+	}
+	if config.MasterSSHPort != 0 {
+		a.MasterSSHPort = config.MasterSSHPort
+	}
+	if config.MasterSSHPrivateKeyPath != "" {
+		a.MasterSSHPrivateKeyPath = config.MasterSSHPrivateKeyPath
+	}
+}
+
+func (a *Argument) LoadMasterHostConfigIfAny() error {
+	if a.BaseDir == "" {
+		return errors.New("basedir unset")
+	}
+	content, err := os.ReadFile(filepath.Join(a.BaseDir, MasterHostConfigFile))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(content, a.MasterHostConfig)
 }
 
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
@@ -422,7 +493,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	r := &KubeRuntime{
 		Cluster:     defaultCluster,
 		ClusterName: cluster.Name,
-		Arg:         arg,
+		Arg:         &arg,
 	}
 	r.BaseRuntime = base
 

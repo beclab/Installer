@@ -111,6 +111,8 @@ const (
 	ClusterStatus = "clusterStatus"
 	ClusterExist  = "clusterExist"
 
+	MasterInfo = "masterInfo"
+
 	// CertsModule
 	Certificate   = "certificate"
 	CaCertificate = "caCertificate"
@@ -185,6 +187,7 @@ const (
 	ManifestImageList          = "images.mf"
 	TerminusStateFilePrepared  = ".prepared"
 	TerminusStateFileInstalled = ".installed"
+	MasterHostConfigFile       = "master.conf"
 )
 
 const (
@@ -231,6 +234,7 @@ const (
 	CacheMinioOperatorPath = "minio_operator_path"
 
 	CacheHostRedisPassword = "hostredis_password"
+	CacheHostRedisAddress  = "hostredis_address"
 	CachePreparedState     = "prepare_state"
 	CacheInstalledState    = "install_state"
 

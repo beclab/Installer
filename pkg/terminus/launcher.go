@@ -103,7 +103,8 @@ func (m *InstallLauncherModule) Init() {
 		Name:   "InstallLauncher",
 		Desc:   "InstallLauncher",
 		Action: new(InstallBFL),
-		Retry:  1,
+		Retry:  3,
+		Delay:  30 * time.Second,
 	}
 
 	checkBFLRunning := &task.LocalTask{

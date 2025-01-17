@@ -29,7 +29,7 @@ func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
 
 	var cmd = fmt.Sprintf("%s get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", kubectlpath,
 		common.NamespaceKubesphereSystem)
-	rphase, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	rphase, err := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if rphase != "Running" {
 		return fmt.Errorf("Redis State %s", rphase)
 	}

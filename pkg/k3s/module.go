@@ -17,6 +17,7 @@
 package k3s
 
 import (
+	"bytetrade.io/web3os/installer/pkg/kubernetes"
 	"path/filepath"
 	"strings"
 	"time"
@@ -245,7 +246,7 @@ func (i *InstallKubeBinariesModule) Init() {
 		Name:    "SyncKubeBinary(k3s)",
 		Desc:    "Synchronize k3s binaries",
 		Hosts:   i.Runtime.GetHostsByRole(common.K8s),
-		Prepare: &NodeInCluster{Not: true},
+		Prepare: &kubernetes.NodeInCluster{Not: true},
 		Action: &SyncKubeBinary{
 			ManifestAction: manifest.ManifestAction{
 				BaseDir:  i.BaseDir,
@@ -260,7 +261,7 @@ func (i *InstallKubeBinariesModule) Init() {
 		Name:    "GenerateK3sKillAllScript",
 		Desc:    "Generate k3s killall.sh script",
 		Hosts:   i.Runtime.GetHostsByRole(common.K8s),
-		Prepare: &NodeInCluster{Not: true},
+		Prepare: &kubernetes.NodeInCluster{Not: true},
 		Action: &action.Template{
 			Name:     "GenerateK3sKillAllScript",
 			Template: templates.K3sKillallScript,
@@ -274,7 +275,7 @@ func (i *InstallKubeBinariesModule) Init() {
 		Name:    "GenerateK3sUninstallScript",
 		Desc:    "Generate k3s uninstall script",
 		Hosts:   i.Runtime.GetHostsByRole(common.K8s),
-		Prepare: &NodeInCluster{Not: true},
+		Prepare: &kubernetes.NodeInCluster{Not: true},
 		Action: &action.Template{
 			Name:     "GenerateK3sUninstallScript",
 			Template: templates.K3sUninstallScript,
@@ -288,7 +289,7 @@ func (i *InstallKubeBinariesModule) Init() {
 		Name:     "ChmodScript(k3s)",
 		Desc:     "Chmod +x k3s script ",
 		Hosts:    i.Runtime.GetHostsByRole(common.K8s),
-		Prepare:  &NodeInCluster{Not: true},
+		Prepare:  &kubernetes.NodeInCluster{Not: true},
 		Action:   new(ChmodScript),
 		Parallel: true,
 		Retry:    2,
@@ -440,7 +441,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Generate k3s Service",
 		Hosts: j.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 		},
 		Action:   new(GenerateK3sService),
 		Parallel: true,
@@ -451,7 +452,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Generate k3s service env",
 		Hosts: j.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 		},
 		Action:   new(GenerateK3sServiceEnv),
 		Parallel: true,
@@ -462,7 +463,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Generate k3s registry config",
 		Hosts: j.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 			&UsePrivateRegstry{Not: false},
 		},
 		Action:   new(GenerateK3sRegistryConfig),
@@ -474,7 +475,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Enable k3s service",
 		Hosts: j.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 		},
 		Action:   new(EnableK3sService),
 		Parallel: false,
@@ -485,7 +486,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Copy k3s.yaml to ~/.kube/config",
 		Hosts: j.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 		},
 		Action:   new(CopyK3sKubeConfig),
 		Parallel: true,
@@ -496,7 +497,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Synchronize kube config to worker",
 		Hosts: j.Runtime.GetHostsByRole(common.Worker),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 			new(common.OnlyWorker),
 		},
 		Action:   new(SyncKubeConfigToWorker),
@@ -508,7 +509,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Add master taint",
 		Hosts: j.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 			&common.IsWorker{Not: true},
 		},
 		Action:   new(AddMasterTaint),
@@ -522,7 +523,7 @@ func (j *JoinNodesModule) Init() {
 		Desc:  "Add worker label",
 		Hosts: j.Runtime.GetHostsByRole(common.K8s),
 		Prepare: &prepare.PrepareCollection{
-			&NodeInCluster{Not: true},
+			&kubernetes.NodeInCluster{Not: true},
 			new(common.IsWorker),
 		},
 		Action:   new(AddWorkerLabel),
@@ -551,6 +552,11 @@ func (d *DeleteClusterModule) Init() {
 	d.Name = "DeleteClusterModule"
 	d.Desc = "Delete k3s cluster"
 
+	deleteCurrentNode := &task.LocalTask{
+		Name:   "DeleteCurrentNode",
+		Action: new(kubernetes.KubectlDeleteCurrentWorkerNode),
+	}
+
 	killScript := &task.RemoteTask{
 		Name:     "ExecKillAllScript(k3s)",
 		Hosts:    d.Runtime.GetHostsByRole(common.K8s),
@@ -568,6 +574,7 @@ func (d *DeleteClusterModule) Init() {
 	}
 
 	d.Tasks = []task.Interface{
+		deleteCurrentNode,
 		killScript,
 		execScript,
 	}

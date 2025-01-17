@@ -24,7 +24,7 @@ func (t *InstallMonitorDashboardCrd) Execute(runtime connector.Runtime) error {
 
 	var p = path.Join(runtime.GetInstallerDir(), cc.BuildFilesCacheDir, cc.BuildDir, "ks-monitor", "monitoring-dashboard")
 	var cmd = fmt.Sprintf("%s apply -f %s", kubectlpath, p)
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 	return nil

@@ -33,12 +33,12 @@ func (g *InstallTerminusdBinary) Execute(runtime connector.Runtime) error {
 	path := binary.FilePath(g.BaseDir)
 
 	dst := filepath.Join(common.TmpDir, binary.Filename)
-	if err := runtime.GetRunner().Host.Scp(path, dst); err != nil {
+	if err := runtime.GetRunner().Scp(path, dst); err != nil {
 		return errors.Wrap(errors.WithStack(err), "sync olaresd tar.gz failed")
 	}
 
 	installCmd := fmt.Sprintf("tar -zxf %s && cp -f olaresd /usr/local/bin/ && chmod +x /usr/local/bin/olaresd && rm -rf olaresd*", dst)
-	if _, err := runtime.GetRunner().Host.SudoCmd(installCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(installCmd, false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "install olaresd binaries failed")
 	}
 	return nil
@@ -108,7 +108,7 @@ type EnableTerminusdService struct {
 }
 
 func (e *EnableTerminusdService) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable --now olaresd",
+	if _, err := runtime.GetRunner().SudoCmd("systemctl enable --now olaresd",
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "enable olaresd failed")
 	}
@@ -120,7 +120,7 @@ type DisableTerminusdService struct {
 }
 
 func (s *DisableTerminusdService) Execute(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().Host.SudoCmd("systemctl disable --now olaresd", false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("systemctl disable --now olaresd", false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "disable olaresd failed")
 	}
 	return nil
@@ -133,7 +133,7 @@ type UninstallTerminusd struct {
 func (r *UninstallTerminusd) Execute(runtime connector.Runtime) error {
 	svcpath := filepath.Join("/etc/systemd/system", templates.TerminusdService.Name())
 	svcenvpath := filepath.Join("/etc/systemd/system", templates.TerminusdEnv.Name())
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf %s && rm -rf /usr/local/bin/olaresd", svcpath, svcenvpath), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s && rm -rf %s && rm -rf /usr/local/bin/olaresd", svcpath, svcenvpath), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "remove olaresd failed")
 	}
 	return nil
