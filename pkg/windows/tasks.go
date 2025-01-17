@@ -22,8 +22,7 @@ import (
 
 const (
 	windowsAppPath = "AppData\\Local\\Microsoft\\WindowsApps"
-	// ubuntu22exe    = "ubuntu2204.exe"
-	ubuntuexe = "ubuntu.exe"
+	ubuntuexe      = "ubuntu.exe"
 
 	OLARES_WINDOWS_FIREWALL_RULE_NAME = "OlaresRule"
 )
@@ -35,17 +34,19 @@ type AddAppxPackage struct {
 	common.KubeAction
 }
 
+func (i *AddAppxPackage) getDownloadCDN(downloadCdnUrlFromEnv string) string {
+	downloadCdnUrl := strings.TrimSuffix(downloadCdnUrlFromEnv, "/")
+	if downloadCdnUrl == "" {
+		downloadCdnUrl = cc.DownloadUrl
+	}
+	return downloadCdnUrl
+}
+
 func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 	var systemInfo = runtime.GetSystemInfo()
-	// var windowsAppsPath = fmt.Sprintf("%s\\%s", runtime.GetSystemInfo().GetHomeDir(), windowsAppPath)
+	var downloadCdnUrl = i.getDownloadCDN(i.KubeConf.Arg.DownloadCdnUrl)
 
-	// if utils.IsExist(fmt.Sprintf("%s\\%s", windowsAppsPath, ubuntu22exe)) {
-	// 	ubuntuTool = ubuntu22exe
-	// 	distro = "Ubuntu-22.04"
-	// 	return nil
-	// }
-
-	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"), cc.DownloadUrl)
+	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"), downloadCdnUrl)
 
 	if err := appx.CreateBaseDir(); err != nil {
 		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", appx.FileName)
