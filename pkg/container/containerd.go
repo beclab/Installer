@@ -123,7 +123,7 @@ func (s *SyncContainerd) Execute(runtime connector.Runtime) error {
 	}
 
 	if _, err := runtime.GetRunner().SudoCmd(
-		fmt.Sprintf("mkdir -p /usr/bin && tar -zxf %s && mv bin/* /usr/bin && rm -rf bin", dst),
+		fmt.Sprintf("mkdir -p /usr/bin && tar -zxf %s --strip-components=1 -C /usr/bin", dst),
 		false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install containerd binaries failed"))
 	}
