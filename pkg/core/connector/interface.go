@@ -56,6 +56,7 @@ type ModuleRuntime interface {
 	GetAllHosts() []Host
 	SetAllHosts([]Host)
 	GetHostsByRole(role string) []Host
+	GetLocalHost() Host
 	DeleteHost(host Host)
 	HostIsDeprecated(host Host) bool
 	// InitLogger() error
@@ -111,13 +112,16 @@ type Host interface {
 	Fetch(local, remote string, printOutput bool, printLine bool) error
 	SudoScp(local, remote string) error
 	Scp(local, remote string) error
-	FileExist(f string) bool
-	DirExist(d string) bool
+	FileExist(f string) (bool, error)
+	DirExist(d string) (bool, error)
 	MkDir(path string) error
 	Cmd(cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExt(cmd string, printOutput bool, printLine bool) (string, error)
+	SudoPrefixIfNecessary(cmd string) string
 	SudoCmd(cmd string, printOutput bool, printLine bool) (string, error)
 	SudoCmdContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	CmdExtWithContext(ctx context.Context, cmd string, printOutput bool, printLine bool) (string, error)
 	MkDirAll(path string, mode string) error
+	Chmod(path string, mode os.FileMode) error
+	FileMd5(path string) (string, error)
 }

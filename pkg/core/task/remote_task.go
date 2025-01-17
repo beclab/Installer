@@ -162,17 +162,16 @@ func (t *RemoteTask) Run(runtime connector.Runtime, host connector.Host, index i
 }
 
 func (t *RemoteTask) ConfigureSelfRuntime(runtime connector.Runtime, host connector.Host, index int) error {
-	// var conn connector.Connection
-	// var err error
-	// if !host.GetMinikube() {
-	// 	conn, err = runtime.GetConnector().Connect(host)
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, "failed to connect to %s", host.GetAddress())
-	// 	}
-	// }
-
+	var conn connector.Connection
+	var err error
+	if host.GetAddress() != runtime.GetSystemInfo().GetLocalIp() || host.GetInternalAddress() != runtime.GetSystemInfo().GetLocalIp() {
+		conn, err = runtime.GetConnector().Connect(host)
+		if err != nil {
+			return errors.Wrapf(err, "failed to connect to %s", host.GetAddress())
+		}
+	}
 	r := &connector.Runner{
-		Conn: nil,
+		Conn: conn,
 		//Debug: runtime.Arg.Debug,
 		Host:  host,
 		Index: index,
@@ -204,7 +203,7 @@ func (t *RemoteTask) WhenWithRetry(runtime connector.Runtime) (bool, error) {
 				err = errors.New(err.Error() + e.Error())
 				continue
 			}
-			logger.Infof("retry: [%s]", runtime.GetRunner().Host.GetName())
+			logger.Infof("retry: [%s]", runtime.RemoteHost().GetName())
 			time.Sleep(t.Delay)
 			continue
 		} else {
@@ -228,7 +227,7 @@ func (t *RemoteTask) ExecuteWithRetry(runtime connector.Runtime) error {
 				err = errors.New(err.Error() + e.Error())
 				continue
 			}
-			logger.Debugf("Remote retry: [%s] %s", runtime.GetRunner().Host.GetName(), t.Name)
+			logger.Debugf("Remote retry: [%s] %s", runtime.RemoteHost().GetName(), t.Name)
 			time.Sleep(t.Delay)
 			continue
 		} else {
@@ -279,11 +278,11 @@ func (t *RemoteTask) RollbackWithTimeout(ctx context.Context, runtime connector.
 
 	select {
 	case <-ctx.Done():
-		logger.Warnf("rollback-failed: [%s]", runtime.GetRunner().Host.GetName())
+		logger.Warnf("rollback-failed: [%s]", runtime.RemoteHost().GetName())
 		logger.Errorf("%s execute task timeout, Timeout=%d", runtime.RemoteHost().GetName(), t.Timeout)
 	case e := <-resCh:
 		if e != nil {
-			logger.Warnf("rollback-failed: [%s]", runtime.GetRunner().Host.GetName())
+			logger.Warnf("rollback-failed: [%s]", runtime.RemoteHost().GetName())
 			logger.Errorf("%s %s", runtime.RemoteHost().GetName(), e.Error())
 		}
 	}
@@ -306,7 +305,7 @@ func (t *RemoteTask) RunRollback(runtime connector.Runtime, host connector.Host,
 		return
 	}
 
-	logger.Infof("rollback: [%s]", runtime.GetRunner().Host.GetName())
+	logger.Infof("rollback: [%s]", runtime.RemoteHost().GetName())
 
 	t.Rollback.Init(t.ModuleCache, t.PipelineCache)
 	t.Rollback.AutoAssert(runtime)

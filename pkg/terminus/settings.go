@@ -38,7 +38,7 @@ func (p *SetSettingsValues) Execute(runtime connector.Runtime) error {
 	}
 
 	selfhosted := true
-	if p.KubeConf.Arg.IsCloudInstance {
+	if p.KubeConf.Arg.PublicNetworkInfo.PubliclyAccessible {
 		selfhosted = false
 	}
 

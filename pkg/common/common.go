@@ -111,6 +111,8 @@ const (
 	ClusterStatus = "clusterStatus"
 	ClusterExist  = "clusterExist"
 
+	MasterInfo = "masterInfo"
+
 	// CertsModule
 	Certificate   = "certificate"
 	CaCertificate = "caCertificate"
@@ -185,6 +187,7 @@ const (
 	ManifestImageList          = "images.mf"
 	TerminusStateFilePrepared  = ".prepared"
 	TerminusStateFileInstalled = ".installed"
+	MasterHostConfigFile       = "master.conf"
 )
 
 const (
@@ -231,6 +234,7 @@ const (
 	CacheMinioOperatorPath = "minio_operator_path"
 
 	CacheHostRedisPassword = "hostredis_password"
+	CacheHostRedisAddress  = "hostredis_address"
 	CachePreparedState     = "prepare_state"
 	CacheInstalledState    = "install_state"
 
@@ -249,6 +253,8 @@ const (
 	CacheAppValues     = "app_built_in_values"
 
 	CacheCountPodsUsingHostIP = "count_pods_using_host_ip"
+
+	CacheWindowsDistroStoreLocation = "windows_distro_store_location"
 )
 
 const (
@@ -257,13 +263,15 @@ const (
 )
 
 const (
-	ENV_TERMINUS_IS_CLOUD_VERSION = "TERMINUS_IS_CLOUD_VERSION"
-	ENV_KUBE_TYPE                 = "KUBE_TYPE"
-	ENV_REGISTRY_MIRRORS          = "REGISTRY_MIRRORS"
-	ENV_DOWNLOAD_CDN_URL          = "DOWNLOAD_CDN_URL"
-	ENV_STORAGE                   = "STORAGE"
-	ENV_S3_BUCKET                 = "S3_BUCKET"
-	ENV_LOCAL_GPU_ENABLE          = "LOCAL_GPU_ENABLE"
+	ENV_TERMINUS_IS_CLOUD_VERSION    = "TERMINUS_IS_CLOUD_VERSION"
+	ENV_PUBLICLY_ACCESSIBLE          = "PUBLICLY_ACCESSIBLE"
+	ENV_KUBE_TYPE                    = "KUBE_TYPE"
+	ENV_REGISTRY_MIRRORS             = "REGISTRY_MIRRORS"
+	ENV_NVIDIA_CONTAINER_REPO_MIRROR = "NVIDIA_CONTAINER_REPO_MIRROR"
+	ENV_DOWNLOAD_CDN_URL             = "DOWNLOAD_CDN_URL"
+	ENV_STORAGE                      = "STORAGE"
+	ENV_S3_BUCKET                    = "S3_BUCKET"
+	ENV_LOCAL_GPU_ENABLE             = "LOCAL_GPU_ENABLE"
 	// ENV_LOCAL_GPU_SHARE             = "LOCAL_GPU_SHARE"
 	ENV_CLOUDFLARE_ENABLE           = "CLOUDFLARE_ENABLE"
 	ENV_FRP_ENABLE                  = "FRP_ENABLE"
@@ -287,6 +295,7 @@ const (
 	ENV_DISABLE_HOST_IP_PROMPT      = "DISABLE_HOST_IP_PROMPT"
 	ENV_AUTO_ADD_FIREWALL_RULES     = "AUTO_ADD_FIREWALL_RULES"
 	ENV_TERMINUS_OS_DOMAINNAME      = "TERMINUS_OS_DOMAINNAME"
+	ENV_DEFAULT_WSL_DISTRO_LOCATION = "DEFAULT_WSL_DISTRO_LOCATION" // If set to 1, the default WSL distro storage will be used.
 )
 
 // TerminusGlobalEnvs holds a group of general environment variables

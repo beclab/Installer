@@ -123,7 +123,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 			loadParm = "--snapshotter=zfs"
 		}
 
-		if runtime.GetRunner().Host.GetOs() == common.Darwin {
+		if runtime.RemoteHost().GetOs() == common.Darwin {
 			if HasSuffixI(imgFileName, ".tar.gz", ".tgz") {
 				loadCmd = fmt.Sprintf("gunzip -c %s | %s -p %s image load -", imageFileName, minikubepath, minikubeprofile)
 			} else {
@@ -146,7 +146,7 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 
 		if err := retry(func() error {
-			if _, err := runtime.GetRunner().Host.SudoCmd(loadCmd, false, false); err != nil {
+			if _, err := runtime.GetRunner().SudoCmd(loadCmd, false, false); err != nil {
 				return fmt.Errorf("%s(%s) error: %v", imageRepoTag, imgFileName, err)
 			} else {
 				logger.Infof("(%d/%d) imported image: %s, time: %s", index+1, len(missingImages), imageRepoTag, time.Since(start))

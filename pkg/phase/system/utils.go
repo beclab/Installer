@@ -2,13 +2,12 @@ package system
 
 import (
 	"bytetrade.io/web3os/installer/pkg/common"
-	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 )
 
 func isGpuSupportOs(runtime *common.KubeRuntime) bool {
 	systemInfo := runtime.GetSystemInfo()
-	if systemInfo.IsUbuntu() && (systemInfo.IsUbuntuVersionEqual(connector.Ubuntu20) || systemInfo.IsUbuntuVersionEqual(connector.Ubuntu22)) {
+	if systemInfo.IsUbuntu() || systemInfo.IsDebian() {
 		return true
 	}
 

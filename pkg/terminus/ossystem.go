@@ -33,13 +33,13 @@ func (t *InstallOsSystem) Execute(runtime connector.Runtime) error {
 	}
 
 	if !runtime.GetSystemInfo().IsDarwin() {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", storage.OlaresSharedLibDir, storage.OlaresSharedLibDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("mkdir -p %s && chown 1000:1000 %s", storage.OlaresSharedLibDir, storage.OlaresSharedLibDir), false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "failed to create shared lib dir")
 		}
 	}
 
 	var cmd = fmt.Sprintf("%s get secret -n kubesphere-system redis-secret -o jsonpath='{.data.auth}' |base64 -d", kubectl)
-	redisPwd, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	redisPwd, err := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get redis secret error")
 	}
@@ -109,7 +109,7 @@ func (t *CreateBackupConfigMap) Execute(runtime connector.Runtime) error {
 	}
 
 	var kubectl, _ = util.GetCommand(common.CommandKubectl)
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, backupConfigMapFile), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, backupConfigMapFile), false, true); err != nil {
 		return err
 	}
 
@@ -140,7 +140,7 @@ func (c *CreateReverseProxyConfigMap) Execute(runtime connector.Runtime) error {
 	}
 
 	var kubectl, _ = util.GetCommand(common.CommandKubectl)
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, defaultReverseProxyConfigMapFile), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, defaultReverseProxyConfigMapFile), false, true); err != nil {
 		return err
 	}
 
@@ -155,48 +155,48 @@ func (p *Patch) Execute(runtime connector.Runtime) error {
 	var err error
 	var kubectl, _ = util.GetCommand(common.CommandKubectl)
 	var globalRoleWorkspaceManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-globalrole-workspace-manager.yaml")
-	if _, err = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, globalRoleWorkspaceManager), false, true); err != nil {
+	if _, err = runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, globalRoleWorkspaceManager), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch globalrole workspace manager failed")
 	}
 
 	var notificationManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-notification-manager.yaml")
-	if _, err = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
+	if _, err = runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch notification manager failed")
 	}
 
-	patchAdminContent := "{\\\"metadata\\\":{\\\"finalizers\\\":[\\\"finalizers.kubesphere.io/users\\\"]}}"
+	patchAdminContent := `{"metadata":{"finalizers":["finalizers.kubesphere.io/users"]}}`
 	patchAdminCMD := fmt.Sprintf(
 		"%s patch user admin -p '%s' --type='merge' ",
 		kubectl,
 		patchAdminContent)
-	_, err = runtime.GetRunner().Host.SudoCmd(patchAdminCMD, false, true)
+	_, err = runtime.GetRunner().SudoCmd(patchAdminCMD, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch user admin failed")
 	}
 
 	deleteAdminCMD := fmt.Sprintf("%s delete user admin --ignore-not-found", kubectl)
-	_, err = runtime.GetRunner().Host.SudoCmd(deleteAdminCMD, false, true)
+	_, err = runtime.GetRunner().SudoCmd(deleteAdminCMD, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "failed to delete ks admin user")
 	}
 	deleteKubectlAdminCMD := fmt.Sprintf("%s -n kubesphere-controls-system delete deploy kubectl-admin --ignore-not-found", kubectl)
-	_, err = runtime.GetRunner().Host.SudoCmd(deleteKubectlAdminCMD, false, true)
+	_, err = runtime.GetRunner().SudoCmd(deleteKubectlAdminCMD, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "failed to delete ks kubectl admin deployment")
 	}
 	deleteHTTPBackendCMD := fmt.Sprintf("%s -n kubesphere-controls-system delete deploy default-http-backend --ignore-not-found", kubectl)
-	_, err = runtime.GetRunner().Host.SudoCmd(deleteHTTPBackendCMD, false, true)
+	_, err = runtime.GetRunner().SudoCmd(deleteHTTPBackendCMD, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "failed to delete ks default http backend")
 	}
 
-	patchFelixConfigContent := "{\\\"spec\\\":{\\\"featureDetectOverride\\\": \\\"SNATFullyRandom=false,MASQFullyRandom=false\\\"}}"
+	patchFelixConfigContent := `{"spec":{"featureDetectOverride": "SNATFullyRandom=false,MASQFullyRandom=false"}}`
 	patchFelixConfigCMD := fmt.Sprintf(
 		"%s patch felixconfiguration default -p '%s'  --type='merge'",
 		kubectl,
 		patchFelixConfigContent,
 	)
-	_, err = runtime.GetRunner().Host.SudoCmd(patchFelixConfigCMD, false, true)
+	_, err = runtime.GetRunner().SudoCmd(patchFelixConfigCMD, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "failed to patch felix configuration")
 	}
@@ -242,6 +242,8 @@ func (m *InstallOsSystemModule) Init() {
 	patchOs := &task.LocalTask{
 		Name:   "PatchOs",
 		Action: &Patch{},
+		Retry:  3,
+		Delay:  30 * time.Second,
 	}
 
 	m.Tasks = []task.Interface{

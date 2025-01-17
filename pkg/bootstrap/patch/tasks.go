@@ -21,9 +21,9 @@ type EnableSSHTask struct {
 }
 
 func (t *EnableSSHTask) Execute(runtime connector.Runtime) error {
-	stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active ssh", false, false)
+	stdout, _ := runtime.GetRunner().SudoCmd("systemctl is-active ssh", false, false)
 	if stdout != "active" {
-		if _, err := runtime.GetRunner().Host.SudoCmd("systemctl enable --now ssh", false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("systemctl enable --now ssh", false, false); err != nil {
 			return err
 		}
 	}
@@ -62,14 +62,14 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	switch platformFamily {
 	case common.Debian:
 		if _, err := util.GetCommand("add-apt-repository"); err != nil {
-			if _, err := runtime.GetRunner().Host.SudoCmd("apt install -y software-properties-common", false, true); err != nil {
+			if _, err := runtime.GetRunner().SudoCmd("apt install -y software-properties-common", false, true); err != nil {
 				logger.Errorf("install add-apt-repository error %v", err)
 				return err
 			}
 		}
 
 		var cmd = fmt.Sprintf("add-apt-repository 'deb http://deb.debian.org/debian %s contrib non-free' -y", systemInfo.GetDebianVersionCode())
-		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("add os repo error %v", err)
 			return err
 		}
@@ -78,47 +78,47 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	case common.Ubuntu:
 		if systemInfo.IsUbuntu() {
 			if !systemInfo.IsPveOrPveLxc() && !systemInfo.IsRaspbian() {
-				if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository universe -y", false, true); err != nil {
+				if _, err := runtime.GetRunner().SudoCmd("add-apt-repository universe -y", false, true); err != nil {
 					logger.Errorf("add os repo error %v", err)
 					return err
 				}
 
-				if _, err := runtime.GetRunner().Host.SudoCmd("add-apt-repository multiverse -y", false, true); err != nil {
+				if _, err := runtime.GetRunner().SudoCmd("add-apt-repository multiverse -y", false, true); err != nil {
 					logger.Errorf("add os repo error %v", err)
 					return err
 				}
 			}
 		}
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s update -qq", pkgManager), false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s update -qq", pkgManager), false, true); err != nil {
 			logger.Errorf("update os error %v", err)
 			return err
 		}
 
 		logger.Debug("apt update success")
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s install -y -qq %s", pkgManager, pre_reqs), false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s install -y -qq %s", pkgManager, pre_reqs), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", pre_reqs, err)
 			return err
 		}
 
 		var cmd = "conntrack socat apache2-utils ntpdate net-tools make gcc bison flex tree unzip"
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, pkgManager, cmd), false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y %s", debianFrontend, pkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}
 
-		if _, err := runtime.GetRunner().Host.SudoCmd("update-pciids", false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("update-pciids", false, true); err != nil {
 			return fmt.Errorf("failed to update-pciids: %v", err)
 		}
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s %s install -y openssh-server", debianFrontend, pkgManager), false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s %s install -y openssh-server", debianFrontend, pkgManager), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}
 	case common.CentOs, common.Fedora, common.RHEl:
 		cmd = "conntrack socat httpd-tools ntpdate net-tools make gcc openssh-server"
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s install -y %s", pkgManager, cmd), false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s install -y %s", pkgManager, cmd), false, true); err != nil {
 			logger.Errorf("install deps %s error %v", cmd, err)
 			return err
 		}
@@ -139,14 +139,14 @@ func (t *SocatTask) Execute(runtime connector.Runtime) error {
 		return err
 	}
 	f := path.Join(filePath, fileName)
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, false); err != nil {
 		logger.Errorf("failed to extract %s %v", f, err)
 		return err
 	}
 
 	tp := path.Join(filePath, fmt.Sprintf("socat-%s", kubekeyapiv1alpha2.DefaultSocatVersion))
 	if err := util.ChangeDir(tp); err == nil {
-		if _, err := runtime.GetRunner().Host.SudoCmd("./configure --prefix=/usr && make -j4 && make install && strip socat", false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("./configure --prefix=/usr && make -j4 && make install && strip socat", false, false); err != nil {
 			logger.Errorf("failed to install socat %v", err)
 			return err
 		}
@@ -178,12 +178,12 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 	fl := path.Join(flexFilePath, flexFileName)
 	f := path.Join(filePath, fileName)
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", fl, filePath), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", fl, filePath), false, true); err != nil {
 		logger.Errorf("failed to extract %s %v", flexFilePath, err)
 		return err
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("tar xzvf %s -C %s", f, filePath), false, true); err != nil {
 		logger.Errorf("failed to extract %s %v", f, err)
 		return err
 	}
@@ -191,7 +191,7 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 	// install
 	fp := path.Join(flexFilePath, fmt.Sprintf("flex-%s", kubekeyapiv1alpha2.DefaultFlexVersion))
 	if err := util.ChangeDir(fp); err == nil {
-		if _, err := runtime.GetRunner().Host.SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
 			logger.Errorf("failed to install flex %v", err)
 			return err
 		}
@@ -199,7 +199,7 @@ func (t *ConntrackTask) Execute(runtime connector.Runtime) error {
 
 	tp := path.Join(filePath, fmt.Sprintf("conntrack-tools-conntrack-tools-%s", kubekeyapiv1alpha2.DefaultConntrackVersion))
 	if err := util.ChangeDir(tp); err == nil {
-		if _, err := runtime.GetRunner().Host.SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("autoreconf -i && ./configure --prefix=/usr && make -j4 && make install", false, true); err != nil {
 			logger.Errorf("failed to install conntrack %v", err)
 			return err
 		}
@@ -222,7 +222,7 @@ func (t *CorrectHostname) Execute(runtime connector.Runtime) error {
 		return nil
 	}
 	hostname := strings.ToLower(hostName)
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s", hostname), false, false); err != nil {
 		return err
 	}
 	runtime.GetSystemInfo().SetHostname(hostname)
@@ -238,19 +238,19 @@ func (t *RaspbianCheckTask) Execute(runtime connector.Runtime) error {
 	systemInfo := runtime.GetSystemInfo()
 	if systemInfo.IsRaspbian() {
 		if _, err := util.GetCommand(common.CommandIptables); err != nil {
-			_, err = runtime.GetRunner().Host.SudoCmd("apt install -y iptables", false, false)
+			_, err = runtime.GetRunner().SudoCmd("apt install -y iptables", false, false)
 			if err != nil {
 				logger.Errorf("%s install iptables error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().Host.Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
+			_, err = runtime.GetRunner().Cmd("systemctl disable --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
 			}
 
-			_, err = runtime.GetRunner().Host.Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
+			_, err = runtime.GetRunner().Cmd("systemctl stop --user gvfs-udisks2-volume-monitor", false, true)
 			if err != nil {
 				logger.Errorf("%s exec error %v", common.Raspbian, err)
 				return err
@@ -271,13 +271,13 @@ type DisableLocalDNSTask struct {
 func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	switch runtime.GetSystemInfo().GetOsPlatformFamily() {
 	case common.Ubuntu, common.Debian:
-		stdout, _ := runtime.GetRunner().Host.SudoCmd("systemctl is-active systemd-resolved", false, false)
-		if stdout != "active" {
-			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop systemd-resolved.service", false, true)
-			_, _ = runtime.GetRunner().Host.SudoCmd("systemctl disable systemd-resolved.service", false, true)
+		stdout, _ := runtime.GetRunner().SudoCmd("systemctl is-active systemd-resolved", false, false)
+		if stdout == "active" {
+			_, _ = runtime.GetRunner().SudoCmd("systemctl stop systemd-resolved.service", false, true)
+			_, _ = runtime.GetRunner().SudoCmd("systemctl disable systemd-resolved.service", false, true)
 
 			if utils.IsExist("/usr/bin/systemd-resolve") {
-				_, _ = runtime.GetRunner().Host.SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
+				_, _ = runtime.GetRunner().SudoCmd("mv /usr/bin/systemd-resolve /usr/bin/systemd-resolve.bak", false, true)
 			}
 			ok, err := utils.IsSymLink("/etc/resolv.conf")
 			if err != nil {
@@ -285,7 +285,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 			if ok {
-				if _, err := runtime.GetRunner().Host.SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
+				if _, err := runtime.GetRunner().SudoCmd("unlink /etc/resolv.conf && touch /etc/resolv.conf", false, true); err != nil {
 					logger.Errorf("unlink /etc/resolv.conf error %v", err)
 					return err
 				}
@@ -296,38 +296,33 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		} else {
-			if _, err := runtime.GetRunner().Host.SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
+			if _, err := runtime.GetRunner().SudoCmd("cat /etc/resolv.conf > /etc/resolv.conf.bak", false, true); err != nil {
 				logger.Errorf("backup /etc/resolv.conf error %v", err)
 				return err
 			}
+
+			httpCode, _ := utils.GetHttpStatus("https://www.apple.com")
+			if httpCode != 200 {
+				if err := ConfigResolvConf(runtime); err != nil {
+					logger.Errorf("config /etc/resolv.conf error %v", err)
+					return err
+				}
+			}
+
 		}
 	}
 
 	sysInfo := runtime.GetSystemInfo()
 	localIp := sysInfo.GetLocalIp()
 	hostname := sysInfo.GetHostname()
-	if stdout, _ := runtime.GetRunner().Host.SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
+	if stdout, _ := runtime.GetRunner().SudoCmd("hostname -i &>/dev/null", false, true); stdout == "" {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("echo %s %s >> /etc/hosts", localIp, hostname), false, true); err != nil {
 			return errors.Wrap(err, "failed to set hostname mapping")
 		}
 	}
 
-	httpCode, _ := utils.GetHttpStatus("https://download.docker.com/linux/ubuntu")
-	if httpCode != 200 {
-		if err := ConfigResolvConf(runtime); err != nil {
-			logger.Errorf("config /etc/resolv.conf error %v", err)
-			return err
-		}
-		if utils.IsExist("/etc/resolv.conf.bak") {
-			if err := utils.DeleteFile("/etc/resolv.conf.bak"); err != nil {
-				logger.Errorf("remove /etc/resolv.conf.bak error %v", err)
-				return err
-			}
-		}
-	}
-
 	if runtime.GetSystemInfo().IsWsl() {
-		_, _ = runtime.GetRunner().Host.SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, false)
+		_, _ = runtime.GetRunner().SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, false)
 	}
 
 	return nil
@@ -336,23 +331,29 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 func ConfigResolvConf(runtime connector.Runtime) error {
 	var err error
 	var cmd string
+	var secondNameserverOp string
+	overrideOp := ">"
+	appendOp := ">>"
 
 	if common.CloudVendor == common.CloudVendorAliYun {
-		cmd = `echo "nameserver 100.100.2.136" > /etc/resolv.conf`
-		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		secondNameserverOp = appendOp
+		cmd = `echo 'nameserver 100.100.2.136' > /etc/resolv.conf`
+		if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			logger.Errorf("exec %s error %v", cmd, err)
 			return err
 		}
+	} else {
+		secondNameserverOp = overrideOp
 	}
 
-	cmd = `echo "nameserver 1.0.0.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	cmd = fmt.Sprintf("echo 'nameserver 1.1.1.1' %s /etc/resolv.conf", secondNameserverOp)
+	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
 
-	cmd = `echo "nameserver 1.1.1.1" >> /etc/resolv.conf`
-	if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	cmd = `echo 'nameserver 114.114.114.114' >> /etc/resolv.conf`
+	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}

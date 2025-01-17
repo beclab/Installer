@@ -102,11 +102,11 @@ type NvidiaGraphicsCard struct {
 }
 
 func (p *NvidiaGraphicsCard) PreCheck(runtime connector.Runtime) (bool, error) {
-	if runtime.GetRunner().Host.GetOs() == common.Darwin {
+	if runtime.RemoteHost().GetOs() == common.Darwin {
 		return false, nil
 	}
-	output, err := runtime.GetRunner().Host.SudoCmd(
-		"lspci | grep VGA | grep -i nvidia", false, false)
+	output, err := runtime.GetRunner().SudoCmd(
+		"lspci | grep -i vga | grep -i nvidia", false, false)
 	if err != nil {
 		logger.Error("try to find nvidia graphics card error", err)
 		logger.Error("ignore card driver installation")

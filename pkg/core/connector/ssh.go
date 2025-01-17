@@ -346,9 +346,10 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 	}
 
 	var (
-		output []byte
-		line   = ""
-		r      = bufio.NewReader(out)
+		output     []byte
+		line       = ""
+		r          = bufio.NewReader(out)
+		trimPrefix = ""
 	)
 
 	for {
@@ -366,7 +367,16 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 
 		line += string(b)
 
-		if (strings.HasPrefix(line, "[sudo] password for ") || strings.HasPrefix(line, "Password")) && strings.HasSuffix(line, ": ") {
+		// we explicitly specify a custom sudo prompt to avoid unexpected prompts at best effort
+		// which should fit in almost all the cases in our program,
+		// but other prompts are also possible
+		// e.g., because of a hardcoded "sudo" command string in the program
+		// or third-party scripts executed by us that contain the "sudo" command
+		// the Chinese colon suffix are checked to fit a machine with Chinese locale
+		// in very rare cases, if the native sudo prompt does not start with "[sudo]" and end with a colon,
+		// this match can still miss
+		if strings.HasPrefix(line, "[sudo]") && (strings.HasSuffix(line, ": ") || strings.HasSuffix(line, "： ")) {
+			trimPrefix = line
 			_, err = in.Write([]byte(host.GetPassword() + "\n"))
 			if err != nil {
 				break
@@ -380,7 +390,7 @@ func (c *connection) Exec(cmd string, host Host) (stdout string, code int, err e
 			exitCode = exitErr.ExitStatus()
 		}
 	}
-	outStr := strings.TrimPrefix(string(output), fmt.Sprintf("[sudo] password for %s:", host.GetUser()))
+	outStr := strings.TrimPrefix(string(output), trimPrefix)
 
 	// preserve original error
 	return strings.TrimSpace(outStr), exitCode, errors.Wrapf(err, "Failed to exec command: %s \n%s", cmd, strings.TrimSpace(outStr))
@@ -394,7 +404,7 @@ func (c *connection) Fetch(local, remote string, host Host) error {
 	//defer srcFile.Close()
 
 	// Base64 encoding is performed on the contents of the file to prevent garbled code in the target file.
-	output, _, err := c.Exec(SudoPrefix(fmt.Sprintf("cat %s | base64 -w 0", remote)), host)
+	output, _, err := c.Exec(host.SudoPrefixIfNecessary(fmt.Sprintf("cat %s | base64 -w 0", remote)), host)
 	if err != nil {
 		return fmt.Errorf("open remote file failed %v, remote path: %s", err, remote)
 	}
@@ -549,7 +559,7 @@ func (c *connection) RemoteFileExist(dst string, host Host) bool {
 	remoteFileName := path.Base(dst)
 	remoteFileDirName := path.Dir(dst)
 
-	remoteFileCommand := fmt.Sprintf(SudoPrefix("ls -l %s/%s 2>/dev/null |wc -l"), remoteFileDirName, remoteFileName)
+	remoteFileCommand := fmt.Sprintf(host.SudoPrefixIfNecessary("ls -l %s/%s 2>/dev/null |wc -l"), remoteFileDirName, remoteFileName)
 
 	out, _, err := c.Exec(remoteFileCommand, host)
 	defer func() {
@@ -584,7 +594,7 @@ func (c *connection) MkDirAll(path string, mode string, host Host) error {
 		mode = "775"
 	}
 	mkDstDir := fmt.Sprintf("mkdir -p -m %s %s || true", mode, path)
-	if _, _, err := c.Exec(SudoPrefix(mkDstDir), host); err != nil {
+	if _, _, err := c.Exec(host.SudoPrefixIfNecessary(mkDstDir), host); err != nil {
 		return err
 	}
 
@@ -600,5 +610,6 @@ func (c *connection) Chmod(path string, mode os.FileMode) error {
 }
 
 func SudoPrefix(cmd string) string {
-	return fmt.Sprintf("sudo -E /bin/bash -c \"%s\"", cmd)
+	cmd = strings.ReplaceAll(cmd, `"`, `\"`)
+	return fmt.Sprintf("sudo -p \"[sudo] Passowrd: \" -E /bin/bash -c \"%s\"", cmd)
 }

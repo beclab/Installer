@@ -28,7 +28,7 @@ type KubeConf struct {
 	Cluster      *kubekeyapiv1alpha2.ClusterSpec
 	Kubeconfig   string
 	ClientSet    *kubekeyclientset.Clientset
-	Arg          Argument
+	Arg          *Argument
 }
 
 type KubeModule struct {

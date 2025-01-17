@@ -377,7 +377,7 @@ func GetKubeletCgroupDriver(runtime connector.Runtime, kubeConf *common.KubeConf
 		kubeletCgroupDriver = ""
 	}
 
-	checkResult, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	checkResult, err := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if err != nil {
 		return "", errors.Wrap(errors.WithStack(err), "Failed to get container runtime cgroup driver.")
 	}

@@ -195,7 +195,7 @@ type ClearAppValues struct {
 
 func (c *ClearAppValues) Execute(runtime connector.Runtime) error {
 	// clear apps values.yaml
-	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("cat /dev/null > %s/wizard/config/apps/values.yaml", runtime.GetInstallerDir()), false, false)
+	_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("cat /dev/null > %s/wizard/config/apps/values.yaml", runtime.GetInstallerDir()), false, false)
 
 	return nil
 }
@@ -218,7 +218,7 @@ func (c *CopyAppServiceHelmFiles) Execute(runtime connector.Runtime) error {
 	kubeclt, _ := util.GetCommand(common.CommandKubectl)
 	for _, app := range []string{"launcher", "apps"} {
 		var cmd = fmt.Sprintf("%s cp %s/wizard/config/%s os-system/%s:/userapps -c app-service", kubeclt, runtime.GetInstallerDir(), app, appServiceName)
-		if _, err = runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			return errors.Wrap(errors.WithStack(err), "copy files failed")
 		}
 	}
@@ -258,7 +258,7 @@ func getBflPod(ctx context.Context, ns string, client clientset.Client, runtime 
 func getDocUrl(ctx context.Context, runtime connector.Runtime) (url string, err error) {
 	var nodeip string
 	var cmd = fmt.Sprintf(`curl --connect-timeout 30 --retry 5 --retry-delay 1 --retry-max-time 10 -s http://checkip.dyndns.org/ | grep -o "[[:digit:].]\+"`)
-	nodeip, _ = runtime.GetRunner().Host.SudoCmdContext(ctx, cmd, false, false)
+	nodeip, _ = runtime.GetRunner().SudoCmdContext(ctx, cmd, false, false)
 	url = fmt.Sprintf("http://%s:30883/bfl/apidocs.json", nodeip)
 	return
 }

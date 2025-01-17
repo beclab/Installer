@@ -17,6 +17,7 @@
 package precheck
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -142,6 +143,48 @@ func (t *SystemdCheck) Check(runtime connector.Runtime) error {
 	return errors.New("this system is not inited by systemd, which is required by Olares")
 }
 
+type ValidResolvConfCheck struct{}
+
+func (t *ValidResolvConfCheck) Name() string {
+	return "ResolvConf"
+}
+
+func (t *ValidResolvConfCheck) Check(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsLinux() {
+		return nil
+	}
+	resolvConfFiles := []string{"/etc/resolv.conf", "/run/systemd/resolve/resolv.conf"}
+	searchDomainPrefix := "search"
+	for _, f := range resolvConfFiles {
+		file, err := os.Open(f)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("failed to open resolv.conf file %s for validity check", f)
+			}
+			continue
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if !strings.HasPrefix(line, searchDomainPrefix) {
+				continue
+			}
+			logger.Debugf("found search domain list line in file %s: %s", f, line)
+			searchDomains := strings.Fields(strings.TrimPrefix(line, searchDomainPrefix))
+			if len(searchDomains) == 0 {
+				return fmt.Errorf("invalid resolv.conf file %s: syntax error: empty search domain list", f)
+			}
+			for _, searchDomain := range searchDomains {
+				if searchDomain != "" && searchDomain != "." {
+					return fmt.Errorf("invalid resolv.conf file %s: search domain other than \".\" causes the malfunction of cluster DNS, please empty it before installation", f)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 type CudaChecker struct {
 	CudaCheckTask
 }
@@ -166,7 +209,7 @@ type GreetingsTask struct {
 }
 
 func (h *GreetingsTask) Execute(runtime connector.Runtime) error {
-	_, err := runtime.GetRunner().Host.Cmd("echo 'Greetings, Olares'", false, true)
+	_, err := runtime.GetRunner().Cmd("echo 'Greetings, Olares'", false, true)
 	if err != nil {
 		return err
 	}
@@ -199,10 +242,10 @@ func (n *NodePreCheck) Execute(runtime connector.Runtime) error {
 		case sudo:
 			// sudo skip sudo prefix
 		default:
-			cmd = connector.SudoPrefix(cmd)
+			cmd = runtime.RemoteHost().SudoPrefixIfNecessary(cmd)
 		}
 
-		res, err := runtime.GetRunner().Host.CmdExt(cmd, false, false)
+		res, err := runtime.GetRunner().Cmd(cmd, false, false)
 		switch software {
 		case showmount:
 			software = nfs
@@ -224,7 +267,7 @@ func (n *NodePreCheck) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	output, err := runtime.GetRunner().Host.CmdExt("date +\"%Z %H:%M:%S\"", false, false)
+	output, err := runtime.GetRunner().Cmd("date +\"%Z %H:%M:%S\"", false, false)
 	if err != nil {
 		results["time"] = ""
 	} else {
@@ -253,34 +296,34 @@ func (g *GetKubeConfig) Execute(runtime connector.Runtime) error {
 	}
 
 	if util.IsExist("/etc/kubernetes/admin.conf") {
-		if _, err := runtime.GetRunner().Host.Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
+		if _, err := runtime.GetRunner().Cmd("mkdir -p $HOME/.kube", false, false); err != nil {
 			return err
 		}
-		if _, err := runtime.GetRunner().Host.SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("cp /etc/kubernetes/admin.conf $HOME/.kube/config", false, false); err != nil {
 			return err
 		}
-		// userId, err := runtime.GetRunner().Host.Cmd("echo $(id -u)", false, false)
+		// userId, err := runtime.GetRunner().Cmd("echo $(id -u)", false, false)
 		// if err != nil {
 		// 	return errors.Wrap(errors.WithStack(err), "get user id failed")
 		// }
 
-		// userGroupId, err := runtime.GetRunner().Host.Cmd("echo $(id -g)", false, false)
+		// userGroupId, err := runtime.GetRunner().Cmd("echo $(id -g)", false, false)
 		// if err != nil {
 		// 	return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		// }
 
-		userId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_UID", false, false)
+		userId, err := runtime.GetRunner().Cmd("echo $SUDO_UID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user id failed")
 		}
 
-		userGroupId, err := runtime.GetRunner().Host.Cmd("echo $SUDO_GID", false, false)
+		userGroupId, err := runtime.GetRunner().Cmd("echo $SUDO_GID", false, false)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "get user group id failed")
 		}
 
 		chownKubeConfig := fmt.Sprintf("chown -R %s:%s $HOME/.kube", userId, userGroupId)
-		if _, err := runtime.GetRunner().Host.SudoCmd(chownKubeConfig, false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(chownKubeConfig, false, false); err != nil {
 			return errors.Wrap(errors.WithStack(err), "chown user kube config failed")
 		}
 	}
@@ -294,7 +337,7 @@ type GetAllNodesK8sVersion struct {
 
 func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 	var nodeK8sVersion string
-	kubeletVersionInfo, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubelet --version", false, false)
+	kubeletVersionInfo, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubelet --version", false, false)
 	if err != nil {
 		return errors.Wrap(err, "get current kubelet version failed")
 	}
@@ -302,7 +345,7 @@ func (g *GetAllNodesK8sVersion) Execute(runtime connector.Runtime) error {
 
 	host := runtime.RemoteHost()
 	if host.IsRole(common.Master) {
-		apiserverVersion, err := runtime.GetRunner().Host.SudoCmd(
+		apiserverVersion, err := runtime.GetRunner().SudoCmd(
 			"cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep 'image:' | rev | cut -d ':' -f1 | rev",
 			false, false)
 		if err != nil {
@@ -360,7 +403,7 @@ type KsVersionCheck struct {
 }
 
 func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
-	ksVersionStr, err := runtime.GetRunner().Host.SudoCmd(
+	ksVersionStr, err := runtime.GetRunner().SudoCmd(
 		"/usr/local/bin/kubectl get deploy -n  kubesphere-system ks-console -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if err != nil {
@@ -371,7 +414,7 @@ func (k *KsVersionCheck) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	ccKsVersionStr, ccErr := runtime.GetRunner().Host.SudoCmd(
+	ccKsVersionStr, ccErr := runtime.GetRunner().SudoCmd(
 		"/usr/local/bin/kubectl get ClusterConfiguration ks-installer -n  kubesphere-system  -o jsonpath='{.metadata.labels.version}'",
 		false, false)
 	if ccErr == nil && ksVersionStr == "v3.1.0" {
@@ -437,13 +480,13 @@ type GetKubernetesNodesStatus struct {
 }
 
 func (g *GetKubernetesNodesStatus) Execute(runtime connector.Runtime) error {
-	nodeStatus, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
+	nodeStatus, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o wide", false, false)
 	if err != nil {
 		return err
 	}
 	g.PipelineCache.Set(common.ClusterNodeStatus, nodeStatus)
 
-	cri, err := runtime.GetRunner().Host.SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
+	cri, err := runtime.GetRunner().SudoCmd("/usr/local/bin/kubectl get node -o jsonpath=\"{.items[*].status.nodeInfo.containerRuntimeVersion}\"", false, false)
 	if err != nil {
 		return err
 	}
@@ -464,7 +507,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", kubectl), false, false); err != nil {
+	if stdout, err := runtime.GetRunner().CmdContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-ak}'", kubectl), false, false); err != nil {
 		storageAccessKey = os.Getenv(common.ENV_AWS_ACCESS_KEY_ID_SETUP)
 		if storageAccessKey == "" {
 			logger.Errorf("storage access key not found")
@@ -473,7 +516,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageAccessKey = stdout
 	}
 
-	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sk}'", kubectl), false, false); err != nil {
+	if stdout, err := runtime.GetRunner().CmdContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sk}'", kubectl), false, false); err != nil {
 		storageSecretKey = os.Getenv(common.ENV_AWS_SECRET_ACCESS_KEY_SETUP)
 		if storageSecretKey == "" {
 			logger.Errorf("storage secret key not found")
@@ -482,7 +525,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageSecretKey = stdout
 	}
 
-	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sts}'", kubectl), false, false); err != nil {
+	if stdout, err := runtime.GetRunner().CmdContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.annotations.bytetrade\\.io/s3-sts}'", kubectl), false, false); err != nil {
 		storageToken = os.Getenv(common.ENV_AWS_SESSION_TOKEN_SETUP)
 		if storageToken == "" {
 			logger.Errorf("storage token not found")
@@ -491,7 +534,7 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 		storageToken = stdout
 	}
 
-	if stdout, err := runtime.GetRunner().Host.CmdExtWithContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.labels.bytetrade\\.io/cluster-id}'", kubectl), false, false); err != nil {
+	if stdout, err := runtime.GetRunner().CmdContext(ctx, fmt.Sprintf("%s get terminus terminus -o jsonpath='{.metadata.labels.bytetrade\\.io/cluster-id}'", kubectl), false, false); err != nil {
 		storageClusterId = os.Getenv(common.ENV_CLUSTER_ID)
 		if storageClusterId == "" {
 			logger.Errorf("storage cluster id not found")
@@ -517,14 +560,14 @@ type RemoveChattr struct {
 }
 
 func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
-	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/hosts", false, true)
-	runtime.GetRunner().Host.SudoCmd("chattr -i /etc/resolv.conf", false, true)
+	runtime.GetRunner().SudoCmd("chattr -i /etc/hosts", false, true)
+	runtime.GetRunner().SudoCmd("chattr -i /etc/resolv.conf", false, true)
 	return nil
 }
 
-var ErrUnsupportedCudaVersion = errors.New("cuda version is too old, please install at least version 12.4")
+var ErrUnsupportedCudaVersion = errors.New("cuda version is too old, please install at least version 12.4, or you can uninstall it, REBOOT your machine, and let Olares install a new version for you.")
 var ErrCudaInstalled = errors.New("cuda is installed")
-var supportedCudaVersions = []string{"12.4", "12.5", "12.6"}
+var supportedCudaVersions = []string{"12.4", "12.5", "12.6", "12.7"}
 
 // CudaCheckTask checks the cuda version, if the current version is not supported, it will return an error
 // before executing the command `olares-cli gpu install`, we need to check the cuda version

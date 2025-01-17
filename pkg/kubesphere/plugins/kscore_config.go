@@ -166,7 +166,7 @@ func (t *CreateKsRole) Execute(runtime connector.Runtime) error {
 	}
 
 	cmd := fmt.Sprintf("%s apply -f %s", kubectlpath, f)
-	_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "create ks role failed")
 	}
@@ -183,10 +183,10 @@ func (t *PatchKsCoreStatus) Execute(runtime connector.Runtime) error {
 		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
 	}
 
-	var jsonPath = fmt.Sprintf(`{\"status\": {\"core\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
+	var jsonPath = fmt.Sprintf(`{"status": {"core": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
 	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPath, common.NamespaceKubesphereSystem)
 
-	_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "patch ks-core status failed")
 	}
@@ -267,7 +267,7 @@ func (t *CreateKsCoreConfigManifests) Execute(runtime connector.Runtime) error {
 			return err
 		}
 		if !info.IsDir() {
-			_, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, path), false, true)
+			_, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, path), false, true)
 			if err != nil {
 				logger.Errorf("failed to apply %s: %v", path, err)
 				return err
@@ -308,7 +308,7 @@ func (t *PacthKsCore) Execute(runtime connector.Runtime) error {
 				kubectlpath, item["ns"], item["kind"], item["resource"], common.NamespaceKubesphereSystem,
 				kubectlpath, item["ns"], item["kind"], item["resource"])
 
-			if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+			if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 				return errors.Wrap(errors.WithStack(err), "patch ks-core crd")
 			}
 		}
@@ -332,7 +332,7 @@ func (t *CheckKsCoreExist) Execute(runtime connector.Runtime) error {
 	cmd = fmt.Sprintf("%s -n %s get secrets --field-selector=type=helm.sh/release.v1 | grep ks-core |wc -l",
 		kubectlpath,
 		common.NamespaceKubesphereSystem)
-	stdout, _ := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	stdout, _ := runtime.GetRunner().SudoCmd(cmd, false, false)
 
 	secretNum, err := strconv.ParseInt(stdout, 10, 64)
 	if err != nil {
@@ -340,7 +340,7 @@ func (t *CheckKsCoreExist) Execute(runtime connector.Runtime) error {
 	}
 
 	cmd = fmt.Sprintf("%s get crd users.iam.kubesphere.io | grep 'users.iam.kubesphere.io' |wc -l", kubectlpath)
-	stdout, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	stdout, _ = runtime.GetRunner().SudoCmd(cmd, false, false)
 
 	usersCrdNum, err := strconv.ParseInt(stdout, 10, 64)
 	if err != nil {

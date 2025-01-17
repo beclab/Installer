@@ -26,13 +26,13 @@ type MkStorageDir struct {
 func (t *MkStorageDir) Execute(runtime connector.Runtime) error {
 	if utils.IsExist(StorageDataDir) {
 		if utils.IsExist(cc.OlaresDir) {
-			_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", cc.OlaresDir), false, false)
+			_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", cc.OlaresDir), false, false)
 		}
 
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("mkdir -p %s", StorageDataOlaresDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("mkdir -p %s", StorageDataOlaresDir), false, false); err != nil {
 			return err
 		}
-		if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("ln -s %s %s", StorageDataOlaresDir, cc.OlaresDir), false, false); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("ln -s %s %s", StorageDataOlaresDir, cc.OlaresDir), false, false); err != nil {
 			return err
 		}
 	}
@@ -46,7 +46,7 @@ type DownloadStorageCli struct {
 
 func (t *DownloadStorageCli) Execute(runtime connector.Runtime) error {
 	if _, err := util.GetCommand(common.CommandUnzip); err != nil {
-		runtime.GetRunner().Host.SudoCmd("apt install -y unzip", false, true)
+		runtime.GetRunner().SudoCmd("apt install -y unzip", false, true)
 	}
 
 	var storageType = t.KubeConf.Arg.Storage.StorageType
@@ -134,7 +134,7 @@ func (t *UnMountS3) Execute(runtime connector.Runtime) error {
 		storageAccessKey, storageSecretKey, storageToken, endpoint, storageClusterId,
 	)
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("failed to unmount s3 bucket %s: %v", storageBucket, err)
 	}
 
@@ -176,7 +176,7 @@ func (t *UnMountOSS) Execute(runtime connector.Runtime) error {
 
 	var cmd = fmt.Sprintf("/usr/local/sbin/ossutil64 rm %s/%s/ --endpoint=%s --access-key-id=%s --access-key-secret=%s --sts-token=%s -r -f", ossName, storageClusterId, ossEndpoint, storageAccessKey, storageSecretKey, storageToken)
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount oss bucket %s: %v", storageBucket, err)
 	}
 
@@ -213,7 +213,7 @@ func (t *UnMountCOS) Execute(runtime connector.Runtime) error {
 	cosEndpoint := fmt.Sprintf("%s.%s.%s.%s", s[1], s[2], s[3], s[4])
 	var cmd = fmt.Sprintf("/usr/local/bin/cosutil rm %s/%s/ --endpoint %s --secret-id %s --secret-key %s --token %s --init-skip -r -f", cosName, storageClusterId, cosEndpoint, storageAccessKey, storageSecretKey, storageToken)
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, false); err != nil {
 		logger.Errorf("failed to unmount cos bucket %s: %v", storageBucket, err)
 	}
 
@@ -225,13 +225,13 @@ type StopJuiceFS struct {
 }
 
 func (t *StopJuiceFS) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop juicefs; systemctl disable juicefs", false, false)
+	_, _ = runtime.GetRunner().SudoCmd("systemctl stop juicefs; systemctl disable juicefs", false, false)
 
-	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf /var/jfsCache %s", JuiceFsCacheDir), false, false)
+	_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf /var/jfsCache %s", JuiceFsCacheDir), false, false)
 
-	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("umount %s", OlaresJuiceFSRootDir), false, false)
+	_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("umount %s", OlaresJuiceFSRootDir), false, false)
 
-	_, _ = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", OlaresJuiceFSRootDir), false, false)
+	_, _ = runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", OlaresJuiceFSRootDir), false, false)
 
 	return nil
 }
@@ -241,7 +241,7 @@ type StopMinio struct {
 }
 
 func (t *StopMinio) Execute(runtime connector.Runtime) error {
-	_, _ = runtime.GetRunner().Host.SudoCmd("systemctl stop minio; systemctl disable minio", false, false)
+	_, _ = runtime.GetRunner().SudoCmd("systemctl stop minio; systemctl disable minio", false, false)
 	return nil
 }
 
@@ -251,7 +251,7 @@ type StopMinioOperator struct {
 
 func (t *StopMinioOperator) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop minio-operator; systemctl disable minio-operator"
-	_, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	_, _ = runtime.GetRunner().SudoCmd(cmd, false, false)
 	return nil
 }
 
@@ -261,9 +261,9 @@ type StopRedis struct {
 
 func (t *StopRedis) Execute(runtime connector.Runtime) error {
 	var cmd = "systemctl stop redis-server; systemctl disable redis-server"
-	_, _ = runtime.GetRunner().Host.SudoCmd(cmd, false, false)
-	_, _ = runtime.GetRunner().Host.SudoCmd("killall -9 redis-server", false, false)
-	_, _ = runtime.GetRunner().Host.SudoCmd("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
+	_, _ = runtime.GetRunner().SudoCmd(cmd, false, false)
+	_, _ = runtime.GetRunner().SudoCmd("killall -9 redis-server", false, false)
+	_, _ = runtime.GetRunner().SudoCmd("unlink /usr/bin/redis-server; unlink /usr/bin/redis-cli", false, false)
 
 	return nil
 }
@@ -284,7 +284,7 @@ func (t *RemoveJuiceFSFiles) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, f := range files {
-		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
+		runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
 	}
 
 	return nil
@@ -303,7 +303,7 @@ func (t *RemoveTerminusFiles) Execute(runtime connector.Runtime) error {
 	}
 
 	for _, f := range files {
-		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
+		runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", f), false, true)
 	}
 
 	return nil
@@ -374,24 +374,16 @@ type DeleteTerminusUserData struct {
 }
 
 func (t *DeleteTerminusUserData) Execute(runtime connector.Runtime) error {
-	var userdata []string
-	filepath.WalkDir(OlaresJuiceFSRootDir, func(path string, d fs.DirEntry, err error) error {
-		if path != OlaresJuiceFSRootDir {
-			if d.IsDir() && d.Name() != ".trash" {
-				userdata = append(userdata, path)
-				return filepath.SkipDir
-			}
-		}
-
-		return nil
-	},
-	)
-
-	userdata = append(userdata, []string{
+	userdataDirs := []string{
 		OlaresUserDataDir,
-	}...)
+		JuiceFsCacheDir,
+	}
 
-	for _, d := range userdata {
+	if util.IsExist(RedisServiceFile) {
+		userdataDirs = append(userdataDirs, OlaresJuiceFSRootDir)
+	}
+
+	for _, d := range userdataDirs {
 		if util.IsExist(d) {
 			if err := util.RemoveDir(d); err != nil {
 				logger.Errorf("remove %s failed %v", d, err)
@@ -440,7 +432,7 @@ func (t *DeleteTerminusData) Execute(runtime connector.Runtime) error {
 	}
 
 	if util.IsExist(StorageDataDir) {
-		runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("umount %s", StorageDataDir), false, true)
+		runtime.GetRunner().SudoCmd(fmt.Sprintf("umount %s", StorageDataDir), false, true)
 		if err := util.RemoveDir(StorageDataDir); err != nil {
 			logger.Errorf("remove %s failed %v", StorageDataDir, err)
 		}

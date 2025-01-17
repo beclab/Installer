@@ -1,15 +1,21 @@
 package terminus
 
 import (
+	"bytetrade.io/web3os/installer/pkg/storage"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -17,6 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+	"sync"
 	"time"
 
 	bootstraptpl "bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
@@ -63,6 +70,7 @@ func (t *GetTerminusVersion) Execute() (string, error) {
 
 type CheckKeyPodsRunning struct {
 	common.KubeAction
+	Node string
 }
 
 func (t *CheckKeyPodsRunning) Execute(runtime connector.Runtime) error {
@@ -79,6 +87,10 @@ func (t *CheckKeyPodsRunning) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(err, "failed to list pods")
 	}
 	for _, pod := range pods.Items {
+		if t.Node != "" && pod.Spec.NodeName != t.Node {
+			logger.Debugf("skipping pod %s that's not on node %s", pod.Name, t.Node)
+			continue
+		}
 		if strings.HasPrefix(pod.Namespace, "user-space") ||
 			strings.HasPrefix(pod.Namespace, "user-system") ||
 			pod.Namespace == "os-system" {
@@ -118,7 +130,7 @@ func (c *CheckPodsRunning) Execute(runtime connector.Runtime) error {
 	for ns, labels := range c.labels {
 		for _, label := range labels {
 			var cmd = fmt.Sprintf("%s get pod -n %s -l '%s' -o jsonpath='{.items[*].status.phase}'", kubectl, ns, label)
-			phase, err := runtime.GetRunner().Host.SudoCmdContext(ctx, cmd, false, false)
+			phase, err := runtime.GetRunner().SudoCmdContext(ctx, cmd, false, false)
 			if err != nil {
 				return fmt.Errorf("pod status invalid, namespace: %s, label: %s, waiting ...", ns, label)
 			}
@@ -146,7 +158,7 @@ func (t *Download) Execute(runtime connector.Runtime) error {
 	}
 
 	var fetchMd5 = fmt.Sprintf("curl -sSfL %s/install-wizard-v%s.md5sum.txt |awk '{print $1}'", t.DownloadCdnUrl, t.Version)
-	md5sum, err := runtime.GetRunner().Host.Cmd(fetchMd5, false, false)
+	md5sum, err := runtime.GetRunner().Cmd(fetchMd5, false, false)
 	if err != nil {
 		return errors.New("get md5sum failed")
 	}
@@ -191,7 +203,7 @@ func copyWizard(wizardPath string, np string, runtime connector.Runtime) {
 	} else {
 		// util.Mkdir(np)
 	}
-	_, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("cp -a %s %s", wizardPath, np), false, false)
+	_, err := runtime.GetRunner().Cmd(fmt.Sprintf("cp -a %s %s", wizardPath, np), false, false)
 	if err != nil {
 		logger.Errorf("copy -a %s to %s failed", wizardPath, np)
 	}
@@ -213,7 +225,7 @@ type PrepareFinished struct {
 func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
 	var preparedFile = filepath.Join(runtime.GetBaseDir(), common.TerminusStateFilePrepared)
 	return util.WriteFile(preparedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
-	// if _, err := runtime.GetRunner().Host.CmdExt(fmt.Sprintf("touch %s", preparedFile), false, true); err != nil {
+	// if _, err := runtime.GetRunner().Cmd(fmt.Sprintf("touch %s", preparedFile), false, true); err != nil {
 	// 	return err
 	// }
 	// return nil
@@ -275,11 +287,11 @@ func (t *GenerateOlaresUninstallScript) Execute(runtime connector.Runtime) error
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", filePath))
 	}
 
-	if err := runtime.GetRunner().Host.SudoScp(filePath, uninstallPath); err != nil {
+	if err := runtime.GetRunner().SudoScp(filePath, uninstallPath); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", filePath, uninstallPath))
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", filePath), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", filePath), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove file %s failed", filePath))
 	}
 
@@ -312,7 +324,7 @@ func (d *DeleteWizardFiles) Execute(runtime connector.Runtime) error {
 
 	for _, location := range locations {
 		if util.IsExist(location) {
-			runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("rm -rf %s", location), false, true)
+			runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", location), false, true)
 		}
 	}
 	return nil
@@ -327,13 +339,13 @@ type SystemctlCommand struct {
 
 func (a *SystemctlCommand) Execute(runtime connector.Runtime) error {
 	if a.DaemonReloadPreExec {
-		if _, err := runtime.GetRunner().Host.SudoCmd("systemctl daemon-reload", false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload", false, true); err != nil {
 			return errors.Wrap(errors.WithStack(err), "systemctl reload failed")
 		}
 	}
 	for _, unitName := range a.UnitNames {
 		cmd := fmt.Sprintf("systemctl %s %s", a.Command, unitName)
-		if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+		if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 			return errors.Wrapf(err, "failed to execute command: %s", cmd)
 		}
 	}
@@ -411,7 +423,7 @@ type RegenerateFilesForK8sIPChange struct {
 func (a *RegenerateFilesForK8sIPChange) Execute(runtime connector.Runtime) error {
 	initCmd := "/usr/local/bin/kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml --skip-phases=preflight,mark-control-plane,bootstrap-token,addon"
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(initCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, false); err != nil {
 		return err
 	}
 	return nil
@@ -419,6 +431,7 @@ func (a *RegenerateFilesForK8sIPChange) Execute(runtime connector.Runtime) error
 
 type DeleteAllPods struct {
 	common.KubeAction
+	Node string
 }
 
 func (a *DeleteAllPods) Execute(runtime connector.Runtime) error {
@@ -426,8 +439,11 @@ func (a *DeleteAllPods) Execute(runtime connector.Runtime) error {
 	if err != nil {
 		return fmt.Errorf("kubectl not found")
 	}
-	var cmd = fmt.Sprintf("%s delete pod --all --all-namespaces", kubectlpath)
-	if _, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true); err != nil {
+	var cmd = fmt.Sprintf("%s delete pod --all-namespaces -l tier!=control-plane", kubectlpath)
+	if a.Node != "" {
+		cmd += fmt.Sprintf(" --field-selector spec.nodeName=%s", a.Node)
+	}
+	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return err
 	}
 
@@ -592,11 +608,11 @@ func (a *UpdateKubeKeyHosts) Execute(runtime connector.Runtime) error {
 	if err := tplAction.Execute(runtime); err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("failed to generate update hosts script: %s", scriptPath))
 	}
-	if _, err := runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("chmod +x %s", scriptPath), false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("chmod +x %s", scriptPath), false, false); err != nil {
 		return errors.Wrap(errors.WithStack(err), "failed to chmod +x update hosts script")
 	}
 
-	if _, err := runtime.GetRunner().Host.SudoCmd(scriptPath, false, true); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(scriptPath, false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "failed to run update hosts script")
 	}
 	return nil
@@ -651,16 +667,13 @@ type GetPublicNetworkInfo struct {
 }
 
 func (p *GetPublicNetworkInfo) Execute(runtime connector.Runtime) error {
-	osPublicIPs, err := util.GetPublicIPsFromOS()
-	if err != nil {
-		return errors.Wrap(err, "failed to get public IPs from OS")
-	}
-	if len(osPublicIPs) > 0 {
-		logger.Info("detected public IP addresses on local network interface")
-		p.KubeConf.Arg.PublicNetworkInfo.OSPublicIPs = osPublicIPs
+	if runtime.GetSystemInfo().IsWsl() || runtime.GetSystemInfo().IsDarwin() {
+		if p.KubeConf.Arg.PublicNetworkInfo.PubliclyAccessible {
+			logger.Warnf("environment variable %s is set explicitly but unsupported on this platform, ignoring", common.ENV_PUBLICLY_ACCESSIBLE)
+			p.KubeConf.Arg.PublicNetworkInfo.PubliclyAccessible = false
+		}
 		return nil
 	}
-
 	if util.IsOnAWSEC2() {
 		logger.Info("on AWS EC2 instance, will try to check if a public IP address is bound")
 		awsPublicIP, err := util.GetPublicIPFromAWSIMDS()
@@ -674,5 +687,289 @@ func (p *GetPublicNetworkInfo) Execute(runtime connector.Runtime) error {
 		}
 	}
 
+	osPublicIPs, err := util.GetPublicIPsFromOS()
+	if err != nil {
+		return errors.Wrap(err, "failed to get public IPs from OS")
+	}
+	if len(osPublicIPs) > 0 {
+		logger.Info("detected public IP addresses on local network interface")
+		p.KubeConf.Arg.PublicNetworkInfo.OSPublicIPs = osPublicIPs
+		return nil
+	}
+
+	if !p.KubeConf.Arg.PublicNetworkInfo.PubliclyAccessible {
+		return nil
+	}
+
+	externalIP := getMyExternalIPAddr()
+	if externalIP == nil {
+		return errors.New("this machine is explicitly specified as publicly accessible but no valid public IP can be found")
+	}
+	p.KubeConf.Arg.PublicNetworkInfo.ExternalPublicIP = externalIP
 	return nil
+
+}
+
+// getMyExternalIPAddr get my network outgoing ip address
+func getMyExternalIPAddr() net.IP {
+	sites := map[string]string{
+		"httpbin":    "https://httpbin.org/ip",
+		"ifconfigme": "https://ifconfig.me/all.json",
+		"externalip": "https://myexternalip.com/json",
+		"joinolares": "https://myip.joinolares.cn/ip",
+	}
+
+	type httpBin struct {
+		Origin string `json:"origin"`
+	}
+
+	type ifconfigMe struct {
+		IPAddr     string `json:"ip_addr"`
+		RemoteHost string `json:"remote_host,omitempty"`
+		UserAgent  string `json:"user_agent,omitempty"`
+		Port       int    `json:"port,omitempty"`
+		Method     string `json:"method,omitempty"`
+		Encoding   string `json:"encoding,omitempty"`
+		Via        string `json:"via,omitempty"`
+		Forwarded  string `json:"forwarded,omitempty"`
+	}
+
+	type externalIP struct {
+		IP string `json:"ip"`
+	}
+
+	var unmarshalFuncs = map[string]func(v []byte) string{
+		"httpbin": func(v []byte) string {
+			var hb httpBin
+			if err := json.Unmarshal(v, &hb); err == nil && hb.Origin != "" {
+				return hb.Origin
+			}
+			return ""
+		},
+		"ifconfigme": func(v []byte) string {
+			var ifMe ifconfigMe
+			if err := json.Unmarshal(v, &ifMe); err == nil && ifMe.IPAddr != "" {
+				return ifMe.IPAddr
+			}
+			return ""
+		},
+		"externalip": func(v []byte) string {
+			var extip externalIP
+			if err := json.Unmarshal(v, &extip); err == nil && extip.IP != "" {
+				return extip.IP
+			}
+			return ""
+		},
+		"joinolares": func(v []byte) string {
+			return strings.TrimSpace(string(v))
+		},
+	}
+
+	var mu sync.Mutex
+	ch := make(chan any, len(sites))
+	chSyncOp := func(f func()) {
+		mu.Lock()
+		defer mu.Unlock()
+		if ch != nil {
+			f()
+		}
+	}
+
+	for site := range sites {
+		go func(name string) {
+			http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			c := http.Client{Timeout: 5 * time.Second}
+			resp, err := c.Get(sites[name])
+			if err != nil {
+				chSyncOp(func() { ch <- err })
+				return
+			}
+			defer resp.Body.Close()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				chSyncOp(func() { ch <- err })
+				return
+			}
+
+			ip := unmarshalFuncs[name](respBytes)
+			//println(name, site, ip)
+			chSyncOp(func() { ch <- ip })
+
+		}(site)
+	}
+
+	tr := time.NewTimer(time.Duration(15*len(sites)+3) * time.Second)
+	defer func() {
+		tr.Stop()
+		chSyncOp(func() {
+			close(ch)
+			ch = nil
+		})
+	}()
+
+LOOP:
+	for i := 0; i < len(sites); i++ {
+		select {
+		case r, ok := <-ch:
+			if !ok {
+				continue
+			}
+
+			switch v := r.(type) {
+			case string:
+				ip := net.ParseIP(v).To4()
+				if ip.IsGlobalUnicast() && !ip.IsPrivate() {
+					return ip
+				}
+			case error:
+				logger.Debugf("got an error when reflecting public IP %v", v)
+			}
+		case <-tr.C:
+			tr.Stop()
+			logger.Debugf("timed out while fetching public IP")
+			break LOOP
+		}
+	}
+
+	return nil
+}
+
+type GetMasterInfo struct {
+	common.KubeAction
+	Print bool
+}
+
+type MasterInfo struct {
+	JuiceFSEnabled      bool
+	KubernetesInstalled bool
+	OlaresInstalled     bool
+	KubernetesType      string
+	OlaresVersion       string
+	MasterNodeName      string
+	AllNodes            []string
+}
+
+func (t *GetMasterInfo) Execute(runtime connector.Runtime) (err error) {
+	masterInfo := &MasterInfo{}
+	defer func() {
+		if err != nil {
+			return
+		}
+		if t.Print {
+			logger.Infof("Got master info:\nOlaresVersion: %s\nJuiceFSEnabled: %t\nKubernetesType: %s\nMasterNodeName: %s\nAllNodes: %s\n",
+				masterInfo.OlaresVersion, masterInfo.JuiceFSEnabled, masterInfo.KubernetesType, masterInfo.MasterNodeName, strings.Join(masterInfo.AllNodes, ","))
+		}
+
+		t.PipelineCache.Set(common.MasterInfo, masterInfo)
+	}()
+	exist, err := runtime.GetRunner().FileExist(storage.JuiceFsServiceFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to check whether JuiceFS service exists")
+	}
+	if !exist {
+		masterInfo.JuiceFSEnabled = false
+	} else {
+		juiceFSCheckCMD := fmt.Sprintf("%s info %s", storage.JuiceFsFile, storage.OlaresJuiceFSRootDir)
+		output, err := runtime.GetRunner().SudoCmd(juiceFSCheckCMD, false, false)
+		if err != nil {
+			return errors.Wrap(err, "failed to check JuiceFS status")
+		}
+		if !strings.Contains(output, "ERROR") {
+			masterInfo.JuiceFSEnabled = true
+		}
+	}
+	nodeList := &corev1.NodeList{}
+	nodeCheckCMD := "kubectl get node -o json"
+	output, err := runtime.GetRunner().SudoCmd(nodeCheckCMD, false, false)
+	if err != nil {
+		if strings.Contains(err.Error(), "command not found") {
+			masterInfo.KubernetesInstalled = false
+			return nil
+		}
+		return errors.Wrap(err, "failed to get Kubernetes node info")
+	}
+	masterInfo.KubernetesInstalled = true
+	if err := json.Unmarshal([]byte(output), nodeList); err != nil {
+		return errors.Wrap(err, "failed to parse Kubernetes node info")
+	}
+	for _, node := range nodeList.Items {
+		masterInfo.AllNodes = append(masterInfo.AllNodes, node.Name)
+		if _, ok := node.Labels["node-role.kubernetes.io/master"]; ok {
+			masterInfo.MasterNodeName = node.Name
+			if strings.Contains(node.Status.NodeInfo.KubeletVersion, common.K3s) {
+				masterInfo.KubernetesType = common.K3s
+			} else {
+				masterInfo.KubernetesType = common.K8s
+			}
+		}
+	}
+	runtime.RemoteHost().SetName(masterInfo.MasterNodeName)
+	t.KubeConf.Arg.MasterNodeName = masterInfo.MasterNodeName
+	t.KubeConf.Arg.SetKubeVersion(masterInfo.KubernetesType)
+	olaresVersionCMD := "kubectl get terminus -o jsonpath='{.items[*].spec.version}'"
+	output, err = runtime.GetRunner().SudoCmd(olaresVersionCMD, false, false)
+	if err != nil {
+		if strings.Contains(err.Error(), "the server doesn't have a resource type") {
+			masterInfo.OlaresInstalled = false
+			return nil
+		}
+		return errors.Wrap(err, "failed to get Olares version (is it installed?)")
+	}
+	masterInfo.OlaresInstalled = true
+	masterInfo.OlaresVersion = strings.TrimSpace(output)
+	return nil
+
+}
+
+type AddNodePrecheck struct {
+	common.KubeAction
+}
+
+func (a *AddNodePrecheck) Execute(runtime connector.Runtime) error {
+	v, ok := a.PipelineCache.Get(common.MasterInfo)
+	if !ok {
+		return errors.New("failed to get master info")
+	}
+	masterInfo := v.(*MasterInfo)
+	var errs []error
+	defer func() {
+		if len(errs) > 0 {
+			var errStr string
+			for _, err := range errs {
+				errStr += err.Error() + "\n"
+			}
+			logger.Errorf("precheck failed, unable to add current node to the cluster:\n%s", errStr)
+			os.Exit(1)
+		}
+	}()
+	if !masterInfo.JuiceFSEnabled {
+		errs = append(errs, errors.New("[JuiceFS] the master node has not enabled JuiceFS, which is required for multi nodes to share a same view of FileSystem"))
+	}
+	if !masterInfo.KubernetesInstalled {
+		errs = append(errs, errors.New("[Kubernetes] the master node has not installed Kubernetes"))
+	}
+	if !masterInfo.OlaresInstalled {
+		errs = append(errs, errors.New("[Olares] the master node has not installed Olares"))
+	}
+	for _, node := range masterInfo.AllNodes {
+		if strings.EqualFold(node, runtime.GetSystemInfo().GetHostname()) {
+			errs = append(errs, fmt.Errorf("[NodeName] the node name: \"%s\" has already been occupied by another node", node))
+		}
+	}
+	return nil
+}
+
+type SaveMasterHostConfig struct {
+	common.KubeAction
+}
+
+func (a *SaveMasterHostConfig) Execute(runtime connector.Runtime) error {
+	if a.KubeConf.Arg.MasterHost == "" {
+		logger.Info("master host is empty, skip saving to master config")
+	}
+	content, err := json.MarshalIndent(a.KubeConf.Arg.MasterHostConfig, "", "    ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(runtime.GetBaseDir(), common.MasterHostConfigFile), content, 0644)
 }
