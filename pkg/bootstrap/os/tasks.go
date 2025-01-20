@@ -232,9 +232,12 @@ func (n *NodeConfigureOS) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	_, err1 := runtime.GetRunner().SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s && sed -i '/^127.0.1.1/s/.*/127.0.1.1      %s/g' /etc/hosts", host.GetName(), host.GetName()), false, false)
-	if err1 != nil {
-		return errors.Wrap(errors.WithStack(err1), "Failed to override hostname")
+	// if running in docker container, /etc/hosts file is bind mounting, cannot be replaced via mv command
+	if !n.KubeConf.Arg.IsOlaresInContainer {
+		_, err1 := runtime.GetRunner().SudoCmd(fmt.Sprintf("hostnamectl set-hostname %s && sed -i '/^127.0.1.1/s/.*/127.0.1.1      %s/g' /etc/hosts", host.GetName(), host.GetName()), false, false)
+		if err1 != nil {
+			return errors.Wrap(errors.WithStack(err1), "Failed to override hostname")
+		}
 	}
 
 	if runtime.GetSystemInfo().IsWsl() {

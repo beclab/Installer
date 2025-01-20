@@ -296,6 +296,9 @@ const (
 	ENV_AUTO_ADD_FIREWALL_RULES     = "AUTO_ADD_FIREWALL_RULES"
 	ENV_TERMINUS_OS_DOMAINNAME      = "TERMINUS_OS_DOMAINNAME"
 	ENV_DEFAULT_WSL_DISTRO_LOCATION = "DEFAULT_WSL_DISTRO_LOCATION" // If set to 1, the default WSL distro storage will be used.
+
+	ENV_CONTAINER      = "container"
+	ENV_CONTAINER_MODE = "CONTAINER_MODE" // running in docker container
 )
 
 // TerminusGlobalEnvs holds a group of general environment variables
