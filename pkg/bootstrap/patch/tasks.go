@@ -1,11 +1,12 @@
 package patch
 
 import (
-	"bytetrade.io/web3os/installer/pkg/utils"
 	"fmt"
-	"github.com/pkg/errors"
 	"path"
 	"strings"
+
+	"bytetrade.io/web3os/installer/pkg/utils"
+	"github.com/pkg/errors"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/binaries"
@@ -38,7 +39,7 @@ type PatchTask struct {
 func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	var cmd string
 	var debianFrontend = "DEBIAN_FRONTEND=noninteractive"
-	var pre_reqs = "apt-transport-https ca-certificates curl"
+	var pre_reqs = "apt-transport-https ca-certificates curl cifs-utils"
 
 	if _, err := util.GetCommand(common.CommandGPG); err != nil {
 		pre_reqs = pre_reqs + " gnupg "
