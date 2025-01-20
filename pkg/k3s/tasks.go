@@ -17,16 +17,16 @@
 package k3s
 
 import (
-	"bytetrade.io/web3os/installer/pkg/storage"
-	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"bytetrade.io/web3os/installer/pkg/storage"
+	storagetpl "bytetrade.io/web3os/installer/pkg/storage/templates"
 
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/manifest"
@@ -352,40 +352,40 @@ func (e *EnableK3sService) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type PreloadImagesService struct {
-	common.KubeAction
-}
+// type PreloadImagesService struct {
+// 	common.KubeAction
+// }
 
-func (p *PreloadImagesService) Execute(runtime connector.Runtime) error {
-	if utils.IsExist(common.K3sImageDir) {
-		if err := util.CreateDir(common.K3sImageDir); err != nil {
-			logger.Errorf("create dir %s failed: %v", common.K3sImageDir, err)
-			return err
-		}
-	}
+// func (p *PreloadImagesService) Execute(runtime connector.Runtime) error {
+// 	if utils.IsExist(common.K3sImageDir) {
+// 		if err := util.CreateDir(common.K3sImageDir); err != nil {
+// 			logger.Errorf("create dir %s failed: %v", common.K3sImageDir, err)
+// 			return err
+// 		}
+// 	}
 
-	fileInfos, err := os.ReadDir(common.K3sImageDir)
-	if err != nil {
-		logger.Errorf("Unable to read images in %s: %v", common.K3sImageDir, err)
-		return nil
-	}
+// 	fileInfos, err := os.ReadDir(common.K3sImageDir)
+// 	if err != nil {
+// 		logger.Errorf("Unable to read images in %s: %v", common.K3sImageDir, err)
+// 		return nil
+// 	}
 
-	var loadingImages images.LocalImages
-	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-			continue
-		}
+// 	var loadingImages images.LocalImages
+// 	for _, fileInfo := range fileInfos {
+// 		if fileInfo.IsDir() {
+// 			continue
+// 		}
 
-		filePath := filepath.Join(common.K3sImageDir, fileInfo.Name())
+// 		filePath := filepath.Join(common.K3sImageDir, fileInfo.Name())
 
-		loadingImages = append(loadingImages, images.LocalImage{Filename: filePath})
-	}
+// 		loadingImages = append(loadingImages, images.LocalImage{Filename: filePath})
+// 	}
 
-	if err := loadingImages.LoadImages(runtime, p.KubeConf); err != nil {
-		return errors.Wrap(errors.WithStack(err), "preload image failed")
-	}
-	return nil
-}
+// 	if err := loadingImages.LoadImages(runtime, p.KubeConf); err != nil {
+// 		return errors.Wrap(errors.WithStack(err), "preload image failed")
+// 	}
+// 	return nil
+// }
 
 type CopyK3sKubeConfig struct {
 	common.KubeAction

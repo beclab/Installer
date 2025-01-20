@@ -20,9 +20,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -130,101 +128,101 @@ func (images *Images) PullImages(runtime connector.Runtime, kubeConf *common.Kub
 	return nil
 }
 
-type LocalImage struct {
-	Filename string
-}
+// type LocalImage struct {
+// 	Filename string
+// }
 
-type LocalImages []LocalImage
+// type LocalImages []LocalImage
 
-func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.KubeConf) error {
-	loadCmd := "docker"
-	host := runtime.RemoteHost()
-	retry := func(f func() error, times int) (err error) {
-		for i := 0; i < times; i++ {
-			err = f()
-			if err == nil {
-				return nil
-			}
-			var dur = 5 + (i+1)*10
-			logger.Warnf("load image %s failed, wait for %d seconds(%d times)", err, dur, i+1)
-			if (i + 1) < times {
-				time.Sleep(time.Duration(dur) * time.Second)
-			}
-		}
+// func (i LocalImages) LoadImages(runtime connector.Runtime, kubeConf *common.KubeConf) error {
+// 	loadCmd := "docker"
+// 	host := runtime.RemoteHost()
+// 	retry := func(f func() error, times int) (err error) {
+// 		for i := 0; i < times; i++ {
+// 			err = f()
+// 			if err == nil {
+// 				return nil
+// 			}
+// 			var dur = 5 + (i+1)*10
+// 			logger.Warnf("load image %s failed, wait for %d seconds(%d times)", err, dur, i+1)
+// 			if (i + 1) < times {
+// 				time.Sleep(time.Duration(dur) * time.Second)
+// 			}
+// 		}
 
-		return
-	}
+// 		return
+// 	}
 
-	for _, image := range i {
-		switch {
-		case host.IsRole(common.Master):
-			// logger.Debugf("%s preloading image: %s", host.GetName(), image.Filename)
-			start := time.Now()
-			fileName := filepath.Base(image.Filename)
-			// fileName = strings.ReplaceAll(fileName, ".gz", "")
-			// fmt.Println(">>> ", fileName, HasSuffixI(image.Filename, ".tar.gz", ".tgz"))
-			if HasSuffixI(image.Filename, ".tar.gz", ".tgz") {
-				switch kubeConf.Cluster.Kubernetes.ContainerManager {
-				case "crio":
-					loadCmd = "ctr" // BUG
-				case "containerd":
-					loadCmd = "ctr -n k8s.io images import -"
-				case "isula":
-					loadCmd = "isula"
-				default:
-					loadCmd = "docker load"
-				}
+// 	for _, image := range i {
+// 		switch {
+// 		case host.IsRole(common.Master):
+// 			// logger.Debugf("%s preloading image: %s", host.GetName(), image.Filename)
+// 			start := time.Now()
+// 			fileName := filepath.Base(image.Filename)
+// 			// fileName = strings.ReplaceAll(fileName, ".gz", "")
+// 			// fmt.Println(">>> ", fileName, HasSuffixI(image.Filename, ".tar.gz", ".tgz"))
+// 			if HasSuffixI(image.Filename, ".tar.gz", ".tgz") {
+// 				switch kubeConf.Cluster.Kubernetes.ContainerManager {
+// 				case "crio":
+// 					loadCmd = "ctr" // BUG
+// 				case "containerd":
+// 					loadCmd = "ctr -n k8s.io images import -"
+// 				case "isula":
+// 					loadCmd = "isula"
+// 				default:
+// 					loadCmd = "docker load"
+// 				}
 
-				// continue if load image error
-				if err := retry(func() error {
-					logger.Infof("preloading image: %s", fileName)
-					if stdout, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("env PATH=$PATH gunzip -c %s | %s", image.Filename, loadCmd), false, false); err != nil {
-						return fmt.Errorf("%s", fileName)
-					} else {
-						logger.Infof("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
-						// fmt.Printf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
-					}
-					return nil
-				}, 5); err != nil {
-					return fmt.Errorf("%s", fileName)
-				}
-			} else if HasSuffixI(image.Filename, ".tar") {
-				switch kubeConf.Cluster.Kubernetes.ContainerManager {
-				case "crio":
-					loadCmd = "ctr" // BUG
-				case "containerd":
-					loadCmd = "ctr -n k8s.io images import"
-				case "isula":
-					loadCmd = "isula"
-				default:
-					loadCmd = "docker load -i"
-				}
+// 				// continue if load image error
+// 				if err := retry(func() error {
+// 					logger.Infof("preloading image: %s", fileName)
+// 					if stdout, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("env PATH=$PATH gunzip -c %s | %s", image.Filename, loadCmd), false, false); err != nil {
+// 						return fmt.Errorf("%s", fileName)
+// 					} else {
+// 						logger.Infof("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
+// 						// fmt.Printf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
+// 					}
+// 					return nil
+// 				}, 5); err != nil {
+// 					return fmt.Errorf("%s", fileName)
+// 				}
+// 			} else if HasSuffixI(image.Filename, ".tar") {
+// 				switch kubeConf.Cluster.Kubernetes.ContainerManager {
+// 				case "crio":
+// 					loadCmd = "ctr" // BUG
+// 				case "containerd":
+// 					loadCmd = "ctr -n k8s.io images import"
+// 				case "isula":
+// 					loadCmd = "isula"
+// 				default:
+// 					loadCmd = "docker load -i"
+// 				}
 
-				if err := retry(func() error {
-					logger.Infof("preloading image: %s", fileName)
-					if stdout, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("env PATH=$PATH %s %s", loadCmd, image.Filename), false, false); err != nil {
-						return fmt.Errorf("%s", fileName)
-					} else {
-						logger.Infof("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
-						// fmt.Printf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
-					}
+// 				if err := retry(func() error {
+// 					logger.Infof("preloading image: %s", fileName)
+// 					if stdout, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("env PATH=$PATH %s %s", loadCmd, image.Filename), false, false); err != nil {
+// 						return fmt.Errorf("%s", fileName)
+// 					} else {
+// 						logger.Infof("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
+// 						// fmt.Printf("%s in %s\n", formatLoadImageRes(stdout, fileName), time.Since(start))
+// 					}
 
-					return nil
-				}, 5); err != nil {
-					return fmt.Errorf("%s", fileName)
-				}
-			} else {
-				logger.Warnf("invalid image file name %s, skip ...", image.Filename)
-				return nil
-			}
-		default:
-			continue
-		}
+// 					return nil
+// 				}, 5); err != nil {
+// 					return fmt.Errorf("%s", fileName)
+// 				}
+// 			} else {
+// 				logger.Warnf("invalid image file name %s, skip ...", image.Filename)
+// 				return nil
+// 			}
+// 		default:
+// 			continue
+// 		}
 
-	}
-	return nil
+// 	}
+// 	return nil
 
-}
+// }
 
 func formatLoadImageRes(str string, fileName string) string {
 	if strings.Contains(str, "(sha256:") {
