@@ -119,8 +119,13 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		var loadCmd string
 		var loadParm string
 
-		if runtime.GetSystemInfo().GetFsType() == "zfs" {
-			loadParm = "--snapshotter=zfs"
+		// unused
+		// if runtime.GetSystemInfo().GetFsType() == "zfs" {
+		// 	loadParm = "--snapshotter=zfs"
+		// }
+
+		if t.KubeConf.Arg.IsOlaresInContainer {
+			loadParm = "--no-unpack"
 		}
 
 		if runtime.RemoteHost().GetOs() == common.Darwin {

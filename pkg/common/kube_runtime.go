@@ -19,13 +19,14 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/spf13/pflag"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 
 	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	kubekeyclientset "bytetrade.io/web3os/installer/clients/clientset/versioned"
@@ -120,6 +121,8 @@ type Argument struct {
 	HostIP             string   `json:"host_ip"`
 
 	CudaVersion string `json:"cuda_version"`
+
+	IsOlaresInContainer bool `json:"is_olares_in_container"`
 }
 
 type MasterHostConfig struct {
@@ -241,6 +244,7 @@ func NewArgument() *Argument {
 	}
 	arg.IsCloudInstance, _ = strconv.ParseBool(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION))
 	arg.PublicNetworkInfo.PubliclyAccessible, _ = strconv.ParseBool(os.Getenv(ENV_PUBLICLY_ACCESSIBLE))
+	arg.IsOlaresInContainer = os.Getenv("CONTAINER_MODE") == "oic"
 	return arg
 }
 
