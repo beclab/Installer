@@ -1,6 +1,8 @@
 package windows
 
 import (
+	"time"
+
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 )
@@ -13,8 +15,20 @@ func (u *InstallWSLModule) Init() {
 	u.Name = "InstallWSL"
 
 	downloadAppxPackage := &task.LocalTask{
-		Name:   "InitAppxPackage",
-		Action: &AddAppxPackage{},
+		Name:   "DownloadAppxPackage",
+		Action: &DownloadAppxPackage{},
+	}
+
+	installAppxPackage := &task.LocalTask{
+		Name:   "InstallAppxPackage",
+		Action: &InstallAppxPackage{},
+		Retry:  2,
+		Delay:  5 * time.Second,
+	}
+
+	downloadWslPackage := &task.LocalTask{
+		Name:   "DownloadWslInstallPackage",
+		Action: &DownloadWSLInstallPackage{},
 	}
 
 	updateWSL := &task.LocalTask{
@@ -24,6 +38,8 @@ func (u *InstallWSLModule) Init() {
 
 	u.Tasks = []task.Interface{
 		downloadAppxPackage,
+		installAppxPackage,
+		downloadWslPackage,
 		updateWSL,
 	}
 }
