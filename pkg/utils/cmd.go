@@ -10,6 +10,7 @@ import (
 
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"github.com/pkg/errors"
+	"github.com/saintfish/chardet"
 	utilexec "k8s.io/utils/exec"
 )
 
@@ -18,6 +19,7 @@ type Charset string
 const (
 	DEFAULT Charset = "DEFAULT"
 	GBK     Charset = "GBK"
+	UTF8    Charset = "UTF8"
 	UTF16   Charset = "UTF16"
 )
 
@@ -113,21 +115,16 @@ func (command *CommandExecutor) runcmd(charset Charset) (string, error) {
 	var exec = utilexec.New()
 
 	output, err := exec.Command(command.name, command.cmd...).Output()
-	switch charset {
-	case UTF16:
-		res = Utf16ToUtf8(output)
-	case GBK:
-		tmp, _ := GbkToUtf8(output)
-		res = string(tmp)
-	default:
-		res = string(output)
-	}
+	detector := chardet.NewTextDetector()
+	result, _ := detector.DetectBest(output)
+	res, _ = CharsetConverts(result.Charset, output, charset)
 
 	if err != nil {
+		logger.Debugf("[exec] CMD: %s, CHARSET: %s, OUTPUT: %s, error: %v", fmt.Sprintf("%s %v", command.name, command.cmd), result.Charset, res, err)
 		return res, err
 	}
 
-	logger.Debugf("[exec] CMD: %s, OUTPUT: %s", fmt.Sprintf("%s %v", command.name, command.cmd), res)
+	logger.Debugf("[exec] CMD: %s, CHARSET: %s, OUTPUT: %s", fmt.Sprintf("%s %v", command.name, command.cmd), result.Charset, res)
 	return res, nil
 }
 
