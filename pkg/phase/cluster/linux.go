@@ -98,6 +98,6 @@ func (l *linuxInstallPhaseBuilder) build() []module.Module {
 		addModule(backupModuleBuilder(func() []module.Module {
 			return l.installBackup()
 		}).withBackup(l.runtime)...).
-		addModule(&terminus.WelcomeModule{}).
-		addModule(&terminus.InstalledModule{})
+		addModule(&terminus.InstalledModule{}).
+		addModule(&terminus.WelcomeModule{})
 }
