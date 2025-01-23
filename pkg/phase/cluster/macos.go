@@ -42,6 +42,6 @@ func (m *macosInstallPhaseBuilder) build() []module.Module {
 	return m.base().
 		addModule(m.installCluster()...).
 		addModule(m.installTerminus()...).
-		addModule(&terminus.WelcomeModule{}).
-		addModule(&terminus.InstalledModule{})
+		addModule(&terminus.InstalledModule{}).
+		addModule(&terminus.WelcomeModule{})
 }
