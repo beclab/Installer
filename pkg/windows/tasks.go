@@ -589,7 +589,7 @@ func (g *GetDiskPartition) Execute(runtime connector.Runtime) error {
 	if len(partitions) == 0 {
 		return fmt.Errorf("Unable to retrieve disk space information")
 	}
-	fmt.Printf("\nInstalling Olares will create a WSL Ubuntu Distro and occupy at least 80 GB of disk space. \nCurrent disk available space, please select the disk to store the WSL Ubuntu Distro: \n\n")
+	fmt.Printf("\nInstalling Olares will create a WSL Ubuntu Distro and occupy at least 80 GB of disk space. \nPlease select the drive where you want to install it. \nAvailable drives and free space:\n")
 	for _, v := range partitions {
 		var tmp = strings.Split(v, "_")
 		fmt.Printf("%s  Free Disk: %s\n", tmp[0], tmp[1])
@@ -607,7 +607,7 @@ func (g *GetDiskPartition) Execute(runtime connector.Runtime) error {
 		scanner := bufio.NewScanner(os.Stdin)
 
 		for {
-			fmt.Printf("\nPlease enter the drive, such as C, D, ... : ")
+			fmt.Printf("\nPlease enter the drive letter (e.g., C):")
 
 			scanner.Scan()
 			enterPath = scanner.Text()
