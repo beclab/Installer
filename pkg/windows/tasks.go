@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	kubekeyapiv1alpha2 "bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
@@ -22,29 +23,19 @@ import (
 
 const (
 	windowsAppPath = "AppData\\Local\\Microsoft\\WindowsApps"
-	ubuntuexe      = "ubuntu.exe"
+	ubuntuTool     = "ubuntu.exe"
+	distro         = "Ubuntu"
 
 	OLARES_WINDOWS_FIREWALL_RULE_NAME = "OlaresRule"
 )
 
-var ubuntuTool string
-var distro string
-
-type AddAppxPackage struct {
+type DownloadAppxPackage struct {
 	common.KubeAction
 }
 
-func (i *AddAppxPackage) getDownloadCDN(downloadCdnUrlFromEnv string) string {
-	downloadCdnUrl := strings.TrimSuffix(downloadCdnUrlFromEnv, "/")
-	if downloadCdnUrl == "" {
-		downloadCdnUrl = cc.DownloadUrl
-	}
-	return downloadCdnUrl
-}
-
-func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
+func (d *DownloadAppxPackage) Execute(runtime connector.Runtime) error {
 	var systemInfo = runtime.GetSystemInfo()
-	var downloadCdnUrl = i.getDownloadCDN(i.KubeConf.Arg.DownloadCdnUrl)
+	var downloadCdnUrl = getDownloadCdnUrl(d.KubeConf.Arg.DownloadCdnUrl)
 
 	appx := files.NewKubeBinary("wsl", systemInfo.GetOsArch(), systemInfo.GetOsType(), systemInfo.GetOsVersion(), systemInfo.GetOsPlatformFamily(), "2204", fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"), downloadCdnUrl)
 
@@ -63,22 +54,72 @@ func (i *AddAppxPackage) Execute(runtime connector.Runtime) error {
 	}
 
 	if !exists {
+		logger.Debugf("download %s, url: %s", appx.FileName, appx.Url)
 		if err := appx.Download(); err != nil {
 			return fmt.Errorf("Failed to download %s binary: %s error: %w ", appx.ID, appx.Url, err)
 		}
 	}
 
+	d.PipelineCache.Set(common.WslUbuntuBinaries, appx)
+	return nil
+}
+
+type InstallAppxPackage struct {
+	common.KubeAction
+}
+
+func (i *InstallAppxPackage) Execute(runtime connector.Runtime) error {
+	wslAppxPackageObj, ok := i.PipelineCache.Get(common.WslUbuntuBinaries)
+	if !ok {
+		return errors.New("get WSL appx package from pipelinecache failed")
+	}
+
+	wslAppxPackage := wslAppxPackageObj.(*files.KubeBinary)
+
 	var ps = &utils.PowerShellCommandExecutor{
-		Commands: []string{fmt.Sprintf("Add-AppxPackage %s -ForceUpdateFromAnyVersion", appx.Path())},
+		Commands: []string{fmt.Sprintf("Add-AppxPackage %s -ForceUpdateFromAnyVersion", wslAppxPackage.Path())},
 	}
 
 	if _, err := ps.Run(); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("Add appx package %s failed", appx.Path()))
+		return fmt.Errorf("Unable to install the package because the resources it modifies are currently in use. Please close the current terminal and try again.")
 	}
 
-	ubuntuTool = ubuntuexe
-	distro = "Ubuntu"
+	return nil
+}
 
+type DownloadWSLInstallPackage struct {
+	common.KubeAction
+}
+
+func (d *DownloadWSLInstallPackage) Execute(runtime connector.Runtime) error {
+	var systemInfo = runtime.GetSystemInfo()
+	var downloadCdnUrl = getDownloadCdnUrl(d.KubeConf.Arg.DownloadCdnUrl)
+	var osArch = systemInfo.GetOsArch()
+	var osType = systemInfo.GetOsType()
+	var osVersion = systemInfo.GetOsVersion()
+	var osPlatformFamily = systemInfo.GetOsPlatformFamily()
+	wslInstallationPackage := files.NewKubeBinary("wslpackage", osArch, osType, osVersion, osPlatformFamily, kubekeyapiv1alpha2.DefaultWSLInstallPackageVersion, fmt.Sprintf("%s\\%s\\%s\\%s", systemInfo.GetHomeDir(), cc.DefaultBaseDir, "pkg", "components"), downloadCdnUrl)
+
+	if err := wslInstallationPackage.CreateBaseDir(); err != nil {
+		return errors.Wrapf(errors.WithStack(err), "create file %s base dir failed", wslInstallationPackage.FileName)
+	}
+
+	var exists = util.IsExist(wslInstallationPackage.Path())
+	if exists {
+		p := wslInstallationPackage.Path()
+		output := util.LocalMd5Sum(p)
+		if output != wslInstallationPackage.Md5sum {
+			util.RemoveFile(p)
+			exists = false
+		}
+	}
+
+	if !exists {
+		if err := wslInstallationPackage.Download(); err != nil {
+			return fmt.Errorf("Failed to download %s binary: %s error: %w ", wslInstallationPackage.ID, wslInstallationPackage.Url, err)
+		}
+	}
+	d.PipelineCache.Set(common.WslBinaries+"-"+osArch, wslInstallationPackage)
 	return nil
 }
 
@@ -87,6 +128,11 @@ type UpdateWSL struct {
 }
 
 func (u *UpdateWSL) Execute(runtime connector.Runtime) error {
+	var disableWslUpdate = os.Getenv("DISABLE_WSL_UPDATE")
+	if strings.EqualFold(disableWslUpdate, "1") {
+		return nil
+	}
+
 	var wslConfigFile = fmt.Sprintf("%s\\%s", runtime.GetSystemInfo().GetHomeDir(), templates.WSLConfigValue.Name())
 
 	file, err := os.Create(wslConfigFile)
@@ -110,11 +156,25 @@ func (u *UpdateWSL) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write wsl config %s failed", wslConfigFile))
 	}
 
-	var cmd = &utils.DefaultCommandExecutor{
-		Commands: []string{"--update"},
+	wslInstallPackageObj, ok := u.PipelineCache.Get(common.WslBinaries + "-" + systemInfo.GetOsArch())
+	if !ok {
+		return errors.New("get WSL install package from pipelinecache failed")
 	}
-	if _, err := cmd.RunCmd("wsl", utils.DEFAULT); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("Update WSL failed"))
+	wslInstallPackage := wslInstallPackageObj.(*files.KubeBinary)
+
+	var wslInfo = new(Wsl)
+	wslInfo.GetVersion()
+	wslInfo.PrintVersion()
+
+	if !wslInfo.IsInstalled() || wslInfo.CompareTo(kubekeyapiv1alpha2.DefaultWSLInstallPackageVersion) < 0 {
+		logger.Info("WSL is updating. This process may take a few minutes. Please wait...")
+		installoutput, err := wslInfo.Install(wslInstallPackage.Path())
+		if err != nil {
+			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("Install WSL failed, message: %s", installoutput))
+		}
+
+		wslInfo.GetVersion()
+		wslInfo.PrintVersion()
 	}
 
 	return nil
@@ -153,15 +213,10 @@ func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
 		Commands:  []string{"install", "--root"},
 		PrintLine: true,
 	}
-	if _, err := cmd.RunCmd(ubuntuTool, utils.GBK); err != nil {
-		fmt.Printf("\nStop Installation !!!!!!!\n\n")
-		fmt.Printf("Installing Windows Olares will use the Ubuntu Distro. It has been detected that there is already an existing Ubuntu Distro in the system. \n\n")
-		fmt.Printf("You can use the 'wsl -l --all' command to view the list of WSL Distros.\n\n")
-		fmt.Printf("To proceed with the installation of Olares, you need to unregister the existing Ubuntu Distro. If your Ubuntu Distro contains important information, please back it up first, then unregister the Ubuntu Distro. \n\n")
-		fmt.Printf("Uninstallation command: 'wsl --unregister Ubuntu'\n\n")
-		fmt.Printf("After the unregister Ubuntu Distro is complete, please reinstall Olares.\n\n")
-
-		return fmt.Errorf("need to unregister Ubuntu Distro")
+	logger.Infof("install ubuntu distro...")
+	output, err := cmd.RunCmd(ubuntuTool, utils.UTF8)
+	if err != nil {
+		return showUbuntuErrorMsg(output)
 	}
 
 	logger.Infof("Install WSL Ubuntu Distro %s successd\n", distro)
@@ -190,7 +245,7 @@ func (m *MoveDistro) Execute(runtime connector.Runtime) error {
 
 	logger.Infof("distro store path: %s, user: %s", distroStorePath, si.GetUsername())
 
-	if aclRes, err := aclCmd.RunCmd("icacls", utils.GBK); err != nil {
+	if aclRes, err := aclCmd.RunCmd("icacls", utils.UTF8); err != nil {
 		logger.Debugf("icacls exec failed, err: %v, message: %s", err, aclRes)
 		return err
 	}
@@ -481,7 +536,7 @@ func (u *UninstallOlares) Execute(runtime connector.Runtime) error {
 	var cmd = &utils.DefaultCommandExecutor{
 		Commands: []string{"--unregister", "Ubuntu"},
 	}
-	_, _ = cmd.RunCmd("wsl", utils.UTF16)
+	_, _ = cmd.RunCmd("wsl", utils.DEFAULT)
 
 	return nil
 }
@@ -534,7 +589,7 @@ func (g *GetDiskPartition) Execute(runtime connector.Runtime) error {
 	if len(partitions) == 0 {
 		return fmt.Errorf("Unable to retrieve disk space information")
 	}
-	fmt.Printf("\nInstalling Olares will create a WSL Ubuntu Distro and occupy at least 80 GB of disk space. \nCurrent disk available space, please select the disk to store the WSL Ubuntu Distro: \n\n")
+	fmt.Printf("\nInstalling Olares will create a WSL Ubuntu Distro and occupy at least 80 GB of disk space. \nPlease select the drive where you want to install it. \nAvailable drives and free space:\n")
 	for _, v := range partitions {
 		var tmp = strings.Split(v, "_")
 		fmt.Printf("%s  Free Disk: %s\n", tmp[0], tmp[1])
@@ -552,7 +607,7 @@ func (g *GetDiskPartition) Execute(runtime connector.Runtime) error {
 		scanner := bufio.NewScanner(os.Stdin)
 
 		for {
-			fmt.Printf("\nPlease enter the drive, such as C, D, ... : ")
+			fmt.Printf("\nPlease enter the drive letter (e.g., C):")
 
 			scanner.Scan()
 			enterPath = scanner.Text()
@@ -583,4 +638,37 @@ func (g *GetDiskPartition) checkEnter(enterPath string, partitions []string) boo
 	}
 
 	return res
+}
+
+func getDownloadCdnUrl(downloadCdnUrlFromEnv string) string {
+	downloadCdnUrl := strings.TrimSuffix(downloadCdnUrlFromEnv, "/")
+	if downloadCdnUrl == "" {
+		downloadCdnUrl = cc.DownloadUrl
+	}
+	return downloadCdnUrl
+}
+
+func showUbuntuErrorMsg(msg string) error {
+	if msg == "" {
+		fmt.Printf(`
+Stop Installation !!!!!!!
+
+Installing Windows Olares will use the Ubuntu Distro. It has been detected that there is already an existing Ubuntu Distro in the system.
+You can use the 'wsl -l --all' command to view the list of WSL Distros.
+To proceed with the installation of Olares, you need to unregister the existing Ubuntu Distro. If your Ubuntu Distro contains important information, please back it up first, then unregister the Ubuntu Distro.
+Uninstallation command: 'wsl --unregister Ubuntu'
+After the unregister Ubuntu Distro is complete, please reinstall Olares.
+
+`)
+		return fmt.Errorf("need to unregister Ubuntu Distro")
+	}
+
+	fmt.Printf(`
+Stop Installation !!!!!!!
+
+An unknown error occurred while updating WSL.
+Please check the Control Panel > Programs > Windows Features to ensure that Windows Subsystem for Linux and Virtual Machine Platform are enabled, then and reinstall them. Error message: %s
+`, msg)
+
+	return fmt.Errorf("need to check system status")
 }

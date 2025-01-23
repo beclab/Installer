@@ -19,7 +19,6 @@ package files
 import (
 	"context"
 	"fmt"
-	"github.com/schollz/progressbar/v3"
 	"io"
 	"math"
 	"net/http"
@@ -29,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/schollz/progressbar/v3"
 
 	cm "bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/common"
@@ -77,6 +78,7 @@ const (
 	installwizard = "install-wizard"
 	fullinstaller = "full-installer"
 	wsl           = "wsl"
+	wslpackage    = "wslpackage"
 )
 
 // KubeBinary Type field const
@@ -355,7 +357,18 @@ func NewKubeBinary(name, arch, osType, osVersion, osPlatformFamily, version, pre
 		component.Type = common.WSL
 		component.FileName = fmt.Sprintf("Ubuntu%s.appx", version)
 		component.Md5sum = FileSha256[wsl][arch][version]
-		component.Url = fmt.Sprintf(WslImageUrl, common.DownloadUrl, component.Md5sum)
+		component.Url = fmt.Sprintf(WslImageUrl, downloadMirrors, component.Md5sum)
+		component.BaseDir = filepath.Join(prePath)
+	case wslpackage:
+		component.Type = common.WSL
+		component.FileName = fmt.Sprintf("wsl.%s.%s.msi", version, arch)
+		component.Md5sum = FileSha256[wslpackage][arch][version]
+		switch arch {
+		case cm.Arm, cm.Arm7, cm.Armv7l, cm.Armhf, cm.Arm64:
+			component.Url = fmt.Sprintf("%s/arm64/%s", downloadMirrors, component.Md5sum)
+		default:
+			component.Url = fmt.Sprintf("%s/%s", downloadMirrors, component.Md5sum)
+		}
 		component.BaseDir = filepath.Join(prePath)
 	default:
 		logger.Fatalf("unsupported kube binaries %s", name)
@@ -1040,6 +1053,14 @@ var (
 			},
 			arm64: {
 				"2204": "2d4f98ae9e7f1921722da620ef72b643",
+			},
+		},
+		wslpackage: {
+			amd64: {
+				"2.3.26.0": "52602b40e5b2179defc8d4aaced3d3ab",
+			},
+			arm64: {
+				"2.3.26.0": "ba7ca1bf304c5940de93b6202425c511",
 			},
 		},
 	}

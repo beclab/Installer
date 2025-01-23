@@ -50,7 +50,9 @@ const (
 	Harbor        = "harbor"
 	DockerCompose = "compose"
 
-	KubeBinaries = "KubeBinaries"
+	KubeBinaries      = "KubeBinaries"
+	WslBinaries       = "WslBinaries"
+	WslUbuntuBinaries = "WslUbuntuBinaries"
 
 	RootDir                      = "/"
 	TmpDir                       = "/tmp/kubekey"
