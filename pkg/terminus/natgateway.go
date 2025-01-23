@@ -43,6 +43,11 @@ func (s *GetNATGatewayIP) Execute(runtime connector.Runtime) error {
 		} else {
 			input = hostIP
 		}
+	case s.KubeConf.Arg.IsOlaresInContainer:
+		if hostIP == "" {
+			return errors.Errorf("host ip not found")
+		}
+		input = hostIP
 	default:
 		return nil
 	}
