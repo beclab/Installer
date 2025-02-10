@@ -538,6 +538,13 @@ func podIsUsingHostIP(pod *corev1.Pod) bool {
 	if pod.Spec.HostNetwork == true {
 		return true
 	}
+
+	// coredns also counts as a pod using host ip
+	// because the local network's gateway is often used as its upstream DNS server,
+	// and it needs to be updated in case of a cidr change
+	if pod.Namespace == "kube-system" && pod.Labels["k8s-app"] == "kube-dns" {
+		return true
+	}
 	var allContainers []corev1.Container
 	allContainers = append(allContainers, pod.Spec.Containers...)
 	allContainers = append(allContainers, pod.Spec.InitContainers...)
