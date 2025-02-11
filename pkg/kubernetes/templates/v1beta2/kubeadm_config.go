@@ -285,6 +285,7 @@ func GetKubeletConfiguration(runtime connector.Runtime, kubeConf *common.KubeCon
 		"evictionMaxPodGracePeriod":        120,
 		"evictionPressureTransitionPeriod": "30s",
 		"featureGates":                     FeatureGatesDefaultConfiguration,
+		"runtimeRequestTimeout":            "5m",
 	}
 
 	if securityEnhancement {
