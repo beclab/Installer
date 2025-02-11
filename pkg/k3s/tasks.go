@@ -196,14 +196,15 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 	}
 
 	defaultKubeletArs := map[string]string{
-		"cni-conf-dir":    "/etc/cni/net.d",
-		"cni-bin-dir":     "/opt/cni/bin",
-		"kube-reserved":   "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
-		"system-reserved": "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
-		"eviction-hard":   "memory.available<5%,nodefs.available<10%",
-		"config":          "/etc/rancher/k3s/kubelet.config",
-		"containerd":      container.DefaultContainerdCRISocket,
-		"cgroup-driver":   "systemd",
+		"cni-conf-dir":            "/etc/cni/net.d",
+		"cni-bin-dir":             "/opt/cni/bin",
+		"kube-reserved":           "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
+		"system-reserved":         "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
+		"eviction-hard":           "memory.available<5%,nodefs.available<10%",
+		"config":                  "/etc/rancher/k3s/kubelet.config",
+		"containerd":              container.DefaultContainerdCRISocket,
+		"cgroup-driver":           "systemd",
+		"runtime-request-timeout": "5m",
 	}
 	defaultKubeProxyArgs := map[string]string{
 		"proxy-mode": "ipvs",
