@@ -26,17 +26,13 @@ import (
 	ksv3 "bytetrade.io/web3os/installer/pkg/kubesphere/v3"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere/templates"
-	"encoding/base64"
 	"fmt"
 	"github.com/pkg/errors"
 	yamlV2 "gopkg.in/yaml.v2"
-	"net"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type DeleteKubeSphereCaches struct {
@@ -76,19 +72,19 @@ type AddInstallerConfig struct {
 }
 
 func (a *AddInstallerConfig) Execute(runtime connector.Runtime) error {
-	var ksFilename string
+	//var ksFilename string
 
 	// if runtime.GetSystemInfo().IsDarwin() {
 	// ksFilename = path.Join(common.TmpDir, "/etc/kubernetes/addons/kubesphere.yaml")
 	// } else {
-	ksFilename = "/etc/kubernetes/addons/kubesphere.yaml"
-	// }
-	configurationBase64 := base64.StdEncoding.EncodeToString([]byte(a.KubeConf.Cluster.KubeSphere.Configurations))
-	if _, err := runtime.GetRunner().SudoCmd(
-		fmt.Sprintf("echo %s | base64 -d >> %s", configurationBase64, ksFilename),
-		false, false); err != nil {
-		return errors.Wrap(errors.WithStack(err), "add config to ks-installer manifests failed")
-	}
+	//ksFilename = "/etc/kubernetes/addons/kubesphere.yaml"
+	//// }
+	//configurationBase64 := base64.StdEncoding.EncodeToString([]byte(a.KubeConf.Cluster.KubeSphere.Configurations))
+	//if _, err := runtime.GetRunner().SudoCmd(
+	//	fmt.Sprintf("echo %s | base64 -d >> %s", configurationBase64, ksFilename),
+	//	false, false); err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "add config to ks-installer manifests failed")
+	//}
 	return nil
 }
 
@@ -384,29 +380,29 @@ func (c *Check) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	if runtime.GetSystemInfo().IsDarwin() {
-		epIPCMD := fmt.Sprintf("%s -n kubesphere-system get ep ks-controller-manager -o jsonpath='{.subsets[*].addresses[*].ip}'", kubectlpath)
-		epIP, _ := runtime.GetRunner().SudoCmd(epIPCMD, false, false)
-		if net.ParseIP(strings.TrimSpace(epIP)) == nil {
-			return errors.New("Waiting for ks-controller-manager svc endpoints to be populated")
-		}
-		// we can't check the svc connectivity in macOS host
-		// so just wait for some time for the proxy to take effect
-		time.Sleep(5 * time.Second)
-		return nil
-	}
-
-	svcIPCMD := fmt.Sprintf("%s -n kubesphere-system get svc ks-controller-manager -o jsonpath='{.spec.clusterIP}'", kubectlpath)
-	svcIP, err := runtime.GetRunner().SudoCmd(svcIPCMD, false, false)
-	if err != nil {
-		return errors.New("Waiting for ks-controller-manager service to be reachable")
-	}
-
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(svcIP, strconv.Itoa(443)), 10*time.Second)
-	if err != nil {
-		return errors.New("Waiting for ks-controller-manager service to be reachable")
-	}
-	defer conn.Close()
+	//if runtime.GetSystemInfo().IsDarwin() {
+	//	epIPCMD := fmt.Sprintf("%s -n kubesphere-system get ep ks-controller-manager -o jsonpath='{.subsets[*].addresses[*].ip}'", kubectlpath)
+	//	epIP, _ := runtime.GetRunner().SudoCmd(epIPCMD, false, false)
+	//	if net.ParseIP(strings.TrimSpace(epIP)) == nil {
+	//		return errors.New("Waiting for ks-controller-manager svc endpoints to be populated")
+	//	}
+	//	// we can't check the svc connectivity in macOS host
+	//	// so just wait for some time for the proxy to take effect
+	//	time.Sleep(5 * time.Second)
+	//	return nil
+	//}
+	//
+	//svcIPCMD := fmt.Sprintf("%s -n kubesphere-system get svc ks-controller-manager -o jsonpath='{.spec.clusterIP}'", kubectlpath)
+	//svcIP, err := runtime.GetRunner().SudoCmd(svcIPCMD, false, false)
+	//if err != nil {
+	//	return errors.New("Waiting for ks-controller-manager service to be reachable")
+	//}
+	//
+	//conn, err := net.DialTimeout("tcp", net.JoinHostPort(svcIP, strconv.Itoa(443)), 10*time.Second)
+	//if err != nil {
+	//	return errors.New("Waiting for ks-controller-manager service to be reachable")
+	//}
+	//defer conn.Close()
 	return nil
 }
 

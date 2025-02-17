@@ -138,7 +138,7 @@ func (a *UpdateNATGatewayForUser) Execute(runtime connector.Runtime) error {
 	}
 	logger.Infof("updating user: %s", username)
 
-	jsonPatch := fmt.Sprintf(`{"metadata":{"annotations":{"bytetrade.io/nat-gateway-ip":"%s"}}}`, hostIP)
+	jsonPatch := fmt.Sprintf(`{"metadata":{"annotations":{"kubesphere.io/nat-gateway-ip":"%s"}}}`, hostIP)
 	patchUserArgs := []string{"patch", "user", username, "-p", jsonPatch, "--type=merge"}
 	patchUserCMD := exec.Command(kubectlCMD, append(kubectlCMDDefaultArgs, patchUserArgs...)...)
 	output, err := patchUserCMD.CombinedOutput()
