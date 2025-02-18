@@ -216,7 +216,7 @@ func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
 	logger.Infof("install ubuntu distro...")
 	output, err := cmd.RunCmd(ubuntuTool, utils.UTF8)
 	if err != nil {
-		return showUbuntuErrorMsg(output)
+		return showUbuntuErrorMsg(output, err)
 	}
 
 	logger.Infof("Install WSL Ubuntu Distro %s successd\n", distro)
@@ -648,7 +648,7 @@ func getDownloadCdnUrl(downloadCdnUrlFromEnv string) string {
 	return downloadCdnUrl
 }
 
-func showUbuntuErrorMsg(msg string) error {
+func showUbuntuErrorMsg(msg string, err error) error {
 	if msg == "" {
 		fmt.Printf(`
 Stop Installation !!!!!!!
@@ -659,7 +659,8 @@ To proceed with the installation of Olares, you need to unregister the existing 
 Uninstallation command: 'wsl --unregister Ubuntu'
 After the unregister Ubuntu Distro is complete, please reinstall Olares.
 
-`)
+Error message: %v
+`, err)
 		return fmt.Errorf("need to unregister Ubuntu Distro")
 	}
 
@@ -667,8 +668,8 @@ After the unregister Ubuntu Distro is complete, please reinstall Olares.
 Stop Installation !!!!!!!
 
 An unknown error occurred while updating WSL.
-Please check the Control Panel > Programs > Windows Features to ensure that Windows Subsystem for Linux and Virtual Machine Platform are enabled, then and reinstall them. Error message: %s
-`, msg)
+Please check the Control Panel > Programs > Windows Features to ensure that Windows Subsystem for Linux and Virtual Machine Platform are enabled, then and reinstall them. Error message: %s %v
+`, msg, err)
 
 	return fmt.Errorf("need to check system status")
 }
