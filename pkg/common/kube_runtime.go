@@ -386,7 +386,7 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 
 func (a *Argument) SetBaseDir(dir string) {
 	if dir == "" {
-		dir = a.SystemInfo.GetHomeDir()
+		dir = filepath.Join(a.SystemInfo.GetHomeDir(), common.DefaultBaseDir)
 	}
 	a.BaseDir = dir
 	if dir != "" && !filepath.IsAbs(dir) {
