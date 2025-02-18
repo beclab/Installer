@@ -187,11 +187,11 @@ func (p *Patch) Execute(runtime connector.Runtime) error {
 	//	return errors.Wrap(errors.WithStack(err), "patch user admin failed")
 	//}
 
-	deleteAdminCMD := fmt.Sprintf("%s delete user admin --ignore-not-found", kubectl)
-	_, err = runtime.GetRunner().SudoCmd(deleteAdminCMD, false, true)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "failed to delete ks admin user")
-	}
+	//deleteAdminCMD := fmt.Sprintf("%s delete user admin --ignore-not-found", kubectl)
+	//_, err = runtime.GetRunner().SudoCmd(deleteAdminCMD, false, true)
+	//if err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "failed to delete ks admin user")
+	//}
 	deleteKubectlAdminCMD := fmt.Sprintf("%s -n kubesphere-controls-system delete deploy kubectl-admin --ignore-not-found", kubectl)
 	_, err = runtime.GetRunner().SudoCmd(deleteKubectlAdminCMD, false, true)
 	if err != nil {

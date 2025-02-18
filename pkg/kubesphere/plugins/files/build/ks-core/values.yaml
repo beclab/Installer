@@ -18,7 +18,7 @@ image:
   defaultbackend_repo: "mirrorgooglecontainers/defaultbackend-amd64"
   defaultbackend_tag: "1.4"
 
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 
 config:

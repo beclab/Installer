@@ -35,7 +35,7 @@ spec:
         - controller-manager
         - --logtostderr=true
         - --leader-elect=false
-        image: hys2023/ks-controller-manager:v1
+        image: beclab/ks-controller-manager:0.0.1
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         name: ks-controller-manager
         ports:
