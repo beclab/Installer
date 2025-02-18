@@ -12,7 +12,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
-	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/utils"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -22,17 +21,17 @@ type CreateKsCore struct {
 }
 
 func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
-	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
-	if err != nil {
-		return fmt.Errorf("kubectl not found")
-	}
+	//var kubectlpath, err = util.GetCommand(common.CommandKubectl)
+	//if err != nil {
+	//	return fmt.Errorf("kubectl not found")
+	//}
 
-	var cmd = fmt.Sprintf("%s get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", kubectlpath,
-		common.NamespaceKubesphereSystem)
-	rphase, err := runtime.GetRunner().SudoCmd(cmd, false, false)
-	if rphase != "Running" {
-		return fmt.Errorf("Redis State %s", rphase)
-	}
+	//var cmd = fmt.Sprintf("%s get pod -n %s -l 'app=redis,tier=database,version=redis-4.0' -o jsonpath='{.items[0].status.phase}'", kubectlpath,
+	//	common.NamespaceKubesphereSystem)
+	//rphase, err := runtime.GetRunner().Host.SudoCmd(cmd, false, false)
+	//if rphase != "Running" {
+	//	return fmt.Errorf("Redis State %s", rphase)
+	//}
 
 	masterNumIf, ok := t.PipelineCache.Get(common.CacheMasterNum)
 	if !ok || masterNumIf == nil {

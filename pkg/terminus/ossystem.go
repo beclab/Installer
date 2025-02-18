@@ -159,26 +159,39 @@ func (p *Patch) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "patch globalrole workspace manager failed")
 	}
 
-	var notificationManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-notification-manager.yaml")
-	if _, err = runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "patch notification manager failed")
-	}
+	//var notificationManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-notification-manager.yaml")
+	//if _, err = runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "patch notification manager failed")
+	//}
+	//var notificationManager = path.Join(runtime.GetInstallerDir(), "deploy", "patch-notification-manager.yaml")
+	//if _, err = runtime.GetRunner().Host.SudoCmd(fmt.Sprintf("%s apply -f %s", kubectl, notificationManager), false, true); err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "patch notification manager failed")
+	//}
+	//
+	//patchAdminContent := `{"metadata":{"finalizers":["finalizers.kubesphere.io/users"]}}`
+	//patchAdminCMD := fmt.Sprintf(
+	//	"%s patch user admin -p '%s' --type='merge' ",
+	//	kubectl,
+	//	patchAdminContent)
+	//_, err = runtime.GetRunner().SudoCmd(patchAdminCMD, false, true)
+	//if err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "patch user admin failed")
+	//}
+	//patchAdminContent := "{\\\"metadata\\\":{\\\"finalizers\\\":[\\\"finalizers.kubesphere.io/users\\\"]}}"
+	//patchAdminCMD := fmt.Sprintf(
+	//	"%s patch user admin -p '%s' --type='merge' ",
+	//	kubectl,
+	//	patchAdminContent)
+	//_, err = runtime.GetRunner().Host.SudoCmd(patchAdminCMD, false, true)
+	//if err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "patch user admin failed")
+	//}
 
-	patchAdminContent := `{"metadata":{"finalizers":["finalizers.kubesphere.io/users"]}}`
-	patchAdminCMD := fmt.Sprintf(
-		"%s patch user admin -p '%s' --type='merge' ",
-		kubectl,
-		patchAdminContent)
-	_, err = runtime.GetRunner().SudoCmd(patchAdminCMD, false, true)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "patch user admin failed")
-	}
-
-	deleteAdminCMD := fmt.Sprintf("%s delete user admin --ignore-not-found", kubectl)
-	_, err = runtime.GetRunner().SudoCmd(deleteAdminCMD, false, true)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "failed to delete ks admin user")
-	}
+	//deleteAdminCMD := fmt.Sprintf("%s delete user admin --ignore-not-found", kubectl)
+	//_, err = runtime.GetRunner().SudoCmd(deleteAdminCMD, false, true)
+	//if err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "failed to delete ks admin user")
+	//}
 	deleteKubectlAdminCMD := fmt.Sprintf("%s -n kubesphere-controls-system delete deploy kubectl-admin --ignore-not-found", kubectl)
 	_, err = runtime.GetRunner().SudoCmd(deleteKubectlAdminCMD, false, true)
 	if err != nil {

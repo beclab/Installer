@@ -120,19 +120,19 @@ type PatchRedisStatus struct {
 }
 
 func (t *PatchRedisStatus) Execute(runtime connector.Runtime) error {
-	kubectlpath, err := util.GetCommand(common.CommandKubectl)
-	if err != nil {
-		return fmt.Errorf("kubectl not found")
-	}
-
-	var jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`,
-		time.Now().Format("2006-01-02T15:04:05Z"))
-	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
-
-	_, err = runtime.GetRunner().SudoCmd(cmd, false, true)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "patch redis status failed")
-	}
+	//kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	//if err != nil {
+	//	return fmt.Errorf("kubectl not found")
+	//}
+	//
+	//var jsonPatch = fmt.Sprintf(`{"status": {"redis": {"status": "enabled", "enabledTime": "%s"}}}`,
+	//	time.Now().Format("2006-01-02T15:04:05Z"))
+	//var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPatch, common.NamespaceKubesphereSystem)
+	//
+	//_, err = runtime.GetRunner().SudoCmd(cmd, false, true)
+	//if err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "patch redis status failed")
+	//}
 
 	return nil
 }

@@ -32,7 +32,7 @@ spec:
       - command:
         - ks-apiserver
         - --logtostderr=true
-        image: {{ .Values.image.ks_apiserver_repo }}:{{ .Values.image.ks_apiserver_tag | default .Chart.AppVersion }}
+        image: beclab/ks-apiserver:0.0.1
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         name: ks-apiserver
         ports:
@@ -41,8 +41,6 @@ spec:
         resources:
           {{- toYaml .Values.apiserver.resources | nindent 12 }}
         volumeMounts:
-        - mountPath: /etc/kubesphere/ingress-controller
-          name: ks-router-config
         - mountPath: /etc/kubesphere/
           name: kubesphere-config
         - mountPath: /etc/localtime
@@ -89,10 +87,6 @@ spec:
 {{ toYaml . | indent 10 }}
 {{- end }}
       volumes:
-      - configMap:
-          defaultMode: 420
-          name: ks-router-config
-        name: ks-router-config
       - configMap:
           defaultMode: 420
           name: kubesphere-config

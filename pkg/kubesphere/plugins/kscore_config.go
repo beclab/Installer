@@ -72,12 +72,6 @@ var kscorecrds = []map[string]string{
 	},
 	{
 		"ns":       "kubesphere-system",
-		"kind":     "configmaps",
-		"resource": "ks-router-config",
-		"release":  "ks-core",
-	},
-	{
-		"ns":       "kubesphere-system",
 		"kind":     "clusterroles",
 		"resource": "system:kubesphere-router-clusterrole",
 		"release":  "ks-core",
@@ -124,12 +118,12 @@ var kscorecrds = []map[string]string{
 		"resource": "ks-controller-manager",
 		"release":  "ks-core",
 	},
-	{
-		"ns":       "kubesphere-system",
-		"kind":     "validatingwebhookconfigurations",
-		"resource": "users.iam.kubesphere.io",
-		"release":  "ks-core",
-	},
+	//{
+	//	"ns":       "kubesphere-system",
+	//	"kind":     "validatingwebhookconfigurations",
+	//	"resource": "users.iam.kubesphere.io",
+	//	"release":  "ks-core",
+	//},
 	{
 		"ns":       "kubesphere-system",
 		"kind":     "validatingwebhookconfigurations",
@@ -178,18 +172,18 @@ type PatchKsCoreStatus struct {
 }
 
 func (t *PatchKsCoreStatus) Execute(runtime connector.Runtime) error {
-	var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
-	if kubectlpath == "" {
-		kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
-	}
-
-	var jsonPath = fmt.Sprintf(`{"status": {"core": {"status": "enabled", "enabledTime": "%s"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
-	var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPath, common.NamespaceKubesphereSystem)
-
-	_, err := runtime.GetRunner().SudoCmd(cmd, false, true)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "patch ks-core status failed")
-	}
+	//var kubectlpath, _ = t.PipelineCache.GetMustString(common.CacheCommandKubectlPath)
+	//if kubectlpath == "" {
+	//	kubectlpath = path.Join(common.BinDir, common.CommandKubectl)
+	//}
+	//
+	//var jsonPath = fmt.Sprintf(`{\"status\": {\"core\": {\"status\": \"enabled\", \"enabledTime\": \"%s\"}}}`, time.Now().Format("2006-01-02T15:04:05Z"))
+	//var cmd = fmt.Sprintf("%s patch cc ks-installer --type merge -p '%s' -n %s", kubectlpath, jsonPath, common.NamespaceKubesphereSystem)
+	//
+	//_, err := runtime.GetRunner().Host.SudoCmd(cmd, false, true)
+	//if err != nil {
+	//	return errors.Wrap(errors.WithStack(err), "patch ks-core status failed")
+	//}
 
 	return nil
 }

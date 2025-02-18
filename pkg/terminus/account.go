@@ -151,13 +151,14 @@ type SetAccountValues struct {
 
 func (p *SetAccountValues) Execute(runtime connector.Runtime) error {
 	var accountFile = path.Join(runtime.GetInstallerDir(), "wizard", "config", "account", accounttemplates.AccountValues.Name())
-	encryptedPassword, err := util.Bcrypt(p.KubeConf.Arg.User.Password)
-	if err != nil {
-		return errors.Wrap(err, "failed to encrypt account password")
-	}
+	//encryptedPassword, err := util.Bcrypt(p.KubeConf.Arg.User.Password)
+	//if err != nil {
+	//	return errors.Wrap(err, "failed to encrypt account password")
+	//}
 	var data = util.Data{
-		"UserName":   p.KubeConf.Arg.User.UserName,
-		"Password":   encryptedPassword,
+		"UserName": p.KubeConf.Arg.User.UserName,
+		//"Password":   encryptedPassword,
+		"Password":   p.KubeConf.Arg.User.Password,
 		"Email":      p.KubeConf.Arg.User.Email,
 		"DomainName": p.KubeConf.Arg.User.DomainName,
 	}
