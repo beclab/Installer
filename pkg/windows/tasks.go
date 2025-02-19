@@ -216,7 +216,7 @@ func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
 	logger.Infof("install ubuntu distro...")
 	output, err := cmd.RunCmd(ubuntuTool, utils.UTF8)
 	if err != nil {
-		return showUbuntuErrorMsg(output)
+		return showUbuntuErrorMsg(output, err)
 	}
 
 	logger.Infof("Install WSL Ubuntu Distro %s successd\n", distro)
