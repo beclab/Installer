@@ -115,6 +115,10 @@ func (command *CommandExecutor) runcmd(charset Charset) (string, error) {
 	var exec = utilexec.New()
 
 	output, err := exec.Command(command.name, command.cmd...).Output()
+	if command.printOutput {
+		logger.Infof("[exec] CMD: %s, output: %s, err: %v", fmt.Sprintf("%s %v", command.name, command.cmd), string(output), err)
+	}
+
 	detector := chardet.NewTextDetector()
 	result, _ := detector.DetectBest(output)
 	res, _ = CharsetConverts(result.Charset, output, charset)
