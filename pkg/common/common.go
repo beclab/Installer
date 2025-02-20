@@ -17,6 +17,7 @@
 package common
 
 import (
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"os"
 )
 
@@ -317,6 +318,7 @@ var TerminusGlobalEnvs = map[string]interface{}{
 	"FRP_LIST_URL":               "https://terminus-frp.snowinning.com",
 	"TAILSCALE_CONTROLPLANE_URL": "https://controlplane.snowinning.com",
 	"OLARES_ROOT_DIR":            "/olares",
+	ENV_DOWNLOAD_CDN_URL:         cc.DownloadUrl,
 }
 
 const (
