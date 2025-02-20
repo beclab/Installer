@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -209,12 +210,32 @@ type InstallWSLDistro struct {
 }
 
 func (i *InstallWSLDistro) Execute(runtime connector.Runtime) error {
+	var homeDir = runtime.GetSystemInfo().GetHomeDir()
+	var installerPath = filepath.Join(homeDir, windowsAppPath, ubuntuTool)
+
+	logger.Infof("%s path: %s", ubuntuTool, installerPath)
+
+	var checkInstallerPs = &utils.PowerShellCommandExecutor{
+		Commands: []string{fmt.Sprintf("Test-Path %s", installerPath)},
+	}
+	installerExists, err := checkInstallerPs.Run()
+	if err != nil {
+		logger.Errorf("check %s path %s failed, error: %s", ubuntuTool, installerPath, err.Error())
+		return err
+	}
+
+	installerExists = strings.TrimSpace(installerExists)
+	if installerExists != "True" {
+		logger.Errorf("%s not found in %s", ubuntuTool, installerPath)
+		return fmt.Errorf("%s not found in %s", ubuntuTool, installerPath)
+	}
+
 	var cmd = &utils.DefaultCommandExecutor{
-		Commands:  []string{"install", "--root"},
-		PrintLine: true,
+		Commands:    []string{"install", "--root"},
+		PrintOutput: true,
 	}
 	logger.Infof("install ubuntu distro...")
-	output, err := cmd.RunCmd(ubuntuTool, utils.UTF8)
+	output, err := cmd.RunCmd(installerPath, utils.UTF8)
 	if err != nil {
 		return showUbuntuErrorMsg(output, err)
 	}
