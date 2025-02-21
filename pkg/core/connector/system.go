@@ -404,7 +404,9 @@ func formatOsPlatform(osType, osPlatform, osKernel string) string {
 	}
 
 	if strings.Contains(osKernel, "-WSL") {
-		return common.WSL
+		if os.Getenv("CONTAINER_MODE") != "oic" { // FIXME: maybe another container mode in the future
+			return common.WSL
+		}
 	}
 
 	return common.Linux
