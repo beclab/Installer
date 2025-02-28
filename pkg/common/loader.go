@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -542,10 +543,22 @@ func defaultCommonClusterConfig(cluster *kubekeyapiv1alpha2.Cluster, arg Argumen
 	if arg.RegistryMirrors != "" {
 		mirrors := strings.Split(arg.RegistryMirrors, ",")
 
-		for _, mirror := range mirrors {
+		for i := range mirrors {
+			mirror := mirrors[i]
 			if !(strings.HasPrefix(mirror, "http://") || strings.HasPrefix(mirror, "https://")) {
 				return errors.New(fmt.Sprintf("Invalid registry mirror: %s, missing scheme 'http://' or 'https://'", mirror))
 			}
+			u, err := url.Parse(mirror)
+			if err != nil {
+				return fmt.Errorf("invalid registry mirror: %s: %w", mirror, err)
+			}
+
+			// match against paths containing only "/"(s)
+			// e.g. "/", "//", "///" (they're all considered valid by url.Parse)
+			if strings.Count(u.Path, "/") == len(u.Path) {
+				u.Path = strings.ReplaceAll(u.Path, "/", "")
+			}
+			mirrors[i] = u.String()
 		}
 
 		cluster.Spec.Registry.RegistryMirrors = mirrors
