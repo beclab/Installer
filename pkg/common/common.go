@@ -17,8 +17,9 @@
 package common
 
 import (
-	cc "bytetrade.io/web3os/installer/pkg/core/common"
 	"os"
+
+	cc "bytetrade.io/web3os/installer/pkg/core/common"
 )
 
 const (
@@ -257,7 +258,8 @@ const (
 
 	CacheCountPodsUsingHostIP = "count_pods_using_host_ip"
 
-	CacheWindowsDistroStoreLocation = "windows_distro_store_location"
+	CacheWindowsDistroStoreLocation     = "windows_distro_store_location"
+	CacheWindowsDistroStoreLocationNums = "windows_distro_store_location_nums"
 )
 
 const (
