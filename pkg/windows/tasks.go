@@ -251,17 +251,24 @@ type MoveDistro struct {
 
 func (m *MoveDistro) Execute(runtime connector.Runtime) error {
 	distroStoreDriver, _ := m.PipelineCache.GetMustString(common.CacheWindowsDistroStoreLocation)
+	distroStoreLocationNums, _ := m.PipelineCache.GetMustString(common.CacheWindowsDistroStoreLocationNums)
 	if distroStoreDriver == "" {
 		return errors.New("get distro location failed")
 	}
+	if distroStoreLocationNums == "1" {
+		logger.Infof("distro store default location: %s", distroStoreDriver)
+		return nil
+	}
 	var distroStorePath = fmt.Sprintf("%s:\\.olares\\distro", distroStoreDriver)
 	if !utils.IsExist(distroStorePath) {
-		utils.CreateDir(distroStorePath)
+		if err := utils.CreateDir(distroStorePath); err != nil {
+			return errors.WithStack(fmt.Errorf("create dir %s failed: %v", distroStorePath, err))
+		}
 	}
 
 	var si = runtime.GetSystemInfo()
 	var aclCmd = &utils.DefaultCommandExecutor{
-		Commands: []string{fmt.Sprintf("%s:\\.olares", distroStoreDriver), "/grant", fmt.Sprintf("Users:(OI)(CI)F")},
+		Commands: []string{fmt.Sprintf("%s:\\.olares", distroStoreDriver), "/grant", fmt.Sprintf("*S-1-5-32-545:(OI)(CI)F")},
 	}
 
 	logger.Infof("distro store path: %s, user: %s", distroStorePath, si.GetUsername())
@@ -642,6 +649,7 @@ func (g *GetDiskPartition) Execute(runtime connector.Runtime) error {
 	}
 
 	g.PipelineCache.Set(common.CacheWindowsDistroStoreLocation, enterPath)
+	g.PipelineCache.Set(common.CacheWindowsDistroStoreLocationNums, len(partitions))
 	fmt.Printf("\n")
 
 	return nil
