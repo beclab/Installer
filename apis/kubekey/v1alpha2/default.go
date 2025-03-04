@@ -47,7 +47,7 @@ const (
 	DefaultRuncVersion_v_1_1_4      = "v1.1.4"
 	DefaultCrictlVersion            = "v1.24.0"
 	DefaultKubeVersion              = "v1.23.10"
-	DefaultCalicoVersion            = "v3.23.2"
+	DefaultCalicoVersion            = "v3.29.2"
 	DefaultFlannelVersion           = "v0.12.0"
 	DefaultCniVersion               = "v0.9.1"
 	DefaultCniVersion_v_1_1_1       = "v1.1.1"

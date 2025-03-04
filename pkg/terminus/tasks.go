@@ -421,7 +421,7 @@ type RegenerateFilesForK8sIPChange struct {
 }
 
 func (a *RegenerateFilesForK8sIPChange) Execute(runtime connector.Runtime) error {
-	initCmd := "/usr/local/bin/kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml --skip-phases=preflight,mark-control-plane,bootstrap-token,addon"
+	initCmd := "/usr/local/bin/kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml --skip-phases=preflight,mark-control-plane,bootstrap-token,addon,show-join-command"
 
 	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, false); err != nil {
 		return err

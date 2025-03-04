@@ -32,6 +32,7 @@ import (
 )
 
 var defaultUserAgent = "kubekey"
+var k8sImageRepositoryAddr = "registry.k8s.io"
 
 type dockerImageOptions struct {
 	arch           string
@@ -213,11 +214,15 @@ func GetImage(runtime connector.ModuleRuntime, kubeConf *common.KubeConf, name s
 		pauseTag = "3.7"
 		corednsTag = "1.8.6"
 	}
+	if versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).AtLeast(versionutil.MustParseSemantic("v1.31.0")) {
+		pauseTag = "3.10"
+		corednsTag = "1.11.3"
+	}
 
 	// logger.Debugf("pauseTag: %s, corednsTag: %s", pauseTag, corednsTag)
 
 	ImageList := map[string]Image{
-		"pause":                   {RepoAddr: kubeConf.Cluster.Registry.PrivateRegistry, Namespace: kubekeyv1alpha2.DefaultKubeImageNamespace, Repo: "pause", Tag: pauseTag, Group: kubekeyv1alpha2.K8s, Enable: true},
+		"pause":                   {RepoAddr: k8sImageRepositoryAddr, Repo: "pause", Tag: pauseTag, Group: kubekeyv1alpha2.K8s, Enable: true},
 		"etcd":                    {RepoAddr: kubeConf.Cluster.Registry.PrivateRegistry, Namespace: kubekeyv1alpha2.DefaultKubeImageNamespace, Repo: "etcd", Tag: kubekeyv1alpha2.DefaultEtcdVersion, Group: kubekeyv1alpha2.Master, Enable: strings.EqualFold(kubeConf.Cluster.Etcd.Type, kubekeyv1alpha2.Kubeadm)},
 		"kube-apiserver":          {RepoAddr: kubeConf.Cluster.Registry.PrivateRegistry, Namespace: kubekeyv1alpha2.DefaultKubeImageNamespace, Repo: "kube-apiserver", Tag: kubeConf.Cluster.Kubernetes.Version, Group: kubekeyv1alpha2.Master, Enable: true},
 		"kube-controller-manager": {RepoAddr: kubeConf.Cluster.Registry.PrivateRegistry, Namespace: kubekeyv1alpha2.DefaultKubeImageNamespace, Repo: "kube-controller-manager", Tag: kubeConf.Cluster.Kubernetes.Version, Group: kubekeyv1alpha2.Master, Enable: true},

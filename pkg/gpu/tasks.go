@@ -308,7 +308,7 @@ func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
 		logger.Errorf("plugin file not exist: %s", pluginFile)
 		return nil
 	}
-	var cmd = fmt.Sprintf("%s create -f %s", kubectlpath, pluginFile)
+	var cmd = fmt.Sprintf("%s apply -f %s", kubectlpath, pluginFile)
 	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		return err
 	}

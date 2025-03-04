@@ -167,8 +167,6 @@ type EnableContainerd struct {
 }
 
 func (e *EnableContainerd) Execute(runtime connector.Runtime) error {
-	var isK3s = strings.Contains(e.KubeConf.Arg.KubernetesVersion, "k3s")
-
 	if _, err := runtime.GetRunner().SudoCmd(
 		"systemctl daemon-reload && systemctl enable containerd && systemctl start containerd",
 		false, false); err != nil {
@@ -181,11 +179,6 @@ func (e *EnableContainerd) Execute(runtime connector.Runtime) error {
 	}
 
 	runcKey := common.Runc
-	if isK3s {
-		runcKey += "-k3s"
-	} else {
-		runcKey += "-k8s"
-	}
 	containerd, err := e.Manifest.Get(runcKey)
 	if err != nil {
 		return errors.New("get KubeBinary key runc by manifest error")

@@ -134,7 +134,6 @@ func deployCalico(d *DeployNetworkPluginModule) []task.Interface {
 				"KubePodsCIDR":            d.KubeConf.Cluster.Network.KubePodsCIDR,
 				"CalicoCniImage":          images.GetImage(d.Runtime, d.KubeConf, "calico-cni").ImageName(),
 				"CalicoNodeImage":         images.GetImage(d.Runtime, d.KubeConf, "calico-node").ImageName(),
-				"CalicoFlexvolImage":      images.GetImage(d.Runtime, d.KubeConf, "calico-flexvol").ImageName(),
 				"CalicoControllersImage":  images.GetImage(d.Runtime, d.KubeConf, "calico-kube-controllers").ImageName(),
 				"CalicoTyphaImage":        images.GetImage(d.Runtime, d.KubeConf, "calico-typha").ImageName(),
 				"TyphaEnabled":            len(d.Runtime.GetHostsByRole(common.K8s)) > 50,
