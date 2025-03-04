@@ -105,7 +105,7 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binaryList := []string{"k3s", "helm", "cni-plugins-k3s"} // kubecni
+	binaryList := []string{"k3s", "helm", "cni-plugins"} // kubecni
 	for _, name := range binaryList {
 		binary, err := s.Manifest.Get(name)
 		if err != nil {
@@ -116,7 +116,7 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 
 		fileName := binary.Filename
 		switch name {
-		case "cni-plugins-k3s":
+		case "cni-plugins":
 			dst := filepath.Join(common.TmpDir, fileName)
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
 			if err := runtime.GetRunner().Scp(path, dst); err != nil {
@@ -140,7 +140,7 @@ func (s *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		default:
-			dst := filepath.Join(common.BinDir, fileName)
+			dst := filepath.Join(common.BinDir, name)
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
 			if err := runtime.GetRunner().SudoScp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
@@ -196,8 +196,6 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 	}
 
 	defaultKubeletArs := map[string]string{
-		"cni-conf-dir":            "/etc/cni/net.d",
-		"cni-bin-dir":             "/opt/cni/bin",
 		"kube-reserved":           "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
 		"system-reserved":         "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
 		"eviction-hard":           "memory.available<5%,nodefs.available<10%",
@@ -212,7 +210,6 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 
 	kubeApiserverArgs, _ := util.GetArgs(map[string]string{}, g.KubeConf.Cluster.Kubernetes.ApiServerArgs)
 	kubeControllerManager, _ := util.GetArgs(map[string]string{
-		"pod-eviction-timeout":        "3m0s",
 		"terminated-pod-gc-threshold": "5",
 	}, g.KubeConf.Cluster.Kubernetes.ControllerManagerArgs)
 	kubeSchedulerArgs, _ := util.GetArgs(map[string]string{}, g.KubeConf.Cluster.Kubernetes.SchedulerArgs)

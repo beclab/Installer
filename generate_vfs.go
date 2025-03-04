@@ -20,14 +20,4 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	fs = http.Dir(path.Join("pkg", "gpu", "files"))
-	dst = path.Join("pkg", "gpu", "assets_vfsdata.go")
-	err = vfsgen.Generate(fs, vfsgen.Options{
-		Filename:    dst,
-		PackageName: "gpu",
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
 }

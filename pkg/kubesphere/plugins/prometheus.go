@@ -182,18 +182,18 @@ func (m *DeployPrometheusModule) Init() {
 		Parallel: false,
 	}
 
-	createAlertManager := &task.RemoteTask{
-		Name:  "CreateAlertManager",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(common.OnlyFirstMaster),
-			new(NotEqualDesiredVersion),
-		},
-		Action: &CreatePrometheusComponent{
-			Component: "alertmanager",
-		},
-		Parallel: false,
-	}
+	//createAlertManager := &task.RemoteTask{
+	//	Name:  "CreateAlertManager",
+	//	Hosts: m.Runtime.GetHostsByRole(common.Master),
+	//	Prepare: &prepare.PrepareCollection{
+	//		new(common.OnlyFirstMaster),
+	//		new(NotEqualDesiredVersion),
+	//	},
+	//	Action: &CreatePrometheusComponent{
+	//		Component: "alertmanager",
+	//	},
+	//	Parallel: false,
+	//}
 
 	m.Tasks = []task.Interface{
 		createOperator,
@@ -201,7 +201,7 @@ func (m *DeployPrometheusModule) Init() {
 		createKubeStateMetrics,
 		createPrometheus,
 		createKubeMonitor,
-		createAlertManager,
+		//createAlertManager,
 	}
 
 }

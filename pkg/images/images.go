@@ -76,7 +76,11 @@ func (image Image) ImageRepo() string {
 	} else {
 		if image.NamespaceOverride == "" {
 			if image.Namespace == "" {
-				prefix = fmt.Sprintf("%s/library/", image.RepoAddr)
+				if strings.Contains(image.RepoAddr, "docker.io") {
+					prefix = fmt.Sprintf("%s/library/", image.RepoAddr)
+				} else {
+					prefix = fmt.Sprintf("%s/", image.RepoAddr)
+				}
 			} else {
 				prefix = fmt.Sprintf("%s/%s/", image.RepoAddr, image.Namespace)
 			}

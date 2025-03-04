@@ -161,7 +161,7 @@ func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 		return err
 	}
 
-	binaryList := []string{"kubeadm", "kubelet", "kubectl", "helm", "cni-plugins-k8s"}
+	binaryList := []string{"kubeadm", "kubelet", "kubectl", "helm", "cni-plugins"}
 	for _, name := range binaryList {
 		binary, err := i.Manifest.Get(name)
 		if err != nil {
@@ -176,7 +176,7 @@ func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 		//	if err := runtime.GetRunner().Scp(binary.Path, fmt.Sprintf("%s/%s", common.TmpDir, binary.Name)); err != nil {
 		//		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 		//	}
-		case "cni-plugins-k8s":
+		case "cni-plugins":
 			dst := filepath.Join(common.TmpDir, fileName)
 			logger.Debugf("SyncKubeBinary cp %s from %s to %s", name, path, dst)
 			if err := runtime.GetRunner().Scp(path, dst); err != nil {
@@ -199,7 +199,7 @@ func (i *SyncKubeBinary) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		default:
-			dst := filepath.Join(common.BinDir, fileName)
+			dst := filepath.Join(common.BinDir, name)
 			if err := runtime.GetRunner().SudoScp(path, dst); err != nil {
 				return errors.Wrap(errors.WithStack(err), fmt.Sprintf("sync kube binaries failed"))
 			}
@@ -348,13 +348,13 @@ func (g *GenerateKubeadmConfig) Execute(runtime connector.Runtime) error {
 			}
 		}
 
+		v1beta2.AdjustDefaultFeatureGates(g.KubeConf)
 		templateAction := action.Template{
 			Name:     "GenerateKubeadmConfig",
 			Template: v1beta2.KubeadmConfig,
 			Dst:      filepath.Join(common.KubeConfigDir, v1beta2.KubeadmConfig.Name()),
 			Data: util.Data{
 				"IsInitCluster":          g.IsInitConfiguration,
-				"ImageRepo":              strings.TrimSuffix(images.GetImage(runtime, g.KubeConf, "kube-apiserver").ImageRepo(), "/kube-apiserver"),
 				"EtcdTypeIsKubeadm":      g.KubeConf.Cluster.Etcd.Type == kubekeyv1alpha2.Kubeadm,
 				"EtcdCertSANs":           etcdCertSANs,
 				"EtcdRepo":               strings.TrimSuffix(images.GetImage(runtime, g.KubeConf, "etcd").ImageRepo(), "/etcd"),
@@ -405,7 +405,7 @@ func (k *KubeadmInit) Execute(runtime connector.Runtime) error {
 	// we manage the creation of coredns ourselves
 	initCmd = initCmd + " --skip-phases=addon/coredns"
 
-	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd(initCmd, false, true); err != nil {
 		// kubeadm reset and then retry
 		resetCmd := "/usr/local/bin/kubeadm reset -f"
 		if k.KubeConf.Cluster.Kubernetes.ContainerRuntimeEndpoint != "" {

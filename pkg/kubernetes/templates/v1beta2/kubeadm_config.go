@@ -41,7 +41,7 @@ var (
 		dedent.Dedent(`
 {{- if .IsInitCluster -}}
 ---
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 etcd:
 {{- if .EtcdTypeIsKubeadm }}
@@ -68,10 +68,6 @@ etcd:
     keyFile: {{ .ExternalEtcd.KeyFile }}
 {{- end }}
 {{- end }}
-dns:
-  imageRepository: {{ .CorednsRepo }}
-  imageTag: {{ .CorednsTag }}
-imageRepository: {{ .ImageRepo }}
 kubernetesVersion: {{ .Version }}
 certificatesDir: /etc/kubernetes/pki
 clusterName: {{ .ClusterName }}
@@ -101,7 +97,7 @@ scheduler:
 {{ toYaml .SchedulerArgs | indent 4 }}
 
 ---
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: {{ .AdvertiseAddress }}
@@ -123,7 +119,7 @@ kind: KubeletConfiguration
 
 {{- else -}}
 ---
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
 discovery:
   bootstrapToken:
@@ -187,15 +183,15 @@ var (
 		"tls-cipher-suites":      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
 	}
 	ControllermanagerArgs = map[string]string{
-		"bind-address":                          "0.0.0.0",
-		"experimental-cluster-signing-duration": "87600h",
+		"bind-address":             "0.0.0.0",
+		"cluster-signing-duration": "87600h",
 	}
 	ControllermanagerSecurityArgs = map[string]string{
-		"bind-address":                          "127.0.0.1",
-		"experimental-cluster-signing-duration": "87600h",
-		"profiling":                             "false",
-		"terminated-pod-gc-threshold":           "50",
-		"use-service-account-credentials":       "true",
+		"bind-address":                    "127.0.0.1",
+		"cluster-signing-duration":        "87600h",
+		"profiling":                       "false",
+		"terminated-pod-gc-threshold":     "50",
+		"use-service-account-credentials": "true",
 	}
 	SchedulerArgs = map[string]string{
 		"bind-address": "0.0.0.0",
@@ -227,13 +223,40 @@ func GetSchedulerArgs(securityEnhancement bool) map[string]string {
 	return SchedulerArgs
 }
 
-func UpdateFeatureGatesConfiguration(args map[string]string, kubeConf *common.KubeConf) map[string]string {
-	// When kubernetes version is less than 1.21,`CSIStorageCapacity` should not be set.
-	cmp, _ := versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.21.0")
-	if cmp == -1 {
-		delete(FeatureGatesDefaultConfiguration, "CSIStorageCapacity")
-	}
+func AdjustDefaultFeatureGates(kubeConf *common.KubeConf) {
+	for _, conf := range []map[string]bool{FeatureGatesDefaultConfiguration, FeatureGatesSecurityDefaultConfiguration} {
+		// When kubernetes version is less than 1.21,`CSIStorageCapacity` is not recognized and should not be set.
+		cmp, _ := versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.21.0")
+		if cmp == -1 {
+			delete(conf, "CSIStorageCapacity")
+		}
 
+		// When kubernetes version is equal to or greater than 1.27, `CSIStorageCapacity` is removed and not recognized
+		// the same logic applies to the feature gates below
+		cmp, _ = versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.27.0")
+		if cmp >= 0 {
+			delete(conf, "CSIStorageCapacity")
+		}
+
+		cmp, _ = versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.24.0")
+		if cmp >= 0 {
+			delete(conf, "TTLAfterFinished")
+		}
+
+		cmp, _ = versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.26.0")
+		if cmp >= 0 {
+			delete(conf, "ExpandCSIVolumes")
+		}
+
+		cmp, _ = versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.28.0")
+		if cmp >= 0 {
+			delete(conf, "SeccompDefault")
+		}
+
+	}
+}
+
+func UpdateFeatureGatesConfiguration(args map[string]string, kubeConf *common.KubeConf) map[string]string {
 	var featureGates []string
 
 	for k, v := range kubeConf.Cluster.Kubernetes.FeatureGates {
@@ -252,12 +275,6 @@ func UpdateFeatureGatesConfiguration(args map[string]string, kubeConf *common.Ku
 }
 
 func GetKubeletConfiguration(runtime connector.Runtime, kubeConf *common.KubeConf, criSock string, securityEnhancement bool) map[string]interface{} {
-	// When kubernetes version is less than 1.21,`CSIStorageCapacity` should not be set.
-	cmp, _ := versionutil.MustParseSemantic(kubeConf.Cluster.Kubernetes.Version).Compare("v1.21.0")
-	if cmp == -1 {
-		delete(FeatureGatesDefaultConfiguration, "CSIStorageCapacity")
-	}
-
 	defaultKubeletConfiguration := map[string]interface{}{
 		"clusterDomain":      kubeConf.Cluster.Kubernetes.DNSDomain,
 		"clusterDNS":         []string{kubeConf.Cluster.CorednsClusterIP()},
