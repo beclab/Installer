@@ -32,7 +32,7 @@ spec:
       - command:
         - ks-apiserver
         - --logtostderr=true
-        image: beclab/ks-apiserver:0.0.4
+        image: beclab/ks-apiserver:0.0.5
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         name: ks-apiserver
         ports:
