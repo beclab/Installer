@@ -8,7 +8,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
+	"time"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/clientset"
@@ -298,18 +300,24 @@ type InstallPlugin struct {
 }
 
 func (t *InstallPlugin) Execute(runtime connector.Runtime) error {
-	kubectlpath, err := util.GetCommand(common.CommandKubectl)
+	chartPath := path.Join(runtime.GetInstallerDir(), "wizard/config/gpu/hami")
+	appName := "hami"
+	ns := "kube-system"
+	config, err := ctrl.GetConfig()
 	if err != nil {
-		return fmt.Errorf("kubectl not found")
+		return err
+	}
+	actionConfig, settings, err := utils.InitConfig(config, ns)
+	if err != nil {
+		return err
 	}
 
-	var pluginFile = path.Join(runtime.GetInstallerDir(), "deploy", "nvidia-device-plugin.yml")
-	if !util.IsExist(pluginFile) {
-		logger.Errorf("plugin file not exist: %s", pluginFile)
-		return nil
-	}
-	var cmd = fmt.Sprintf("%s apply -f %s", kubectlpath, pluginFile)
-	if _, err := runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
+	var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	vals := make(map[string]interface{})
+
+	if err := utils.UpgradeCharts(ctx, actionConfig, settings, appName, chartPath, "", ns, vals, false); err != nil {
 		return err
 	}
 
@@ -326,7 +334,7 @@ func (t *CheckGpuStatus) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	cmd := fmt.Sprintf("%s get pod  -n kube-system -l 'name=nvidia-device-plugin-ds' -o jsonpath='{.items[*].status.phase}'", kubectlpath)
+	cmd := fmt.Sprintf("%s get pod  -n kube-system -l 'app.kubernetes.io/component=hami-device-plugin' -o jsonpath='{.items[*].status.phase}'", kubectlpath)
 
 	rphase, _ := runtime.GetRunner().SudoCmd(cmd, false, false)
 	if rphase == "Running" {
@@ -354,11 +362,6 @@ func (t *InstallGPUShared) Execute(runtime connector.Runtime) error {
 	fileName = path.Join(pluginPath, "deploy", "nvshare-system-quotas.yaml")
 	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, fileName), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to apply nvshare-system-quotas.yaml")
-	}
-
-	fileName = path.Join(pluginPath, "deploy", "device-plugin.yaml")
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s apply -f %s", kubectlpath, fileName), false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apply device-plugin.yaml")
 	}
 
 	fileName = path.Join(pluginPath, "deploy", "scheduler.yaml")
@@ -646,34 +649,18 @@ func (t *PrintPluginsStatus) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "kubeclient create error")
 	}
 
-	plugins, err := client.Kubernetes().CoreV1().Pods("kube-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvidia-device-plugin-ds"})
+	plugins, err := client.Kubernetes().CoreV1().Pods("kube-system").List(context.Background(), metav1.ListOptions{LabelSelector: "app.kubernetes.io/component=hami-device-plugin"})
 	if err != nil {
 		logger.Error("get plugin status error, ", err)
 		return err
 	}
 
 	if len(plugins.Items) == 0 {
-		logger.Info("nvidia-device-plugin not exists")
+		logger.Info("hami-device-plugin not exists")
 
 	} else {
 		for _, plugin := range plugins.Items {
-			logger.Infof("nvidia-device-plugin status: %s", plugin.Status.Phase)
-			break
-		}
-	}
-
-	nvsharePlugins, err := client.Kubernetes().CoreV1().Pods("nvshare-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvshare-device-plugin"})
-	if err != nil {
-		logger.Error("get nvshare plugin status error, ", err)
-		return err
-	}
-
-	if len(nvsharePlugins.Items) == 0 {
-		logger.Info("nvshare-device-plugin not exists")
-
-	} else {
-		for _, plugin := range nvsharePlugins.Items {
-			logger.Infof("nvshare-device-plugin status: %s", plugin.Status.Phase)
+			logger.Infof("hami-device-plugin status: %s", plugin.Status.Phase)
 			break
 		}
 	}
@@ -705,16 +692,16 @@ func (t *RestartPlugin) Execute(runtime connector.Runtime) error {
 		return fmt.Errorf("kubectl not found")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s rollout restart ds nvshare-device-plugin -n nvshare-system", kubectlpath), false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-device-plugin")
-	}
-
 	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s rollout restart ds nvshare-scheduler -n nvshare-system", kubectlpath), false, true); err != nil {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart nvshare-scheduler")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s rollout restart ds nvidia-device-plugin-daemonset -n kube-system", kubectlpath), false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to restart nvidia-device-plugin")
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s rollout restart ds hami-device-plugin -n kube-system", kubectlpath), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to restart hami-device-plugin")
+	}
+
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("%s rollout restart deploy hami-scheduler -n kube-system", kubectlpath), false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to restart hami-scheduler")
 	}
 
 	return nil
