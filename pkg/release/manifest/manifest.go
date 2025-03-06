@@ -144,8 +144,9 @@ func (m *Manager) downloadChecksum(name string) (string, error) {
 	// as for now
 	// the response status code of fetching a missing checksum
 	// is 403 rather than 404
+	// update: it seems that sometimes 404 is also returned
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusForbidden {
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusNotFound {
 			return "", nil
 		}
 		return "", fmt.Errorf("failed to download checksum, status code: %d", resp.StatusCode)

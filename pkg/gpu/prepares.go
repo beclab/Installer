@@ -142,7 +142,7 @@ func (p *GpuDevicePluginInstalled) PreCheck(runtime connector.Runtime) (bool, er
 		return false, nil
 	}
 
-	plugins, err := client.Kubernetes().CoreV1().Pods("kube-system").List(context.Background(), metav1.ListOptions{LabelSelector: "name=nvidia-device-plugin-ds"})
+	plugins, err := client.Kubernetes().CoreV1().Pods("kube-system").List(context.Background(), metav1.ListOptions{LabelSelector: "app.kubernetes.io/component=hami-device-plugin"})
 	if err != nil {
 		logger.Debug(err)
 		return false, nil
