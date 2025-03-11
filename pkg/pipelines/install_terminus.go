@@ -30,6 +30,10 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetReverseProxy()
 	arg.SetTokenMaxAge()
+	arg.SetSwapConfig(opts.SwapConfig)
+	if err := arg.SwapConfig.Validate(); err != nil {
+		return err
+	}
 	if opts.WithJuiceFS {
 		arg.WithJuiceFS = true
 	}

@@ -177,12 +177,21 @@ func (c *ConfigureOSModule) Init() {
 		Parallel: true,
 	}
 
+	configureSwap := &task.RemoteTask{
+		Name:     "ConfigureSwap",
+		Hosts:    c.Runtime.GetAllHosts(),
+		Prepare:  &kubernetes.NodeInCluster{Not: true},
+		Action:   new(ConfigureSwapTask),
+		Parallel: true,
+	}
+
 	c.Tasks = []task.Interface{
 		getOSData,
 		initOS,
 		GenerateScript,
 		ExecScript,
 		ConfigureNtpServer,
+		configureSwap,
 	}
 }
 

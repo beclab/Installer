@@ -35,6 +35,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/storage"
 	"bytetrade.io/web3os/installer/pkg/core/util"
+	kresource "k8s.io/apimachinery/pkg/api/resource"
 )
 
 type KubeRuntime struct {
@@ -81,6 +82,9 @@ type Argument struct {
 	RegistryMirrors string `json:"registry_mirrors"`
 	DownloadCdnUrl  string `json:"download_cdn_url"`
 
+	// Swap config
+	*SwapConfig
+
 	// master node ssh config
 	*MasterHostConfig
 
@@ -123,6 +127,42 @@ type Argument struct {
 	CudaVersion string `json:"cuda_version"`
 
 	IsOlaresInContainer bool `json:"is_olares_in_container"`
+}
+
+type SwapConfig struct {
+	EnablePodSwap    bool   `json:"enable_pod_swap"`
+	Swappiness       int    `json:"swappiness"`
+	EnableZRAM       bool   `json:"enable_zram"`
+	ZRAMSize         string `json:"zram_size"`
+	ZRAMSwapPriority int    `json:"zram_swap_priority"`
+}
+
+func (cfg *SwapConfig) AddFlags(fs *pflag.FlagSet) {
+	fs.BoolVar(&cfg.EnablePodSwap, "enable-pod-swap", false, "Enable pods on Kubernetes cluster to use swap, setting --enable-zram, --zram-size or --zram-swap-priority implicitly enables this option, regardless of the command line args, note that only pods of the BestEffort QOS group can use swap due to K8s design")
+	fs.IntVar(&cfg.Swappiness, "swappiness", 0, "Configure the Linux swappiness value, if not set, the current configuration is remained")
+	fs.BoolVar(&cfg.EnableZRAM, "enable-zram", false, "Set up a ZRAM device to be used for swap, setting --zram-size or --zram-swap-priority implicitly enables this option, regardless of the command line args")
+	fs.StringVar(&cfg.ZRAMSize, "zram-size", "", "Set the size of the ZRAM device, takes a format of https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity, defaults to half of the total RAM")
+	fs.IntVar(&cfg.ZRAMSwapPriority, "zram-swap-priority", 0, "Set the swap priority of the ZRAM device, between -1 and 32767, defaults to 100")
+}
+
+func (cfg *SwapConfig) Validate() error {
+	if cfg.ZRAMSize == "" {
+		return nil
+	}
+	processedZRAMSize := cfg.ZRAMSize
+	if strings.HasSuffix(processedZRAMSize, "b") || strings.HasSuffix(processedZRAMSize, "B") {
+		processedZRAMSize = strings.TrimSuffix(cfg.ZRAMSize, "b")
+		processedZRAMSize = strings.TrimSuffix(cfg.ZRAMSize, "B")
+	}
+	processedZRAMSize = strings.ReplaceAll(processedZRAMSize, "g", "G")
+	processedZRAMSize = strings.ReplaceAll(processedZRAMSize, "k", "K")
+	processedZRAMSize = strings.ReplaceAll(processedZRAMSize, "m", "M")
+	q, err := kresource.ParseQuantity(processedZRAMSize)
+	if err != nil {
+		return fmt.Errorf("invalid zram size %s: %w", cfg.ZRAMSize, err)
+	}
+	cfg.ZRAMSize = q.String() + "B"
+	return nil
 }
 
 type MasterHostConfig struct {
@@ -411,6 +451,23 @@ func (a *Argument) SetManifest(manifest string) {
 func (a *Argument) SetConsoleLog(fileName string, truncate bool) {
 	a.ConsoleLogFileName = fileName
 	a.ConsoleLogTruncate = truncate
+}
+
+func (a *Argument) SetSwapConfig(config SwapConfig) {
+	a.SwapConfig = &SwapConfig{}
+	if config.ZRAMSize != "" || config.ZRAMSwapPriority != 0 {
+		a.EnableZRAM = true
+	} else {
+		a.EnableZRAM = config.EnableZRAM
+	}
+	if a.EnableZRAM {
+		a.ZRAMSize = config.ZRAMSize
+		a.ZRAMSwapPriority = config.ZRAMSwapPriority
+		a.EnablePodSwap = true
+	} else {
+		a.EnablePodSwap = config.EnablePodSwap
+	}
+	a.Swappiness = config.Swappiness
 }
 
 func (a *Argument) SetMasterHostOverride(config MasterHostConfig) {

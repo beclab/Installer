@@ -209,6 +209,7 @@ const (
 	CommandVelero       = "velero"
 	CommandUpdatePciids = "update-pciids"
 	CommandNmcli        = "nmcli"
+	CommandZRAMCtl      = "zramctl"
 
 	CacheCommandKubectlPath  = "kubectl_bin_path"
 	CacheCommandMinikubePath = "minikube_bin_path"

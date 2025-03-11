@@ -281,6 +281,7 @@ func GetKubeletConfiguration(runtime connector.Runtime, kubeConf *common.KubeCon
 		"maxPods":            kubeConf.Cluster.Kubernetes.MaxPods,
 		"podPidsLimit":       kubeConf.Cluster.Kubernetes.PodPidsLimit,
 		"rotateCertificates": true,
+		"failSwapOn":         false,
 		"kubeReserved": map[string]string{
 			"cpu":    "200m",
 			"memory": "250Mi",
@@ -370,6 +371,12 @@ func GetKubeletConfiguration(runtime connector.Runtime, kubeConf *common.KubeCon
 			if _, ok := featureGates[k]; !ok {
 				featureGates[k] = v
 			}
+		}
+	}
+
+	if kubeConf.Arg.EnablePodSwap {
+		kubeletConfiguration["memorySwap"] = map[string]string{
+			"swapBehavior": "LimitedSwap",
 		}
 	}
 
