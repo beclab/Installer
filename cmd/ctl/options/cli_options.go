@@ -33,6 +33,7 @@ type CliTerminusInstallOptions struct {
 	WithJuiceFS     bool
 	MiniKubeProfile string
 	BaseDir         string
+	common.SwapConfig
 }
 
 func NewCliTerminusInstallOptions() *CliTerminusInstallOptions {
@@ -45,6 +46,7 @@ func (o *CliTerminusInstallOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.WithJuiceFS, "with-juicefs", false, "Use JuiceFS as the rootfs for Olares workloads, rather than the local disk.")
 	cmd.Flags().StringVarP(&o.MiniKubeProfile, "profile", "p", "", "Set Minikube profile name, only in MacOS platform, defaults to "+common.MinikubeDefaultProfile)
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+	(&o.SwapConfig).AddFlags(cmd.Flags())
 }
 
 type CliPrepareSystemOptions struct {

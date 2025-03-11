@@ -44,9 +44,6 @@ var InitOsScriptTmpl = template.Must(template.New("initOS.sh").Parse(
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-swapoff -a
-sed -i /^[^#]*swap*/s/^/\#/g /etc/fstab
-
 # See https://github.com/kubernetes/website/issues/14457
 if [ -f /etc/selinux/config ]; then 
   sed -ri 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
@@ -65,7 +62,6 @@ echo 'net.bridge.bridge-nf-call-ip6tables = 1' >> /etc/sysctl.conf
 echo 'net.bridge.bridge-nf-call-iptables = 1' >> /etc/sysctl.conf
 echo 'net.ipv4.ip_local_reserved_ports = 30000-32767' >> /etc/sysctl.conf
 echo 'vm.max_map_count = 262144' >> /etc/sysctl.conf
-echo 'vm.swappiness = 1' >> /etc/sysctl.conf
 echo 'fs.inotify.max_user_instances = 524288' >> /etc/sysctl.conf
 echo 'kernel.pid_max = 65535' >> /etc/sysctl.conf
 
@@ -90,7 +86,6 @@ sed -r -i  "s@#{0,}?net.bridge.bridge-nf-call-ip6tables ?= ?(0|1)@net.bridge.bri
 sed -r -i  "s@#{0,}?net.bridge.bridge-nf-call-iptables ?= ?(0|1)@net.bridge.bridge-nf-call-iptables = 1@g" /etc/sysctl.conf
 sed -r -i  "s@#{0,}?net.ipv4.ip_local_reserved_ports ?= ?([0-9]{1,}-{0,1},{0,1}){1,}@net.ipv4.ip_local_reserved_ports = 30000-32767@g" /etc/sysctl.conf
 sed -r -i  "s@#{0,}?vm.max_map_count ?= ?([0-9]{1,})@vm.max_map_count = 262144@g" /etc/sysctl.conf
-sed -r -i  "s@#{0,}?vm.swappiness ?= ?([0-9]{1,})@vm.swappiness = 1@g" /etc/sysctl.conf
 sed -r -i  "s@#{0,}?fs.inotify.max_user_instances ?= ?([0-9]{1,})@fs.inotify.max_user_instances = 524288@g" /etc/sysctl.conf
 sed -r -i  "s@#{0,}?kernel.pid_max ?= ?([0-9]{1,})@kernel.pid_max = 65535@g" /etc/sysctl.conf
 

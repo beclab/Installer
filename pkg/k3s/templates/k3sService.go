@@ -68,6 +68,10 @@ ExecStart=/usr/local/bin/k3s $K3S_ROLE $K3S_ARGS $K3S_EXTRA_ARGS $K3S_SERVER_ARG
 		dedent.Dedent(`apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 maxPods: {{ .MaxPods }}
+{{- if .EnablePodSwap }}
+memorySwap:
+  swapBehavior: LimitedSwap
+{{- end }}
 		`)))
 
 	// * --kubelet-arg=image-gc-high-threshold=85 --kubelet-arg=image-gc-low-threshold=70

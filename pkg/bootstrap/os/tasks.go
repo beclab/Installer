@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	osrelease "github.com/dominodatalab/os-release"
@@ -249,6 +250,54 @@ func (n *NodeConfigureOS) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type ConfigureSwapTask struct {
+	common.KubeAction
+}
+
+func (t *ConfigureSwapTask) Execute(runtime connector.Runtime) error {
+	if !t.KubeConf.Arg.EnableZRAM && t.KubeConf.Arg.Swappiness == 0 {
+		return nil
+	}
+	if t.KubeConf.Arg.EnableZRAM {
+		if _, err := util.GetCommand(common.CommandZRAMCtl); err != nil {
+			_, err := runtime.GetRunner().SudoCmd("apt-get install -y util-linux", false, true)
+			if err != nil {
+				return errors.Wrap(err, "failed to install util-linux to configure zram and swap")
+			}
+		}
+
+		if t.KubeConf.Arg.ZRAMSize == "" {
+			t.KubeConf.Arg.ZRAMSize = strconv.Itoa(int(runtime.GetSystemInfo().GetTotalMemory() / 2))
+		}
+		if t.KubeConf.Arg.ZRAMSwapPriority == 0 {
+			t.KubeConf.Arg.ZRAMSwapPriority = 100
+		}
+	}
+	swapServiceStr, err := util.Render(templates.SwapServiceTmpl, t.KubeConf.Arg.SwapConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to generate swap configuring service")
+	}
+
+	swapServiceName := templates.SwapServiceTmpl.Name()
+	swapServicePath := path.Join("/etc/systemd/system", swapServiceName)
+
+	if err := util.WriteFile(swapServicePath, []byte(swapServiceStr), cc.FileMode0755); err != nil {
+		return errors.Wrap(err, "failed to write swap configuring service file")
+	}
+	if _, err := runtime.GetRunner().SudoCmd("systemctl daemon-reload", false, true); err != nil {
+		return errors.Wrap(err, "failed to reload swap configuring service")
+	}
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("systemctl enable %s", swapServiceName), false, true); err != nil {
+		return errors.Wrap(err, "failed to enable swap configuring service")
+	}
+
+	// the service type is oneshot, issue restart to make it actually execute
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("systemctl restart %s", swapServiceName), false, true); err != nil {
+		return errors.Wrap(err, "failed to start swap configuring service")
+	}
+	return nil
+}
+
 func addUsers(runtime connector.Runtime, node connector.Host) error {
 	if _, err := runtime.GetRunner().SudoCmd("useradd -M -c 'Kubernetes user' -s /sbin/nologin -r kube || :", false, false); err != nil {
 		return err
@@ -353,6 +402,7 @@ var (
 		"/tmp/kubekey",
 		"/etc/kubekey",
 		"/etc/kke/version",
+		"/etc/systemd/system/olares-swap.service",
 	}
 
 	networkResetCmds = []string{

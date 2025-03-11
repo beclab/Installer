@@ -37,7 +37,7 @@ import (
 type Data map[string]interface{}
 
 // Render text template with given `variables` Render-context
-func Render(tmpl *template.Template, variables map[string]interface{}) (string, error) {
+func Render(tmpl *template.Template, variables any) (string, error) {
 
 	var buf strings.Builder
 
