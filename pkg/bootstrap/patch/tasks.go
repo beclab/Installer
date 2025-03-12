@@ -292,7 +292,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 				}
 			}
 
-			if err = ConfigResolvConf(runtime); err != nil {
+			if err = t.configResolvConf(runtime); err != nil {
 				logger.Errorf("config /etc/resolv.conf error %v", err)
 				return err
 			}
@@ -304,7 +304,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 
 			httpCode, _ := utils.GetHttpStatus("https://www.apple.com")
 			if httpCode != 200 {
-				if err := ConfigResolvConf(runtime); err != nil {
+				if err := t.configResolvConf(runtime); err != nil {
 					logger.Errorf("config /etc/resolv.conf error %v", err)
 					return err
 				}
@@ -329,7 +329,7 @@ func (t *DisableLocalDNSTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-func ConfigResolvConf(runtime connector.Runtime) error {
+func (t *DisableLocalDNSTask) configResolvConf(runtime connector.Runtime) error {
 	var err error
 	var cmd string
 	var secondNameserverOp string
@@ -347,13 +347,18 @@ func ConfigResolvConf(runtime connector.Runtime) error {
 		secondNameserverOp = overrideOp
 	}
 
-	cmd = fmt.Sprintf("echo 'nameserver 1.1.1.1' %s /etc/resolv.conf", secondNameserverOp)
+	primaryDNSServer, secondaryDNSServer := "1.1.1.1", "114.114.114.114"
+	if strings.Contains(t.KubeConf.Arg.RegistryMirrors, common.OlaresRegistryMirrorHost) || strings.Contains(t.KubeConf.Arg.RegistryMirrors, common.OlaresRegistryMirrorHostLegacy) {
+		primaryDNSServer, secondaryDNSServer = secondaryDNSServer, primaryDNSServer
+	}
+
+	cmd = fmt.Sprintf("echo 'nameserver %s' %s /etc/resolv.conf", primaryDNSServer, secondNameserverOp)
 	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
 	}
 
-	cmd = `echo 'nameserver 114.114.114.114' >> /etc/resolv.conf`
+	cmd = fmt.Sprintf("echo 'nameserver %s' >> /etc/resolv.conf", secondaryDNSServer)
 	if _, err = runtime.GetRunner().SudoCmd(cmd, false, true); err != nil {
 		logger.Errorf("exec %s error %v", cmd, err)
 		return err
