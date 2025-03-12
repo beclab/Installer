@@ -178,6 +178,11 @@ var (
 )
 
 const (
+	OlaresRegistryMirrorHost       = "mirrors.joinolares.cn"
+	OlaresRegistryMirrorHostLegacy = "mirrors.jointerminus.cn"
+)
+
+const (
 	CloudVendorAliYun = "aliyun"
 	CloudVendorAWS    = "aws"
 )
