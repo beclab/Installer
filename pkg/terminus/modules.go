@@ -1,19 +1,30 @@
 package terminus
 
 import (
+	bootstrapos "bytetrade.io/web3os/installer/pkg/bootstrap/os"
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/container"
+	containertemplates "bytetrade.io/web3os/installer/pkg/container/templates"
 	"bytetrade.io/web3os/installer/pkg/core/connector"
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/module"
+	"bytetrade.io/web3os/installer/pkg/core/prepare"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/etcd"
+	etcdtemplates "bytetrade.io/web3os/installer/pkg/etcd/templates"
 	"bytetrade.io/web3os/installer/pkg/k3s"
+	k3stemplates "bytetrade.io/web3os/installer/pkg/k3s/templates"
 	"bytetrade.io/web3os/installer/pkg/kubernetes"
+	ktemplates "bytetrade.io/web3os/installer/pkg/kubernetes/templates"
 	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/storage"
+	storageemplates "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
+	"fmt"
+	"os"
+	"path"
 	"time"
 )
 
@@ -193,6 +204,167 @@ func (d *DeleteWizardFilesModule) Init() {
 	d.Tasks = []task.Interface{
 		deleteWizardFiles,
 	}
+}
+
+var (
+	systemdUnitDir        = "/etc/systemd/system/"
+	k3sServiceName        = k3stemplates.K3sService.Name()
+	kubeletServiceName    = ktemplates.KubeletService.Name()
+	containerdServiceName = containertemplates.ContainerdService.Name()
+	etcdServiceName       = etcdtemplates.ETCDService.Name()
+	juiceFSServiceName    = storageemplates.JuicefsService.Name()
+	redisServiceName      = storageemplates.RedisService.Name()
+	minIOServiceName      = storageemplates.MinioService.Name()
+)
+
+func serviceExists(serviceName string) bool {
+	return util.IsExist(path.Join(systemdUnitDir, serviceName))
+}
+
+type StopOlaresModule struct {
+	common.KubeModule
+	Timeout       time.Duration
+	CheckInterval time.Duration
+}
+
+func (m *StopOlaresModule) Init() {
+	m.Name = "StopOlares"
+
+	newStopServiceTask := func(serviceName string) task.Interface {
+		return &task.LocalTask{
+			Name:  fmt.Sprintf("Stop %s", serviceName),
+			Retry: 3,
+			Action: &SystemctlCommand{
+				Command:   "stop",
+				UnitNames: []string{serviceName},
+			},
+		}
+	}
+
+	k3sServiceExists := serviceExists(k3sServiceName)
+	kubeletServiceExists := serviceExists(kubeletServiceName)
+	if k3sServiceExists {
+		m.Tasks = append(m.Tasks, newStopServiceTask(k3sServiceName))
+	}
+	if kubeletServiceExists {
+		m.Tasks = append(m.Tasks, newStopServiceTask(kubeletServiceName))
+	}
+	if serviceExists(containerdServiceName) {
+		m.Tasks = append(m.Tasks, newStopServiceTask(containerdServiceName))
+	}
+	if k3sServiceExists || kubeletServiceExists {
+		m.Tasks = append(m.Tasks,
+			&task.LocalTask{
+				Name: "KillContainers",
+				Action: &container.KillContainerdProcess{
+					Signal:        "TERM",
+					Timeout:       m.Timeout,
+					CheckInterval: m.CheckInterval,
+				},
+				Retry: 3,
+			},
+			&task.LocalTask{
+				Name:   "ClearKubernetesMounts",
+				Action: new(kubernetes.UmountKubelet),
+				Retry:  3,
+			},
+			&task.LocalTask{
+				Name:   "ClearKubernetesNetworkConfigs",
+				Action: new(bootstrapos.ResetNetworkConfig),
+				Retry:  3,
+			},
+		)
+	}
+	for _, service := range []string{
+		etcdServiceName,
+		juiceFSServiceName,
+		redisServiceName,
+		minIOServiceName,
+	} {
+		if serviceExists(service) {
+			m.Tasks = append(m.Tasks, newStopServiceTask(service))
+		}
+	}
+	if len(m.Tasks) == 0 {
+		logger.Info("found no components of Olares, please install Olares first")
+		logger.Info("exiting ...")
+		os.Exit(0)
+	} else if !k3sServiceExists && !kubeletServiceExists {
+		logger.Warn("kubernetes service can not be found, it seems that Olares has not been installed yet")
+		logger.Warn("will try to stop any other base components that we can find")
+	}
+}
+
+type StartOlaresModule struct {
+	common.KubeModule
+}
+
+func (m *StartOlaresModule) Init() {
+	m.Name = "StartOlares"
+
+	newStartServiceTask := func(serviceName string) task.Interface {
+		return &task.LocalTask{
+			Name:  fmt.Sprintf("Start %s", serviceName),
+			Retry: 3,
+			Delay: 15 * time.Second,
+			Action: &SystemctlCommand{
+				Command:   "start",
+				UnitNames: []string{serviceName},
+			},
+		}
+	}
+
+	for _, service := range []string{
+		minIOServiceName,
+		redisServiceName,
+		juiceFSServiceName,
+		etcdServiceName,
+
+		// backupETCDService is triggered by systemd.timer
+		// and does not need to be manually started, it will only do an unnecessary backup
+		// backupETCDServiceName,
+		containerdServiceName,
+	} {
+		if serviceExists(service) {
+			m.Tasks = append(m.Tasks, newStartServiceTask(service))
+		}
+	}
+	k3sServiceExists := serviceExists(k3sServiceName)
+	kubeletServiceExists := serviceExists(kubeletServiceName)
+	if k3sServiceExists {
+		m.Tasks = append(m.Tasks, newStartServiceTask(k3sServiceName))
+	}
+	if kubeletServiceExists {
+		m.Tasks = append(m.Tasks, newStartServiceTask(kubeletServiceName))
+	}
+	if len(m.Tasks) == 0 {
+		logger.Info("found no components of Olares, please install Olares first")
+		logger.Info("exiting ...")
+		os.Exit(0)
+	} else if k3sServiceExists || kubeletServiceExists {
+		m.Tasks = append(m.Tasks, &task.LocalTask{
+
+			// when starting an already stopped Olares, which is the normal use case
+			// it's very likely for this program to outrun kubelet
+			// and retrieve a pod list from kube-apiserver that is a "snapshot" of the cluster state
+			// when the kubernetes components was killed, before. i.e. the data will say all the pods are running while they're actually not
+			// there's no easy way for us to detect whether the retrieved data represents the current cluster state
+			// so we just wait some time for the kubelet to update the pod status before retrieving it from kube-apiserver
+			// again, in normal cases, it takes much longer than this period for the pods to be back running again
+			// thus no harm is caused
+			Prepare: &prepare.InitialDelay{
+				Duration: 30 * time.Second,
+			},
+			Name:   "EnsurePodsUpAndRunningAgain",
+			Action: &CheckKeyPodsRunning{Node: m.Runtime.GetLocalHost().GetName()},
+			Delay:  10 * time.Second,
+			Retry:  60,
+		})
+	} else {
+		logger.Warn("kubernetes service can not be found, it seems that Olares has not been installed yet")
+		logger.Warn("will try to start any other base components that we can find")
+	}
+
 }
 
 type ChangeIPModule struct {
