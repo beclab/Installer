@@ -668,29 +668,38 @@ func (d *MigrateSelfNodeCri) Execute(runtime connector.Runtime) error {
 
 type KillContainerdProcess struct {
 	common.KubeAction
+	Signal        string
+	Timeout       time.Duration
+	CheckInterval time.Duration
 }
 
-func (t *KillContainerdProcess) Execute(runtime connector.Runtime) error {
+// getContainerdPids returns all containerd-shim process IDs and their child processes
+func getContainerdPids(runtime connector.Runtime) ([]string, error) {
 	var pids []string
 	var childpids []string
-	var cmd = "ps -ef | grep containerd-shim | grep -v grep"
+	var cmd = "ps -ef | grep containerd-shim"
 	stdout, err := runtime.GetRunner().SudoCmd(cmd, false, false)
-	if err == nil || stdout != "" {
-		scanner := bufio.NewScanner(strings.NewReader(stdout))
-		for scanner.Scan() {
-			line := scanner.Text()
-			fields := strings.Fields(line)
-			if len(fields) > 1 {
-				pid := fields[1]
-				pids = append(pids, pid)
-			}
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		if len(pids) > 0 {
-			for _, pid := range pids {
-				var p = getProcessIds(pid, runtime)
-				childpids = append(childpids, p...)
-			}
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "grep") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 1 {
+			pid := fields[1]
+			pids = append(pids, pid)
+		}
+	}
+
+	if len(pids) > 0 {
+		for _, pid := range pids {
+			var p = getProcessIds(pid, runtime)
+			childpids = append(childpids, p...)
 		}
 	}
 
@@ -698,10 +707,65 @@ func (t *KillContainerdProcess) Execute(runtime connector.Runtime) error {
 	allPids = append(allPids, childpids...)
 	allPids = append(allPids, pids...)
 
-	if len(allPids) > 0 {
-		for _, pid := range allPids {
-			runtime.GetRunner().SudoCmd(fmt.Sprintf("kill -9 %s", pid), false, false)
-		}
+	return allPids, nil
+}
+
+func (t *KillContainerdProcess) Execute(runtime connector.Runtime) error {
+	if t.Signal == "" {
+		t.Signal = "TERM"
 	}
+	if t.Timeout == 0 {
+		t.Timeout = 1 * time.Minute
+	}
+	if t.CheckInterval == 0 {
+		t.CheckInterval = 10 * time.Second
+	}
+
+	allPids, err := getContainerdPids(runtime)
+	if err != nil {
+		return errors.Wrap(err, "get container pids failed")
+	}
+
+	if len(allPids) == 0 {
+		return nil
+	}
+
+	// first try with the specified signal
+	for _, pid := range allPids {
+		runtime.GetRunner().SudoCmd(fmt.Sprintf("kill -%s %s", t.Signal, pid), false, false)
+	}
+
+	// if signal is KILL, just return immediately
+	// otherwise, poll until timeout to check if processes are gone
+	if t.Signal == "KILL" || t.Signal == "9" {
+		return nil
+	}
+	deadline := time.Now().Add(t.Timeout)
+
+	for time.Now().Before(deadline) {
+		remainingPids, err := getContainerdPids(runtime)
+		if err != nil {
+			continue
+		}
+
+		// If no processes remain, we're done
+		if len(remainingPids) == 0 {
+			return nil
+		}
+
+		// Wait for the check interval before next poll
+		time.Sleep(t.CheckInterval)
+	}
+
+	// force kill remaining processes
+	remainingPids, err := getContainerdPids(runtime)
+	if err != nil {
+		return err
+	}
+
+	for _, pid := range remainingPids {
+		runtime.GetRunner().SudoCmd(fmt.Sprintf("kill -9 %s", pid), false, false)
+	}
+
 	return nil
 }

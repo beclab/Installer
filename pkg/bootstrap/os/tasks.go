@@ -382,6 +382,8 @@ var (
 	}
 	clusterFiles = []string{
 		"/etc/kubernetes",
+		"/etc/systemd/system/backup-etcd.timer",
+		"/etc/systemd/system/backup-etcd.service",
 		"/etc/systemd/system/etcd.service",
 		"/var/log/calico",
 		"/etc/cni",
@@ -406,13 +408,11 @@ var (
 	}
 
 	networkResetCmds = []string{
-		"iptables -F",
-		"iptables -X",
-		"iptables -F -t nat",
-		"iptables -X -t nat",
+		"ip netns show 2>/dev/null | grep cni- | xargs -r -t -n 1 ip netns delete",
 		"ipvsadm -C",
 		"ip link del kube-ipvs0",
-		"ip link del nodelocaldns",
+		"rm -rf /var/lib/cni",
+		"iptables-save | grep -v KUBE- | grep -v CALICO- | iptables-restore",
 	}
 )
 
