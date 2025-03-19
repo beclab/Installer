@@ -183,14 +183,15 @@ var (
 		"tls-cipher-suites":      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
 	}
 	ControllermanagerArgs = map[string]string{
-		"bind-address":             "0.0.0.0",
-		"cluster-signing-duration": "87600h",
+		"bind-address":                "0.0.0.0",
+		"cluster-signing-duration":    "87600h",
+		"terminated-pod-gc-threshold": "1",
 	}
 	ControllermanagerSecurityArgs = map[string]string{
 		"bind-address":                    "127.0.0.1",
 		"cluster-signing-duration":        "87600h",
 		"profiling":                       "false",
-		"terminated-pod-gc-threshold":     "50",
+		"terminated-pod-gc-threshold":     "1",
 		"use-service-account-credentials": "true",
 	}
 	SchedulerArgs = map[string]string{

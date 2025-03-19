@@ -210,7 +210,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 
 	kubeApiserverArgs, _ := util.GetArgs(map[string]string{}, g.KubeConf.Cluster.Kubernetes.ApiServerArgs)
 	kubeControllerManager, _ := util.GetArgs(map[string]string{
-		"terminated-pod-gc-threshold": "5",
+		"terminated-pod-gc-threshold": "1",
 	}, g.KubeConf.Cluster.Kubernetes.ControllerManagerArgs)
 	kubeSchedulerArgs, _ := util.GetArgs(map[string]string{}, g.KubeConf.Cluster.Kubernetes.SchedulerArgs)
 	kubeletArgs, _ := util.GetArgs(defaultKubeletArs, g.KubeConf.Cluster.Kubernetes.KubeletArgs)
