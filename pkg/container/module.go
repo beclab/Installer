@@ -393,7 +393,7 @@ func (m *KillContainerdProcessModule) Init() {
 	killContainerdProcess := &task.RemoteTask{
 		Name:     "KillContainerdProcess",
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Action:   new(KillContainerdProcess),
+		Action:   &KillContainerdProcess{Signal: "KILL"},
 		Parallel: false,
 		Retry:    1,
 	}

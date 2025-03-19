@@ -23,6 +23,8 @@ func NewCmdOs() *cobra.Command {
 	rootOsCmd.AddCommand(NewCmdChangeIP())
 	rootOsCmd.AddCommand(NewCmdRelease())
 	rootOsCmd.AddCommand(NewCmdPrintInfo())
+	rootOsCmd.AddCommand(NewCmdStart())
+	rootOsCmd.AddCommand(NewCmdStop())
 
 	return rootOsCmd
 }
