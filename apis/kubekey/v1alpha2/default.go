@@ -73,40 +73,42 @@ const (
 	DefaultVeleroVersion            = "v1.11.3"
 	DefaultWSLInstallPackageVersion = "2.3.26.0"
 
-	DefaultMaxPods             = 200
-	DefaultPodPidsLimit        = 10000
-	DefaultNodeCidrMaskSize    = 24
-	DefaultIPIPMode            = "Always"
-	DefaultVXLANMode           = "Never"
-	DefaultVethMTU             = 0
-	DefaultBackendMode         = "vxlan"
-	DefaultProxyMode           = "ipvs"
-	DefaultCrioEndpoint        = "unix:///var/run/crio/crio.sock"
-	DefaultContainerdEndpoint  = "unix:///run/containerd/containerd.sock"
-	DefaultIsulaEndpoint       = "unix:///var/run/isulad.sock"
-	Etcd                       = "etcd"
-	Master                     = "master"
-	ControlPlane               = "control-plane"
-	Worker                     = "worker"
-	K8s                        = "k8s"
-	Registry                   = "registry"
-	DefaultEtcdBackupDir       = "/var/backups/kube_etcd"
-	DefaultEtcdBackupPeriod    = 30
-	DefaultKeepBackNumber      = 5
-	DefaultEtcdBackupScriptDir = "/usr/local/bin/kube-scripts"
-	DefaultPodGateway          = "10.233.64.1"
-	DefaultJoinCIDR            = "100.64.0.0/16"
-	DefaultNetworkType         = "geneve"
-	DefaultTunnelType          = "geneve"
-	DefaultPodNicType          = "veth-pair"
-	DefaultModules             = "kube_ovn_fastpath.ko"
-	DefaultRPMs                = "openvswitch-kmod"
-	DefaultVlanID              = "100"
-	DefaultOvnLabel            = "node-role.kubernetes.io/control-plane"
-	DefaultDPDKVersion         = "19.11"
-	DefaultDNSAddress          = "114.114.114.114"
-	DefaultDpdkTunnelIface     = "br-phy"
-	DefaultCNIConfigPriority   = "01"
+	DefaultShutdownGracePeriod             = "30s"
+	DefaultShutdownGracePeriodCriticalPods = "10s"
+	DefaultMaxPods                         = 200
+	DefaultPodPidsLimit                    = 10000
+	DefaultNodeCidrMaskSize                = 24
+	DefaultIPIPMode                        = "Always"
+	DefaultVXLANMode                       = "Never"
+	DefaultVethMTU                         = 0
+	DefaultBackendMode                     = "vxlan"
+	DefaultProxyMode                       = "ipvs"
+	DefaultCrioEndpoint                    = "unix:///var/run/crio/crio.sock"
+	DefaultContainerdEndpoint              = "unix:///run/containerd/containerd.sock"
+	DefaultIsulaEndpoint                   = "unix:///var/run/isulad.sock"
+	Etcd                                   = "etcd"
+	Master                                 = "master"
+	ControlPlane                           = "control-plane"
+	Worker                                 = "worker"
+	K8s                                    = "k8s"
+	Registry                               = "registry"
+	DefaultEtcdBackupDir                   = "/var/backups/kube_etcd"
+	DefaultEtcdBackupPeriod                = 30
+	DefaultKeepBackNumber                  = 5
+	DefaultEtcdBackupScriptDir             = "/usr/local/bin/kube-scripts"
+	DefaultPodGateway                      = "10.233.64.1"
+	DefaultJoinCIDR                        = "100.64.0.0/16"
+	DefaultNetworkType                     = "geneve"
+	DefaultTunnelType                      = "geneve"
+	DefaultPodNicType                      = "veth-pair"
+	DefaultModules                         = "kube_ovn_fastpath.ko"
+	DefaultRPMs                            = "openvswitch-kmod"
+	DefaultVlanID                          = "100"
+	DefaultOvnLabel                        = "node-role.kubernetes.io/control-plane"
+	DefaultDPDKVersion                     = "19.11"
+	DefaultDNSAddress                      = "114.114.114.114"
+	DefaultDpdkTunnelIface                 = "br-phy"
+	DefaultCNIConfigPriority               = "01"
 
 	Docker     = "docker"
 	Containerd = "containerd"
@@ -138,6 +140,12 @@ func (cfg *ClusterSpec) SetDefaultClusterSpec(incluster bool, macos bool) (*Clus
 	}
 	if cfg.Kubernetes.Version == "" {
 		clusterCfg.Kubernetes.Version = DefaultKubeVersion
+	}
+	if cfg.Kubernetes.ShutdownGracePeriod == "" {
+		clusterCfg.Kubernetes.ShutdownGracePeriod = DefaultShutdownGracePeriod
+	}
+	if cfg.Kubernetes.ShutdownGracePeriodCriticalPods == "" {
+		clusterCfg.Kubernetes.ShutdownGracePeriodCriticalPods = DefaultShutdownGracePeriodCriticalPods
 	}
 	if cfg.Kubernetes.MaxPods == 0 {
 		clusterCfg.Kubernetes.MaxPods = DefaultMaxPods

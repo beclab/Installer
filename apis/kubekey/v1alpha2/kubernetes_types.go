@@ -20,18 +20,20 @@ import "k8s.io/apimachinery/pkg/runtime"
 
 // Kubernetes contains the configuration for the cluster
 type Kubernetes struct {
-	Type                   string   `yaml:"type" json:"type,omitempty"`
-	Version                string   `yaml:"version" json:"version,omitempty"`
-	ClusterName            string   `yaml:"clusterName" json:"clusterName,omitempty"`
-	DNSDomain              string   `yaml:"dnsDomain" json:"dnsDomain,omitempty"`
-	DisableKubeProxy       bool     `yaml:"disableKubeProxy" json:"disableKubeProxy,omitempty"`
-	MasqueradeAll          bool     `yaml:"masqueradeAll" json:"masqueradeAll,omitempty"`
-	MaxPods                int      `yaml:"maxPods" json:"maxPods,omitempty"`
-	PodPidsLimit           int      `yaml:"podPidsLimit" json:"podPidsLimit,omitempty"`
-	NodeCidrMaskSize       int      `yaml:"nodeCidrMaskSize" json:"nodeCidrMaskSize,omitempty"`
-	ApiserverCertExtraSans []string `yaml:"apiserverCertExtraSans" json:"apiserverCertExtraSans,omitempty"`
-	ProxyMode              string   `yaml:"proxyMode" json:"proxyMode,omitempty"`
-	AutoRenewCerts         *bool    `yaml:"autoRenewCerts" json:"autoRenewCerts,omitempty"`
+	Type                            string   `yaml:"type" json:"type,omitempty"`
+	Version                         string   `yaml:"version" json:"version,omitempty"`
+	ClusterName                     string   `yaml:"clusterName" json:"clusterName,omitempty"`
+	DNSDomain                       string   `yaml:"dnsDomain" json:"dnsDomain,omitempty"`
+	DisableKubeProxy                bool     `yaml:"disableKubeProxy" json:"disableKubeProxy,omitempty"`
+	MasqueradeAll                   bool     `yaml:"masqueradeAll" json:"masqueradeAll,omitempty"`
+	ShutdownGracePeriod             string   `yaml:"shutdownGracePeriod" json:"shutdownGracePeriod,omitempty"`
+	ShutdownGracePeriodCriticalPods string   `json:"shutdownGracePeriodCriticalPods,omitempty"`
+	MaxPods                         int      `yaml:"maxPods" json:"maxPods,omitempty"`
+	PodPidsLimit                    int      `yaml:"podPidsLimit" json:"podPidsLimit,omitempty"`
+	NodeCidrMaskSize                int      `yaml:"nodeCidrMaskSize" json:"nodeCidrMaskSize,omitempty"`
+	ApiserverCertExtraSans          []string `yaml:"apiserverCertExtraSans" json:"apiserverCertExtraSans,omitempty"`
+	ProxyMode                       string   `yaml:"proxyMode" json:"proxyMode,omitempty"`
+	AutoRenewCerts                  *bool    `yaml:"autoRenewCerts" json:"autoRenewCerts,omitempty"`
 	// +optional
 	Nodelocaldns             *bool                `yaml:"nodelocaldns" json:"nodelocaldns,omitempty"`
 	ContainerManager         string               `yaml:"containerManager" json:"containerManager,omitempty"`

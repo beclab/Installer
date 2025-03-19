@@ -255,8 +255,10 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		Template: templates.K3sKubeletConfig,
 		Dst:      filepath.Join("/etc/rancher/k3s/", templates.K3sKubeletConfig.Name()),
 		Data: util.Data{
-			"MaxPods":       g.KubeConf.Cluster.Kubernetes.MaxPods,
-			"EnablePodSwap": g.KubeConf.Arg.EnablePodSwap,
+			"ShutdownGracePeriod":             g.KubeConf.Cluster.Kubernetes.ShutdownGracePeriod,
+			"ShutdownGracePeriodCriticalPods": g.KubeConf.Cluster.Kubernetes.ShutdownGracePeriodCriticalPods,
+			"MaxPods":                         g.KubeConf.Cluster.Kubernetes.MaxPods,
+			"EnablePodSwap":                   g.KubeConf.Arg.EnablePodSwap,
 		},
 	}
 

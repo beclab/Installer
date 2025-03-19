@@ -72,6 +72,8 @@ maxPods: {{ .MaxPods }}
 memorySwap:
   swapBehavior: LimitedSwap
 {{- end }}
+shutdownGracePeriod: {{ .ShutdownGracePeriod }}
+shutdownGracePeriodCriticalPods: {{ .ShutdownGracePeriodCriticalPods }}
 		`)))
 
 	// * --kubelet-arg=image-gc-high-threshold=85 --kubelet-arg=image-gc-low-threshold=70
