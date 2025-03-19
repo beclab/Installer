@@ -276,12 +276,14 @@ func UpdateFeatureGatesConfiguration(args map[string]string, kubeConf *common.Ku
 
 func GetKubeletConfiguration(runtime connector.Runtime, kubeConf *common.KubeConf, criSock string, securityEnhancement bool) map[string]interface{} {
 	defaultKubeletConfiguration := map[string]interface{}{
-		"clusterDomain":      kubeConf.Cluster.Kubernetes.DNSDomain,
-		"clusterDNS":         []string{kubeConf.Cluster.CorednsClusterIP()},
-		"maxPods":            kubeConf.Cluster.Kubernetes.MaxPods,
-		"podPidsLimit":       kubeConf.Cluster.Kubernetes.PodPidsLimit,
-		"rotateCertificates": true,
-		"failSwapOn":         false,
+		"clusterDomain":                   kubeConf.Cluster.Kubernetes.DNSDomain,
+		"clusterDNS":                      []string{kubeConf.Cluster.CorednsClusterIP()},
+		"shutdownGracePeriod":             kubeConf.Cluster.Kubernetes.ShutdownGracePeriod,
+		"shutdownGracePeriodCriticalPods": kubeConf.Cluster.Kubernetes.ShutdownGracePeriodCriticalPods,
+		"maxPods":                         kubeConf.Cluster.Kubernetes.MaxPods,
+		"podPidsLimit":                    kubeConf.Cluster.Kubernetes.PodPidsLimit,
+		"rotateCertificates":              true,
+		"failSwapOn":                      false,
 		"kubeReserved": map[string]string{
 			"cpu":    "200m",
 			"memory": "250Mi",
