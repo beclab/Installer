@@ -596,38 +596,43 @@ type UmountKubelet struct {
 }
 
 func (u *UmountKubelet) Execute(runtime connector.Runtime) error {
-	if !util.IsExist("/proc/self/mounts") {
+	procMountsFile := "/proc/mounts"
+	targetPaths := []string{
+		"/var/lib/kubelet",
+		"/run/netns/cni",
+	}
+	f, err := os.Open(procMountsFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to open %s: %w", procMountsFile, err)
+		}
 		return nil
 	}
-
-	var cmd = fmt.Sprintf("cat /proc/self/mounts |grep 'kubelet' | sort -r")
-	var stdout, _ = runtime.GetRunner().SudoCmd(cmd, false, false)
-	if stdout == "" {
-		return nil
-	}
+	defer f.Close()
 
 	var mounts []string
-	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
 		if len(fields) < 2 {
 			continue
 		}
-		mounts = append(mounts, fields[1])
+		for _, targetPath := range targetPaths {
+			if strings.HasPrefix(fields[1], targetPath) {
+				mounts = append(mounts, fields[1])
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("failed to scan %s: %w", procMountsFile, err)
 	}
 
-	if mounts == nil || len(mounts) == 0 {
-		return nil
-	}
-
-	logger.Infof("kubelet mounts %v", mounts)
+	logger.Debugf("kubelet mounts %v", mounts)
 
 	for _, m := range mounts {
-		runtime.GetRunner().SudoCmd(fmt.Sprintf("umount %s", m), false, true)
+		runtime.GetRunner().SudoCmd(fmt.Sprintf("umount %s && rm -rf %s", m, m), false, true)
 	}
-
-	_, _ = runtime.GetRunner().SudoCmd("systemctl stop kubepods.slice", false, true)
 
 	return nil
 }
