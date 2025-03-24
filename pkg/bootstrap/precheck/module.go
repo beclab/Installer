@@ -31,12 +31,12 @@ type RemoveChattrModule struct {
 }
 
 func (m *RemoveChattrModule) Init() {
-	m.Name = "RemoveChattr"
+	m.Name = "RemoveWSLChattr"
 
 	removeChattr := &task.RemoteTask{
-		Name:     "RemoveChattr",
+		Name:     "RemoveWSLChattr",
 		Hosts:    m.Runtime.GetHostsByRole(common.Master),
-		Action:   new(RemoveChattr),
+		Action:   new(RemoveWSLChattr),
 		Parallel: false,
 		Retry:    1,
 	}

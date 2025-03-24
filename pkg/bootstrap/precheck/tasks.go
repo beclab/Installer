@@ -555,11 +555,26 @@ func (t *GetStorageKeyTask) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type RemoveChattr struct {
+type AddWSLChattr struct {
 	common.KubeAction
 }
 
-func (t *RemoveChattr) Execute(runtime connector.Runtime) error {
+func (a *AddWSLChattr) Execute(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsWsl() {
+		return nil
+	}
+	runtime.GetRunner().SudoCmd("chattr +i /etc/hosts /etc/resolv.conf", false, false)
+	return nil
+}
+
+type RemoveWSLChattr struct {
+	common.KubeAction
+}
+
+func (t *RemoveWSLChattr) Execute(runtime connector.Runtime) error {
+	if !runtime.GetSystemInfo().IsWsl() {
+		return nil
+	}
 	runtime.GetRunner().SudoCmd("chattr -i /etc/hosts", false, true)
 	runtime.GetRunner().SudoCmd("chattr -i /etc/resolv.conf", false, true)
 	return nil
