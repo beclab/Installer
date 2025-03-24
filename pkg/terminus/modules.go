@@ -380,6 +380,10 @@ func (m *ChangeIPModule) Init() {
 	}
 	m.Tasks = []task.Interface{
 		&task.LocalTask{
+			Name:   "RemoveFileAttributesForUpdating",
+			Action: new(precheck.RemoveWSLChattr),
+		},
+		&task.LocalTask{
 			Name:   "UpdateHosts",
 			Action: new(UpdateKubeKeyHosts),
 		},
@@ -425,6 +429,11 @@ func (m *ChangeIPModule) Init() {
 				Action: new(SaveMasterHostConfig),
 			})
 	}
+	m.Tasks = append(m.Tasks,
+		&task.LocalTask{
+			Name:   "RewriteFileAttributes",
+			Action: new(precheck.AddWSLChattr),
+		})
 }
 
 func (m *ChangeIPModule) addStorageTasks() {
