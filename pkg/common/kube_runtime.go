@@ -281,6 +281,7 @@ func NewArgument() *Argument {
 		HostIP:                 os.Getenv(ENV_HOST_IP),
 		Environment:            os.Environ(),
 		MasterHostConfig:       &MasterHostConfig{},
+		SwapConfig:             &SwapConfig{},
 	}
 	arg.IsCloudInstance, _ = strconv.ParseBool(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION))
 	arg.PublicNetworkInfo.PubliclyAccessible, _ = strconv.ParseBool(os.Getenv(ENV_PUBLICLY_ACCESSIBLE))
