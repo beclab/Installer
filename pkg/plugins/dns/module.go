@@ -43,6 +43,9 @@ type ClusterDNSModule struct {
 func (c *ClusterDNSModule) Init() {
 	c.Name = "ClusterDNSModule"
 
+	// inject coredns svc ip to the global envs before other relative components are created
+	common.TerminusGlobalEnvs["COREDNS_SVC"] = c.KubeConf.Cluster.ClusterIP()
+
 	generateCoreDNDService := &task.RemoteTask{
 		Name:  "GenerateCoreDNSService",
 		Hosts: c.Runtime.GetHostsByRole(common.Master),
