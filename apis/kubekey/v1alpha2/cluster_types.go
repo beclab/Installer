@@ -280,11 +280,6 @@ func toHosts(cfg HostCfg) *KubeHost {
 	return kubeHost
 }
 
-// ClusterIP is used to get the kube-apiserver service address inside the cluster.
-func (cfg *ClusterSpec) ClusterIP() string {
-	return util.ParseIp(cfg.Network.KubeServiceCIDR)[0]
-}
-
 // CorednsClusterIP is used to get the coredns service address inside the cluster.
 func (cfg *ClusterSpec) CorednsClusterIP() string {
 	return util.ParseIp(cfg.Network.KubeServiceCIDR)[2]
