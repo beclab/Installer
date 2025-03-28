@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var BuiltInApps = []string{"portfolio", "vault", "desktop", "message", "wise", "search", "appstore", "notification", "dashboard", "settings", "profile", "agent", "files"}
+var BuiltInApps = []string{"portfolio", "vault", "desktop", "message", "wise", "search", "appstore", "notification", "dashboard", "settings", "profile", "agent", "files", "studio"}
 
 type InstallAppsModule struct {
 	common.KubeModule
