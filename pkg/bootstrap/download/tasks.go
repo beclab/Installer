@@ -3,10 +3,11 @@ package download
 import (
 	"bufio"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
 
@@ -129,6 +130,7 @@ func isRealExists(runtime connector.Runtime, item *manifest.ManifestItem, baseDi
 
 func (d *PackageDownload) downloadItem(runtime connector.Runtime, baseDir string, index int) error {
 	arch := runtime.GetSystemInfo().GetOsArch()
+	os := runtime.GetSystemInfo().GetOsType()
 	item := d.missingItems[index]
 	url := item.GetItemUrlForHost(arch)
 
@@ -140,6 +142,7 @@ func (d *PackageDownload) downloadItem(runtime connector.Runtime, baseDir string
 	component.FileName = item.Filename
 	component.CheckMd5Sum = true
 	component.Md5sum = url.Checksum
+	component.Os = os
 
 	downloadPath := component.Path()
 	if utils.IsExist(downloadPath) {

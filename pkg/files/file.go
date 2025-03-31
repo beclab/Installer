@@ -17,6 +17,7 @@
 package files
 
 import (
+	"compress/bzip2"
 	"context"
 	"fmt"
 	"io"
@@ -24,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -79,6 +81,7 @@ const (
 	fullinstaller = "full-installer"
 	wsl           = "wsl"
 	wslpackage    = "wslpackage"
+	restic        = "restic"
 )
 
 // KubeBinary Type field const
@@ -399,6 +402,38 @@ func (b *KubeBinary) Path() string {
 	return filepath.Join(b.BaseDir, b.FileName)
 }
 
+func (b *KubeBinary) Bzip2Cmd() error {
+	var fileName = b.Path()
+	if !strings.Contains(fileName, restic) {
+		return nil
+	}
+	if !strings.Contains(fileName, b.Os) {
+		return nil
+	}
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	bz2Reader := bzip2.NewReader(file)
+	target := filepath.Join(path.Dir(fileName), restic)
+	outputFile, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	_, err = io.Copy(outputFile, bz2Reader)
+	if err != nil {
+		return err
+	}
+
+	var copyCmd = fmt.Sprintf("cp %s /usr/local/bin/restic && chmod +x /usr/local/bin/restic", target)
+	var cmd = exec.Command("/bin/sh", "-c", copyCmd)
+	return cmd.Run()
+}
+
 func (b *KubeBinary) UntarCmd() error {
 	untarCmd := b.GetTarCmd()
 	if untarCmd != "" {
@@ -553,6 +588,11 @@ func (b *KubeBinary) Download() error {
 				return err
 			}
 			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		if err := b.Bzip2Cmd(); err != nil { // only for restic or other bzip2 compressed files
+			logger.Errorf("bzip2 decompression failed: %v", err)
 			continue
 		}
 
