@@ -327,6 +327,7 @@ var TerminusGlobalEnvs = map[string]interface{}{
 	"TAILSCALE_CONTROLPLANE_URL": "https://controlplane.snowinning.com",
 	"OLARES_ROOT_DIR":            "/olares",
 	ENV_DOWNLOAD_CDN_URL:         cc.DownloadUrl,
+	ENV_MARKET_PROVIDER:          "appstore-server-prod.bttcdn.com",
 }
 
 const (
