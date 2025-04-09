@@ -67,6 +67,36 @@ func (m *PreparedModule) Init() {
 	}
 }
 
+type WriteReleaseFileModule struct {
+	common.KubeModule
+}
+
+func (m *WriteReleaseFileModule) Init() {
+	m.Name = "WriteReleaseFile"
+
+	m.Tasks = []task.Interface{
+		&task.LocalTask{
+			Name:   "WriteReleaseFile",
+			Action: new(WriteReleaseFile),
+		},
+	}
+}
+
+type RemoveReleaseFileModule struct {
+	common.KubeModule
+}
+
+func (m *RemoveReleaseFileModule) Init() {
+	m.Name = "RemoveReleaseFile"
+
+	m.Tasks = []task.Interface{
+		&task.LocalTask{
+			Name:   "RemoveReleaseFile",
+			Action: new(RemoveReleaseFile),
+		},
+	}
+}
+
 type CheckPreparedModule struct {
 	common.KubeModule
 	Force bool

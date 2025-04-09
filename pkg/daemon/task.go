@@ -55,7 +55,7 @@ func (g *GenerateTerminusdServiceEnv) Execute(runtime connector.Runtime) error {
 		Template: templates.TerminusdEnv,
 		Dst:      filepath.Join("/etc/systemd/system/", templates.TerminusdEnv.Name()),
 		Data: util.Data{
-			"Version":                g.KubeConf.Arg.TerminusVersion,
+			"Version":                g.KubeConf.Arg.OlaresVersion,
 			"KubeType":               g.KubeConf.Arg.Kubetype,
 			"RegistryMirrors":        g.KubeConf.Arg.RegistryMirrors,
 			"BaseDir":                baseDir,

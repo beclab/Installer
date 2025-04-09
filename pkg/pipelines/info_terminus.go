@@ -7,7 +7,7 @@ import (
 )
 
 func PrintTerminusInfo() {
-	var cli = &terminus.GetTerminusVersion{}
+	var cli = &terminus.GetOlaresVersion{}
 	terminusVersion, err := cli.Execute()
 	if err != nil {
 		fmt.Printf("Olares: not installed\n")
