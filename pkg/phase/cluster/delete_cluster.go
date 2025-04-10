@@ -99,9 +99,9 @@ func (p *phaseBuilder) phaseInstall() *phaseBuilder {
 		}
 
 		p.modules = append(p.modules,
-			&os.ClearOSEnvironmentModule{},
 			&certs.UninstallAutoRenewCertsModule{},
 			&container.KillContainerdProcessModule{},
+			&os.ClearOSEnvironmentModule{},
 			&certs.UninstallCertsFilesModule{},
 			&storage.DeleteUserDataModule{},
 			&terminus.DeleteWizardFilesModule{},

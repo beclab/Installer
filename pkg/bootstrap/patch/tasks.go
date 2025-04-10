@@ -53,6 +53,12 @@ func (t *PatchTask) Execute(runtime connector.Runtime) error {
 	if _, err := util.GetCommand(common.CommandIptables); err != nil {
 		pre_reqs = pre_reqs + " iptables "
 	}
+	if _, err := util.GetCommand(common.CommandIp6tables); err != nil {
+		pre_reqs = pre_reqs + " iptables "
+	}
+	if _, err := util.GetCommand(common.CommandIpset); err != nil {
+		pre_reqs = pre_reqs + " ipset "
+	}
 	if _, err := util.GetCommand(common.CommandNmcli); err != nil {
 		pre_reqs = pre_reqs + " network-manager "
 	}

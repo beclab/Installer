@@ -200,7 +200,9 @@ const (
 )
 
 const (
+	CommandIpset        = "ipset"
 	CommandIptables     = "iptables"
+	CommandIp6tables    = "ip6tables"
 	CommandGPG          = "gpg"
 	CommandSudo         = "sudo"
 	CommandSocat        = "socat"
