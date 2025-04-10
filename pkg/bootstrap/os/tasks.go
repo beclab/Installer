@@ -413,6 +413,8 @@ var (
 		"ip link del kube-ipvs0",
 		"rm -rf /var/lib/cni",
 		"iptables-save | grep -v KUBE- | grep -v CALICO- | iptables-restore",
+		"ip6tables-save | grep -v KUBE- | grep -v CALICO- | ip6tables-restore",
+		"ipset x",
 	}
 )
 
