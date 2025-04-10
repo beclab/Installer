@@ -524,8 +524,8 @@ func (i *InstallTerminus) Execute(runtime connector.Runtime) error {
 		downloadUrl = cc.DownloadUrl
 	}
 	var installScript = fmt.Sprintf("curl -fsSL %s | bash -", bashUrl)
-	if i.KubeConf.Arg.TerminusVersion != "" {
-		var installFile = fmt.Sprintf("install-wizard-v%s.tar.gz", i.KubeConf.Arg.TerminusVersion)
+	if i.KubeConf.Arg.OlaresVersion != "" {
+		var installFile = fmt.Sprintf("install-wizard-v%s.tar.gz", i.KubeConf.Arg.OlaresVersion)
 		installScript = fmt.Sprintf("curl -fsSLO %s/%s && tar -xf %s -C ./ ./install.sh && rm -rf %s && bash ./install.sh",
 			downloadUrl, installFile, installFile, installFile)
 	}

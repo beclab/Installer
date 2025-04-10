@@ -132,6 +132,7 @@ func (p *phaseBuilder) phasePrepare() *phaseBuilder {
 				PhaseFile: common.TerminusStateFilePrepared,
 				BaseDir:   p.runtime.GetBaseDir(),
 			},
+			&terminus.RemoveReleaseFileModule{},
 		)
 	}
 	return p
@@ -173,7 +174,7 @@ func (p *phaseBuilder) phaseMacos() {
 	}
 }
 
-func UninstallTerminus(phase string, args *common.Argument, runtime *common.KubeRuntime) pipeline.Pipeline {
+func UninstallTerminus(phase string, runtime *common.KubeRuntime) pipeline.Pipeline {
 	var builder = &phaseBuilder{
 		phase:   phase,
 		runtime: runtime,

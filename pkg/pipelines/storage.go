@@ -11,14 +11,14 @@ import (
 )
 
 func CliInstallStoragePipeline(opts *options.InstallStorageOptions) error {
-	var terminusVersion, _ = phase.GetTerminusVersion()
+	var terminusVersion, _ = phase.GetOlaresVersion()
 	if terminusVersion != "" {
 		return errors.New("Olares is already installed, please uninstall it first.")
 	}
 
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
-	arg.SetTerminusVersion(opts.Version)
+	arg.SetOlaresVersion(opts.Version)
 	arg.SetStorage(getStorageValueFromEnv())
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)

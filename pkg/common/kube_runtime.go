@@ -19,6 +19,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"net"
 	"os"
 	"path/filepath"
@@ -52,7 +53,7 @@ type Argument struct {
 	KubernetesVersion   string `json:"kubernetes_version"`
 	KsEnable            bool   `json:"ks_enable"`
 	KsVersion           string `json:"ks_version"`
-	TerminusVersion     string `json:"terminus_version"`
+	OlaresVersion       string `json:"olares_version"`
 	Debug               bool   `json:"debug"`
 	IgnoreErr           bool   `json:"ignore_err"`
 	SkipPullImages      bool   `json:"skip_pull_images"`
@@ -245,7 +246,51 @@ func NewArgument() *Argument {
 	arg.IsCloudInstance, _ = strconv.ParseBool(os.Getenv(ENV_TERMINUS_IS_CLOUD_VERSION))
 	arg.PublicNetworkInfo.PubliclyAccessible, _ = strconv.ParseBool(os.Getenv(ENV_PUBLICLY_ACCESSIBLE))
 	arg.IsOlaresInContainer = os.Getenv("CONTAINER_MODE") == "oic"
+
+	if err := arg.LoadReleaseInfo(); err != nil {
+		fmt.Printf("error loading release info: %v", err)
+		os.Exit(1)
+	}
 	return arg
+}
+
+// LoadReleaseInfo loads base directory and version settings
+// from /etc/olares/release and environment variables,
+// with the latter takes precedence.
+// Note that the command line options --base-dir and --version
+// still have the highest priority and will override any values loaded here
+func (a *Argument) LoadReleaseInfo() error {
+	// load envs from the release file
+	// already existing envs are not overridden so
+	err := godotenv.Load(OlaresReleaseFile)
+
+	// silently ignore the non-existence of a release file
+	// otherwise, return the error
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	a.BaseDir = os.Getenv(ENV_OLARES_BASE_DIR)
+	a.OlaresVersion = os.Getenv(ENV_OLARES_VERSION)
+	return nil
+}
+
+func (a *Argument) SaveReleaseInfo() error {
+	if a.BaseDir == "" {
+		return errors.New("invalid: empty base directory")
+	}
+	if a.OlaresVersion == "" {
+		return errors.New("invalid: empty olares version")
+	}
+	releaseInfoMap := map[string]string{
+		ENV_OLARES_BASE_DIR: a.BaseDir,
+		ENV_OLARES_VERSION:  a.OlaresVersion,
+	}
+	if !util.IsExist(filepath.Dir(OlaresReleaseFile)) {
+		if err := os.MkdirAll(filepath.Dir(OlaresReleaseFile), 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %v", filepath.Dir(OlaresReleaseFile), err)
+		}
+	}
+	return godotenv.Write(releaseInfoMap, OlaresReleaseFile)
 }
 
 func (a *Argument) GetWslUserPath() string {
@@ -295,7 +340,7 @@ func (a *Argument) SetGPU(enable bool, share bool) {
 	a.GPU.Share = share
 }
 
-func (a *Argument) SetTerminusVersion(version string) {
+func (a *Argument) SetOlaresVersion(version string) {
 	if version == "" || len(version) <= 2 {
 		return
 	}
@@ -303,7 +348,7 @@ func (a *Argument) SetTerminusVersion(version string) {
 	if version[0] == 'v' {
 		version = version[1:]
 	}
-	a.TerminusVersion = version
+	a.OlaresVersion = version
 }
 
 func (a *Argument) SetRegistryMirrors(registryMirrors string) {
@@ -385,15 +430,20 @@ func (a *Argument) SetKubernetesVersion(kubeType string, kubeVersion string) {
 }
 
 func (a *Argument) SetBaseDir(dir string) {
-	if dir == "" {
-		dir = filepath.Join(a.SystemInfo.GetHomeDir(), common.DefaultBaseDir)
+	if dir != "" {
+		a.BaseDir = dir
 	}
-	a.BaseDir = dir
-	if dir != "" && !filepath.IsAbs(dir) {
-		dir, _ = filepath.Abs(dir)
-		if dir != "" {
-			a.BaseDir = dir
+	if a.BaseDir == "" {
+		a.BaseDir = filepath.Join(a.SystemInfo.GetHomeDir(), common.DefaultBaseDir)
+	}
+	if !filepath.IsAbs(a.BaseDir) {
+		var err error
+		var absBaseDir string
+		absBaseDir, err = filepath.Abs(a.BaseDir)
+		if err != nil {
+			panic(fmt.Errorf("failed to get absolute path for base directory %s: %v", a.BaseDir, err))
 		}
+		a.BaseDir = absBaseDir
 	}
 }
 
@@ -466,7 +516,7 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	}
 
 	base := connector.NewBaseRuntime(cluster.Name, connector.NewDialer(),
-		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.TerminusVersion, arg.ConsoleLogFileName, arg.ConsoleLogTruncate, arg.SystemInfo)
+		arg.Debug, arg.IgnoreErr, arg.Provider, arg.BaseDir, arg.OlaresVersion, arg.ConsoleLogFileName, arg.ConsoleLogTruncate, arg.SystemInfo)
 
 	clusterSpec := &cluster.Spec
 	defaultCluster, roleGroups := clusterSpec.SetDefaultClusterSpec(arg.InCluster, arg.SystemInfo.IsDarwin())

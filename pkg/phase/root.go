@@ -5,8 +5,8 @@ import (
 	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
-func GetTerminusVersion() (string, error) {
-	var terminusTask = &terminus.GetTerminusVersion{}
+func GetOlaresVersion() (string, error) {
+	var terminusTask = &terminus.GetOlaresVersion{}
 	return terminusTask.Execute()
 }
 

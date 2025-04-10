@@ -14,7 +14,7 @@ import (
 
 func InstallGpuDrivers(opt *options.InstallGpuOptions) error {
 	arg := common.NewArgument()
-	arg.SetTerminusVersion(opt.Version)
+	arg.SetOlaresVersion(opt.Version)
 	arg.SetCudaVersion(opt.Cuda)
 	arg.SetBaseDir(opt.BaseDir)
 	arg.SetConsoleLog("gpuinstall.log", true)
