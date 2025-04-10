@@ -197,6 +197,7 @@ const (
 	TerminusStateFilePrepared  = ".prepared"
 	TerminusStateFileInstalled = ".installed"
 	MasterHostConfigFile       = "master.conf"
+	OlaresReleaseFile          = "/etc/olares/release"
 )
 
 const (
@@ -276,6 +277,8 @@ const (
 )
 
 const (
+	ENV_OLARES_BASE_DIR              = "OLARES_BASE_DIR"
+	ENV_OLARES_VERSION               = "OLARES_VERSION"
 	ENV_TERMINUS_IS_CLOUD_VERSION    = "TERMINUS_IS_CLOUD_VERSION"
 	ENV_PUBLICLY_ACCESSIBLE          = "PUBLICLY_ACCESSIBLE"
 	ENV_KUBE_TYPE                    = "KUBE_TYPE"

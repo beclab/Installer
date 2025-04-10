@@ -46,6 +46,7 @@ require (
 	github.com/estesp/manifest-tool/v2 v2.1.6
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/libp2p/go-netroute v0.2.2
 	github.com/lithammer/dedent v1.1.0
 	github.com/mattn/go-sqlite3 v1.14.22

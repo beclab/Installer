@@ -10,7 +10,7 @@ import (
 
 func CheckDownloadInstallationPackage(opts *options.CliDownloadOptions) error {
 	arg := common.NewArgument()
-	arg.SetTerminusVersion(opts.Version)
+	arg.SetOlaresVersion(opts.Version)
 	arg.SetBaseDir(opts.BaseDir)
 
 	runtime, err := common.NewKubeRuntime(common.AllInOne, *arg)

@@ -20,7 +20,7 @@ func AddNodePipeline(opts *options.AddNodeOptions) error {
 	if opts.Version == "" {
 		return errors.New("Olares version must be specified")
 	}
-	arg.SetTerminusVersion(opts.Version)
+	arg.SetOlaresVersion(opts.Version)
 	if err := arg.LoadMasterHostConfigIfAny(); err != nil {
 		return errors.Wrap(err, "failed to load master host config")
 	}

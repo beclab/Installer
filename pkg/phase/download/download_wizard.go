@@ -12,7 +12,7 @@ func NewDownloadWizard(runtime *common.KubeRuntime) *pipeline.Pipeline {
 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
-		&terminus.InstallWizardDownloadModule{Version: runtime.Arg.TerminusVersion, DownloadCdnUrl: runtime.Arg.DownloadCdnUrl},
+		&terminus.InstallWizardDownloadModule{Version: runtime.Arg.OlaresVersion, DownloadCdnUrl: runtime.Arg.DownloadCdnUrl},
 	}
 
 	return &pipeline.Pipeline{

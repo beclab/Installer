@@ -16,11 +16,11 @@ func ChangeIPPipeline(opt *options.ChangeIPOptions) error {
 	terminusVersion := opt.Version
 	kubeType := phase.GetKubeType()
 	if terminusVersion == "" {
-		terminusVersion, _ = phase.GetTerminusVersion()
+		terminusVersion, _ = phase.GetOlaresVersion()
 	}
 
 	var arg = common.NewArgument()
-	arg.SetTerminusVersion(terminusVersion)
+	arg.SetOlaresVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
 	arg.SetConsoleLog("changeip.log", true)
 	arg.SetKubeVersion(kubeType)

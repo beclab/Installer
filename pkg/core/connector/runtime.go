@@ -47,12 +47,12 @@ type BaseRuntime struct {
 	roleHosts       map[string][]Host
 	deprecatedHosts map[string]string
 	cmdSed          string
-	terminusVersion string
+	olaresVersion   string
 	systemInfo      Systems
 	k8sClient       *kubernetes.Clientset
 }
 
-func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, terminusVersion string, consoleLogFileName string, consoleLogTruncate bool, systemInfo Systems) BaseRuntime {
+func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bool, sqlProvider storage.Provider, baseDir string, olaresVersion string, consoleLogFileName string, consoleLogTruncate bool, systemInfo Systems) BaseRuntime {
 	base := BaseRuntime{
 		ObjName:         name,
 		connector:       connector,
@@ -64,7 +64,7 @@ func NewBaseRuntime(name string, connector Connector, verbose bool, ignoreErr bo
 		deprecatedHosts: make(map[string]string),
 		cmdSed:          util.FormatSed(systemInfo.IsDarwin()),
 		systemInfo:      systemInfo,
-		terminusVersion: terminusVersion,
+		olaresVersion:   olaresVersion,
 	}
 
 	if systemInfo.IsWindows() {
@@ -139,7 +139,7 @@ func (b *BaseRuntime) GenerateBaseDir(baseDir string) error {
 }
 
 func (b *BaseRuntime) GenerateWorkDir() error {
-	installerPath := filepath.Join(b.baseDir, "versions", fmt.Sprintf("v%s", b.terminusVersion))
+	installerPath := filepath.Join(b.baseDir, "versions", fmt.Sprintf("v%s", b.olaresVersion))
 	if err := util.CreateDir(installerPath); err != nil {
 		return errors.Wrap(err, "create wizard dir failed")
 	}

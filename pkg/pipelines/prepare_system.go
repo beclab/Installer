@@ -14,7 +14,7 @@ import (
 
 func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 
-	var terminusVersion, _ = phase.GetTerminusVersion()
+	var terminusVersion, _ = phase.GetOlaresVersion()
 	if terminusVersion != "" {
 		return errors.New("Olares is already installed, please uninstall it first.")
 	}
@@ -23,7 +23,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
 	arg.SetMinikubeProfile(opts.MinikubeProfile)
-	arg.SetTerminusVersion(opts.Version)
+	arg.SetOlaresVersion(opts.Version)
 	arg.SetRegistryMirrors(opts.RegistryMirrors)
 	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetTokenMaxAge()
