@@ -8,7 +8,7 @@ image:
   ks_controller_manager_tag: "v3.3.0"
 
   ks_apiserver_repo: beclab/ks-apiserver
-  ks_apiserver_tag: "v3.3.0-ext-4"
+  ks_apiserver_tag: "v3.3.0-ext-5"
 
   ks_kubectl_repo: kubesphere/kubectl
   ks_kubectl_tag: "v1.22.0"
