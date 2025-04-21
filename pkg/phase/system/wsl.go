@@ -116,5 +116,6 @@ func (l *wslPhaseBuilder) build() []module.Module {
 				},
 			}
 		}).inBox(l.runtime)...).
-		addModule(&terminus.PreparedModule{})
+		addModule(&terminus.PreparedModule{}).
+		addModule(&terminus.WriteReleaseFileModule{})
 }

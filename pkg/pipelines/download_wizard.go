@@ -13,7 +13,7 @@ import (
 func DownloadInstallationWizard(opts *options.CliDownloadWizardOptions) error {
 	arg := common.NewArgument()
 	arg.SetKubeVersion(opts.KubeType)
-	arg.SetTerminusVersion(opts.Version)
+	arg.SetOlaresVersion(opts.Version)
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetDownloadCdnUrl(opts.DownloadCdnUrl)
 

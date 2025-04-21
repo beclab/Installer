@@ -12,7 +12,7 @@ func StartPreCheckPipeline(opt *options.PreCheckOptions) error {
 	terminusVersion := opt.Version
 
 	var arg = common.NewArgument()
-	arg.SetTerminusVersion(terminusVersion)
+	arg.SetOlaresVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
 	arg.SetConsoleLog("precheck.log", true)
 

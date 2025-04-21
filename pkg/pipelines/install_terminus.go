@@ -17,7 +17,7 @@ import (
 )
 
 func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
-	var terminusVersion, _ = phase.GetTerminusVersion()
+	var terminusVersion, _ = phase.GetOlaresVersion()
 	if terminusVersion != "" {
 		return errors.New("Olares is already installed, please uninstall it first.")
 	}
@@ -25,7 +25,7 @@ func CliInstallTerminusPipeline(opts *options.CliTerminusInstallOptions) error {
 	arg := common.NewArgument()
 	arg.SetBaseDir(opts.BaseDir)
 	arg.SetKubeVersion(opts.KubeType)
-	arg.SetTerminusVersion(opts.Version)
+	arg.SetOlaresVersion(opts.Version)
 	arg.SetMinikubeProfile(opts.MiniKubeProfile)
 	arg.SetStorage(getStorageValueFromEnv())
 	arg.SetReverseProxy()

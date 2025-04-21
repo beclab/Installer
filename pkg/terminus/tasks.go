@@ -42,10 +42,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-type GetTerminusVersion struct {
+type GetOlaresVersion struct {
 }
 
-func (t *GetTerminusVersion) Execute() (string, error) {
+func (t *GetOlaresVersion) Execute() (string, error) {
 	var kubectlpath, err = util.GetCommand(common.CommandKubectl)
 	if err != nil {
 		return "", fmt.Errorf("kubectl not found, Olares might not be installed.")
@@ -156,7 +156,7 @@ type Download struct {
 }
 
 func (t *Download) Execute(runtime connector.Runtime) error {
-	if t.KubeConf.Arg.TerminusVersion == "" {
+	if t.KubeConf.Arg.OlaresVersion == "" {
 		return errors.New("unknown version to download")
 	}
 
@@ -227,11 +227,30 @@ type PrepareFinished struct {
 
 func (t *PrepareFinished) Execute(runtime connector.Runtime) error {
 	var preparedFile = filepath.Join(runtime.GetBaseDir(), common.TerminusStateFilePrepared)
-	return util.WriteFile(preparedFile, []byte(t.KubeConf.Arg.TerminusVersion), cc.FileMode0644)
+	return util.WriteFile(preparedFile, []byte(t.KubeConf.Arg.OlaresVersion), cc.FileMode0644)
 	// if _, err := runtime.GetRunner().Cmd(fmt.Sprintf("touch %s", preparedFile), false, true); err != nil {
 	// 	return err
 	// }
 	// return nil
+}
+
+type WriteReleaseFile struct {
+	common.KubeAction
+}
+
+func (t *WriteReleaseFile) Execute(runtime connector.Runtime) error {
+	if util.IsExist(common.OlaresReleaseFile) {
+		logger.Warnf("found existing release file: %s, overriding ...", common.OlaresReleaseFile)
+	}
+	return t.KubeConf.Arg.SaveReleaseInfo()
+}
+
+type RemoveReleaseFile struct {
+	common.KubeAction
+}
+
+func (t *RemoveReleaseFile) Execute(runtime connector.Runtime) error {
+	return os.Remove(common.OlaresReleaseFile)
 }
 
 type CheckPrepared struct {
@@ -278,7 +297,7 @@ func (t *GenerateOlaresUninstallScript) Execute(runtime connector.Runtime) error
 	data := util.Data{
 		"BaseDir": runtime.GetBaseDir(),
 		"Phase":   "install",
-		"Version": t.KubeConf.Arg.TerminusVersion,
+		"Version": t.KubeConf.Arg.OlaresVersion,
 	}
 
 	uninstallScriptStr, err := util.Render(uninstalltemplate.OlaresUninstallScriptValues, data)
@@ -306,7 +325,7 @@ type InstallFinished struct {
 }
 
 func (t *InstallFinished) Execute(runtime connector.Runtime) error {
-	var content = fmt.Sprintf("%s %s", t.KubeConf.Arg.TerminusVersion, t.KubeConf.Arg.Kubetype)
+	var content = fmt.Sprintf("%s %s", t.KubeConf.Arg.OlaresVersion, t.KubeConf.Arg.Kubetype)
 	var phaseState = path.Join(runtime.GetBaseDir(), common.TerminusStateFileInstalled)
 	if err := util.WriteFile(phaseState, []byte(content), cc.FileMode0644); err != nil {
 		return err

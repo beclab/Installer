@@ -16,11 +16,11 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 	kubeType := phase.GetKubeType()
 
 	if terminusVersion == "" {
-		terminusVersion, _ = phase.GetTerminusVersion()
+		terminusVersion, _ = phase.GetOlaresVersion()
 	}
 
 	var arg = common.NewArgument()
-	arg.SetTerminusVersion(terminusVersion)
+	arg.SetOlaresVersion(terminusVersion)
 	arg.SetBaseDir(opt.BaseDir)
 	arg.SetConsoleLog("uninstall.log", true)
 	arg.SetKubeVersion(kubeType)
@@ -45,7 +45,7 @@ func UninstallTerminusPipeline(opt *options.CliTerminusUninstallOptions) error {
 		phaseName = cluster.PhaseDownload.String()
 	}
 
-	var p = cluster.UninstallTerminus(phaseName, arg, runtime)
+	var p = cluster.UninstallTerminus(phaseName, runtime)
 	if err := p.Start(); err != nil {
 		logger.Errorf("uninstall Olares failed: %v", err)
 		return err
