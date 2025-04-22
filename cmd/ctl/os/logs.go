@@ -2,6 +2,7 @@ package os
 
 import (
 	"archive/tar"
+	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"compress/gzip"
 	"fmt"
@@ -60,11 +61,74 @@ func collectLogs(options *LogCollectOptions) error {
 		return fmt.Errorf("failed to collect systemd logs: %v", err)
 	}
 
+	fmt.Println("collecting logs from kubernetes cluster...")
 	if err := collectKubernetesLogs(tw, options); err != nil {
 		return fmt.Errorf("failed to collect kubernetes logs: %v", err)
 	}
 
+	fmt.Println("collecting olares-cli logs...")
+	if err := collectOlaresCLILogs(tw, options); err != nil {
+		return fmt.Errorf("failed to collect OlaresCLI logs: %v", err)
+	}
+
+	fmt.Println("collecting network configs...")
+	if err := collectNetworkConfigs(tw, options); err != nil {
+		return fmt.Errorf("failed to collect network configs: %v", err)
+	}
+
 	fmt.Printf("logs have been collected and archived in: %s\n", archiveName)
+	return nil
+}
+
+func collectOlaresCLILogs(tw *tar.Writer, options *LogCollectOptions) error {
+	basedir, err := getBaseDir()
+	if err != nil {
+		return err
+	}
+	cliLogDir := filepath.Join(basedir, "logs")
+	if _, err := os.Stat(cliLogDir); err != nil {
+		fmt.Printf("warning: directory %s does not exist, skipping collecting olares-cli logs\n", cliLogDir)
+		return nil
+	}
+	err = filepath.Walk(cliLogDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		srcFile, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open file %s: %v", path, err)
+		}
+		defer srcFile.Close()
+
+		relPath, err := filepath.Rel(cliLogDir, path)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %v", err)
+		}
+
+		header := &tar.Header{
+			Name:    filepath.Join("olares-cli", relPath),
+			Mode:    0644,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write header for %s: %v", path, err)
+		}
+
+		// stream file contents to tar
+		if _, err := io.CopyN(tw, srcFile, header.Size); err != nil {
+			return fmt.Errorf("failed to write data for %s: %v", path, err)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to collect olares-cli logs from %s: %v", cliLogDir, err)
+	}
 	return nil
 }
 
@@ -144,7 +208,7 @@ func collectSystemdLogs(tw *tar.Writer, options *LogCollectOptions) error {
 			return fmt.Errorf("failed to write header for %s: %v", service, err)
 		}
 
-		if _, err := io.Copy(tw, logFile); err != nil {
+		if _, err := io.CopyN(tw, logFile, header.Size); err != nil {
 			return fmt.Errorf("failed to write logs for %s: %v", service, err)
 		}
 	}
@@ -187,7 +251,7 @@ func collectKubernetesLogs(tw *tar.Writer, options *LogCollectOptions) error {
 			}
 
 			// stream file contents to tar
-			if _, err := io.Copy(tw, srcFile); err != nil {
+			if _, err := io.CopyN(tw, srcFile, header.Size); err != nil {
 				return fmt.Errorf("failed to write data for %s: %v", path, err)
 			}
 			return nil
@@ -202,8 +266,28 @@ func collectKubernetesLogs(tw *tar.Writer, options *LogCollectOptions) error {
 		return nil
 	}
 
-	cmd := exec.Command("kubectl", "describe", "pods", "--all-namespaces")
-	output, err := tryKubectlCommand(cmd, "describe pods", options)
+	cmd := exec.Command("kubectl", "get", "pods", "--all-namespaces", "-o", "wide")
+	output, err := tryKubectlCommand(cmd, "get pods", options)
+	if err != nil && !options.IgnoreKubeErrors {
+		return err
+	}
+	if err == nil {
+		header := &tar.Header{
+			Name:    "pods-list.txt",
+			Mode:    0644,
+			Size:    int64(len(output)),
+			ModTime: time.Now(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write pods list header: %v", err)
+		}
+		if _, err := tw.Write(output); err != nil {
+			return fmt.Errorf("failed to write pods list data: %v", err)
+		}
+	}
+
+	cmd = exec.Command("kubectl", "describe", "pods", "--all-namespaces")
+	output, err = tryKubectlCommand(cmd, "describe pods", options)
 	if err != nil && !options.IgnoreKubeErrors {
 		return err
 	}
@@ -222,7 +306,125 @@ func collectKubernetesLogs(tw *tar.Writer, options *LogCollectOptions) error {
 		}
 	}
 
+	cmd = exec.Command("kubectl", "describe", "node")
+	output, err = tryKubectlCommand(cmd, "describe node", options)
+	if err != nil && !options.IgnoreKubeErrors {
+		return err
+	}
+	if err == nil {
+		header := &tar.Header{
+			Name:    "node-describe.txt",
+			Mode:    0644,
+			Size:    int64(len(output)),
+			ModTime: time.Now(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write node description header: %v", err)
+		}
+		if _, err := tw.Write(output); err != nil {
+			return fmt.Errorf("failed to write node description data: %v", err)
+		}
+	}
+
 	return nil
+}
+
+func collectNetworkConfigs(tw *tar.Writer, options *LogCollectOptions) error {
+	if _, err := util.GetCommand("ip"); err == nil {
+		cmd := exec.Command("ip", "address")
+		output, err := cmd.Output()
+		if err != nil {
+			return err
+		}
+		header := &tar.Header{
+			Name:    "ip-address.txt",
+			Mode:    0644,
+			Size:    int64(len(output)),
+			ModTime: time.Now(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write ip address header: %v", err)
+		}
+		if _, err := tw.Write(output); err != nil {
+			return fmt.Errorf("failed to write ip address data: %v", err)
+		}
+
+		cmd = exec.Command("ip", "route")
+		output, err = cmd.Output()
+		if err != nil {
+			return err
+		}
+		header = &tar.Header{
+			Name:    "ip-route.txt",
+			Mode:    0644,
+			Size:    int64(len(output)),
+			ModTime: time.Now(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write ip route header: %v", err)
+		}
+		if _, err := tw.Write(output); err != nil {
+			return fmt.Errorf("failed to write ip route data: %v", err)
+		}
+	}
+
+	if _, err := util.GetCommand("iptables-save"); err == nil {
+		cmd := exec.Command("iptables-save")
+		output, err := cmd.Output()
+		if err != nil {
+			return err
+		}
+		header := &tar.Header{
+			Name:    "iptables.txt",
+			Mode:    0644,
+			Size:    int64(len(output)),
+			ModTime: time.Now(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write iptables header: %v", err)
+		}
+		if _, err := tw.Write(output); err != nil {
+			return fmt.Errorf("failed to write iptables data: %v", err)
+		}
+	}
+
+	if _, err := util.GetCommand("nft"); err == nil {
+		cmd := exec.Command("nft", "list", "ruleset")
+		output, err := cmd.Output()
+		if err != nil {
+			return err
+		}
+		header := &tar.Header{
+			Name:    "nftables.txt",
+			Mode:    0644,
+			Size:    int64(len(output)),
+			ModTime: time.Now(),
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("failed to write nftables header: %v", err)
+		}
+		if _, err := tw.Write(output); err != nil {
+			return fmt.Errorf("failed to write nftables data: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func getBaseDir() (string, error) {
+	// quick path to get basedir from argument instance
+	arg := &common.Argument{}
+	if err := arg.LoadReleaseInfo(); err != nil {
+		return "", fmt.Errorf("failed to load olares release info: %v", err)
+	}
+	if arg.BaseDir != "" {
+		return arg.BaseDir, nil
+	}
+	homeDir, err := util.Home()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home dir: %v", err)
+	}
+	return filepath.Join(homeDir, ".olares"), nil
 }
 
 func tryKubectlCommand(cmd *exec.Cmd, description string, options *LogCollectOptions) ([]byte, error) {
@@ -265,6 +467,8 @@ func NewCmdLogs() *cobra.Command {
 - MinIO logs
 - etcd logs
 - Olaresd logs
+- olares-cli logs
+- network configurations
 - Kubernetes pod info and logs
 - Kubernetes node info`,
 		Run: func(cmd *cobra.Command, args []string) {
