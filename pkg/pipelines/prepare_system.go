@@ -23,7 +23,7 @@ import (
 
 func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions, components []string) error {
 	var terminusVersion, _ = phase.GetOlaresVersion()
-	if terminusVersion != "" && len(components) > 0 {
+	if terminusVersion != "" && len(components) == 0 {
 		return errors.New("Olares is already installed, please uninstall it first.")
 	}
 
@@ -61,7 +61,7 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions, components []s
 
 	for _, component := range components {
 		switch component {
-		case "image":
+		case "image", "images":
 			p := &pipeline.Pipeline{
 				Name: "Preload Container Images",
 				Modules: []module.Module{

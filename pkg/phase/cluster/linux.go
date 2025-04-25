@@ -99,5 +99,6 @@ func (l *linuxInstallPhaseBuilder) build() []module.Module {
 			return l.installBackup()
 		}).withBackup(l.runtime)...).
 		addModule(&terminus.InstalledModule{}).
+		addModule(&terminus.WriteReleaseFileModule{}).
 		addModule(&terminus.WelcomeModule{})
 }

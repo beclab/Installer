@@ -22,9 +22,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"net"
 	"os"
 	"regexp"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 	"time"
 
@@ -38,6 +42,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/version/kubesphere"
 	"github.com/pkg/errors"
 	versionutil "k8s.io/apimachinery/pkg/util/version"
+	kclient "k8s.io/client-go/kubernetes"
 )
 
 type RunChecks struct {
@@ -141,6 +146,73 @@ func (t *SystemdCheck) Check(runtime connector.Runtime) error {
 		return nil
 	}
 	return errors.New("this system is not inited by systemd, which is required by Olares")
+}
+
+type MasterNodeReadyCheck struct{}
+
+func (t *MasterNodeReadyCheck) Name() string {
+	return "MasterNodeReady"
+}
+
+func (t *MasterNodeReadyCheck) Check(runtime connector.Runtime) error {
+	config, err := ctrl.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get kubernetes config: %s", err)
+	}
+	client, err := kclient.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes client: %s", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	nodes, err := client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list nodes: %s", err)
+	}
+	for _, node := range nodes.Items {
+		roles := sets.NewString()
+		for k, v := range node.Labels {
+			switch {
+			case strings.HasPrefix(k, "node-role.kubernetes.io/"):
+				if role := strings.TrimPrefix(k, "node-role.kubernetes.io/"); len(role) > 0 {
+					roles.Insert(role)
+				}
+
+			case k == "kubernetes.io/role" && v != "":
+				roles.Insert(v)
+			}
+		}
+		if !roles.HasAny("control-plane", "master") {
+			continue
+		}
+		if node.Spec.Unschedulable {
+			return fmt.Errorf("node %s is unschedulable", node.Name)
+		}
+		var readyConditionExists bool
+		for _, condition := range node.Status.Conditions {
+			if condition.Type == corev1.NodeReady {
+				readyConditionExists = true
+				if condition.Status != corev1.ConditionTrue {
+					return fmt.Errorf("node %s is not ready", node.Name)
+				}
+			}
+		}
+		if !readyConditionExists {
+			return fmt.Errorf("node %s's condition is unknown", node.Name)
+		}
+	}
+
+	return nil
+}
+
+type RootPartitionAvailableSpaceCheck struct{}
+
+func (t *RootPartitionAvailableSpaceCheck) Name() string {
+	return "RootPartitionAvailableSpace"
+}
+
+func (t *RootPartitionAvailableSpaceCheck) Check(runtime connector.Runtime) error {
+	return nil
 }
 
 type ValidResolvConfCheck struct{}

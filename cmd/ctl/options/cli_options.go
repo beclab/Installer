@@ -146,3 +146,17 @@ func (o *MasterInfoOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
 	(&o.MasterHostConfig).AddFlags(cmd.Flags())
 }
+
+type UpgradeOptions struct {
+	Version string
+	BaseDir string
+}
+
+func NewUpgradeOptions() *UpgradeOptions {
+	return &UpgradeOptions{}
+}
+
+func (o *UpgradeOptions) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "Set target Olares version to upgrade to, e.g., 1.10.0, 1.10.0-20241109")
+	cmd.Flags().StringVarP(&o.BaseDir, "base-dir", "b", "", "Set Olares package base dir, defaults to $HOME/"+cc.DefaultBaseDir)
+}

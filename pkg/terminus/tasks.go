@@ -1,30 +1,31 @@
 package terminus
 
 import (
-	"bytetrade.io/web3os/installer/pkg/storage"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"sync"
 	"time"
+
+	"bytetrade.io/web3os/installer/pkg/storage"
+	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	bootstraptpl "bytetrade.io/web3os/installer/pkg/bootstrap/os/templates"
 	"bytetrade.io/web3os/installer/pkg/core/action"
@@ -240,7 +241,7 @@ type WriteReleaseFile struct {
 
 func (t *WriteReleaseFile) Execute(runtime connector.Runtime) error {
 	if util.IsExist(common.OlaresReleaseFile) {
-		logger.Warnf("found existing release file: %s, overriding ...", common.OlaresReleaseFile)
+		logger.Debugf("found existing release file: %s, overriding ...", common.OlaresReleaseFile)
 	}
 	return t.KubeConf.Arg.SaveReleaseInfo()
 }

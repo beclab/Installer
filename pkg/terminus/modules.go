@@ -1,6 +1,11 @@
 package terminus
 
 import (
+	"fmt"
+	"os"
+	"path"
+	"time"
+
 	bootstrapos "bytetrade.io/web3os/installer/pkg/bootstrap/os"
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/common"
@@ -22,10 +27,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/storage"
 	storageemplates "bytetrade.io/web3os/installer/pkg/storage/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
-	"fmt"
-	"os"
-	"path"
-	"time"
 )
 
 type InstallWizardDownloadModule struct {

@@ -267,6 +267,9 @@ const (
 
 	CacheCountPodsUsingHostIP = "count_pods_using_host_ip"
 
+	CacheUpgradeUsers     = "upgrade_users"
+	CacheUpgradeAdminUser = "upgrade_admin_user"
+
 	CacheWindowsDistroStoreLocation     = "windows_distro_store_location"
 	CacheWindowsDistroStoreLocationNums = "windows_distro_store_location_nums"
 )

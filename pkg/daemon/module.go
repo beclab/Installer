@@ -60,6 +60,12 @@ func (m *ReplaceOlaresdBinaryModule) Init() {
 		Retry: 3,
 	}
 
+	updateEnv := &task.LocalTask{
+		Name:   "UpdateOlaresdEnv",
+		Desc:   "Update olaresd env",
+		Action: new(UpdateOlaresdServiceEnv),
+	}
+
 	restart := &task.LocalTask{
 		Name: "RestartOlaresd",
 		Desc: "Restart olaresd",
@@ -71,6 +77,7 @@ func (m *ReplaceOlaresdBinaryModule) Init() {
 
 	m.Tasks = []task.Interface{
 		replace,
+		updateEnv,
 		restart,
 	}
 
