@@ -1,10 +1,11 @@
 package os
 
 import (
+	"log"
+
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 type InstallOsOptions struct {

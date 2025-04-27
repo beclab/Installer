@@ -44,6 +44,20 @@ func (g *InstallTerminusdBinary) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type UpdateOlaresdServiceEnv struct {
+	common.KubeAction
+}
+
+func (a *UpdateOlaresdServiceEnv) Execute(runtime connector.Runtime) error {
+	envFilePath := filepath.Join("/etc/systemd/system/", templates.TerminusdEnv.Name())
+	versionKey := "INSTALLED_VERSION"
+	updateVersionCMD := fmt.Sprintf("sed -i '/%s/c\\%s=%s' %s ", versionKey, versionKey, a.KubeConf.Arg.OlaresVersion, envFilePath)
+	if _, err := runtime.GetRunner().SudoCmd(updateVersionCMD, false, false); err != nil {
+		return fmt.Errorf("update olaresd env failed: %v", err)
+	}
+	return nil
+}
+
 type GenerateTerminusdServiceEnv struct {
 	common.KubeAction
 }

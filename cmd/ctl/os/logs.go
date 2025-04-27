@@ -174,6 +174,14 @@ func collectSystemdLogs(tw *tar.Writer, options *LogCollectOptions) error {
 			args = append(args, "-n", fmt.Sprintf("%d", options.MaxLines))
 		}
 
+		if options.Since != "" && options.MaxLines > 0 {
+			// this is a journalctl bug
+			// where -S and -n combined results in the latest logs truncated
+			// rather than the old logs
+			// a -r corrects the truncate behavior
+			args = append(args, "-r")
+		}
+
 		// execute journalctl and write directly to temp file
 		// don't just use the command output because that's too memory-consuming
 		// the same logic goes to the os.Open and io.Copy rather than os.ReadFile

@@ -1,21 +1,29 @@
 package pipelines
 
 import (
+	"bytetrade.io/web3os/installer/pkg/core/logger"
+	"bytetrade.io/web3os/installer/pkg/daemon"
 	"errors"
 	"fmt"
 	"os"
 	"path"
 
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
+	bootstrapos "bytetrade.io/web3os/installer/pkg/bootstrap/os"
+	"bytetrade.io/web3os/installer/pkg/bootstrap/patch"
 	"bytetrade.io/web3os/installer/pkg/common"
+	"bytetrade.io/web3os/installer/pkg/container"
+	"bytetrade.io/web3os/installer/pkg/core/module"
+	"bytetrade.io/web3os/installer/pkg/core/pipeline"
+	"bytetrade.io/web3os/installer/pkg/images"
+	"bytetrade.io/web3os/installer/pkg/manifest"
 	"bytetrade.io/web3os/installer/pkg/phase"
 	"bytetrade.io/web3os/installer/pkg/phase/system"
 )
 
-func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
-
+func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions, components []string) error {
 	var terminusVersion, _ = phase.GetOlaresVersion()
-	if terminusVersion != "" {
+	if terminusVersion != "" && len(components) == 0 {
 		return errors.New("Olares is already installed, please uninstall it first.")
 	}
 
@@ -34,13 +42,94 @@ func PrepareSystemPipeline(opts *options.CliPrepareSystemOptions) error {
 		return fmt.Errorf("error creating runtime: %w", err)
 	}
 
-	manifest := path.Join(runtime.GetInstallerDir(), "installation.manifest")
+	manifestPath := path.Join(runtime.GetInstallerDir(), "installation.manifest")
+	runtime.Arg.SetManifest(manifestPath)
 
-	runtime.Arg.SetManifest(manifest)
+	manifestMap, err := manifest.ReadAll(manifestPath)
+	if err != nil {
+		return fmt.Errorf("error reading manifest: %w", err)
+	}
 
-	var p = system.PrepareSystemPhase(runtime)
-	if err := p.Start(); err != nil {
-		return err
+	// if no components specified, run all
+	if len(components) == 0 {
+		var p = system.PrepareSystemPhase(runtime)
+		if err := p.Start(); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	for _, component := range components {
+		switch component {
+		case "image", "images":
+			p := &pipeline.Pipeline{
+				Name: "Preload Container Images",
+				Modules: []module.Module{
+					&images.PreloadImagesModule{
+						ManifestModule: manifest.ManifestModule{
+							Manifest: manifestMap,
+							BaseDir:  runtime.GetBaseDir(),
+						},
+					},
+				},
+				Runtime: runtime,
+			}
+			if err := p.Start(); err != nil {
+				return fmt.Errorf("error preparing images: %w", err)
+			}
+		case "olaresd":
+			p := &pipeline.Pipeline{
+				Name: "Prepare Olaresd daemon",
+				Modules: []module.Module{
+					&daemon.ReplaceOlaresdBinaryModule{
+						ManifestModule: manifest.ManifestModule{
+							Manifest: manifestMap,
+							BaseDir:  runtime.GetBaseDir(),
+						},
+					},
+				},
+				Runtime: runtime,
+			}
+			if err := p.Start(); err != nil {
+				return fmt.Errorf("error preparing os environment: %w", err)
+			}
+		case "os":
+			p := &pipeline.Pipeline{
+				Name: "Prepare OS environment",
+				Modules: []module.Module{
+					&bootstrapos.PvePatchModule{Skip: !runtime.GetSystemInfo().IsPveOrPveLxc()},
+					&patch.InstallDepsModule{
+						ManifestModule: manifest.ManifestModule{
+							Manifest: manifestMap,
+							BaseDir:  runtime.GetBaseDir(),
+						},
+					},
+					&bootstrapos.ConfigSystemModule{},
+				},
+				Runtime: runtime,
+			}
+			if err := p.Start(); err != nil {
+				return fmt.Errorf("error preparing os environment: %w", err)
+			}
+		case "container":
+			p := &pipeline.Pipeline{
+				Name: "Install Container Runtime",
+				Modules: []module.Module{
+					&container.InstallContainerModule{
+						ManifestModule: manifest.ManifestModule{
+							Manifest: manifestMap,
+							BaseDir:  runtime.GetBaseDir(),
+						},
+					},
+				},
+				Runtime: runtime,
+			}
+			if err := p.Start(); err != nil {
+				return fmt.Errorf("error setting up container runtime: %w", err)
+			}
+		default:
+			logger.Warnf("unkonwn component: %s", component)
+		}
 	}
 
 	return nil

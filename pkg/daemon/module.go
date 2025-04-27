@@ -4,6 +4,7 @@ import (
 	"bytetrade.io/web3os/installer/pkg/common"
 	"bytetrade.io/web3os/installer/pkg/core/task"
 	"bytetrade.io/web3os/installer/pkg/manifest"
+	"bytetrade.io/web3os/installer/pkg/terminus"
 )
 
 type UninstallTerminusdModule struct {
@@ -36,6 +37,50 @@ func (u *UninstallTerminusdModule) Init() {
 		disableService,
 		uninstall,
 	}
+}
+
+type ReplaceOlaresdBinaryModule struct {
+	common.KubeModule
+	manifest.ManifestModule
+}
+
+func (m *ReplaceOlaresdBinaryModule) Init() {
+	m.Name = "ReplaceOlaresdBinaryModule"
+	m.Desc = "Replace olaresd"
+
+	replace := &task.LocalTask{
+		Name: "ReplaceOlaresdBinary",
+		Desc: "Replace olaresd binary",
+		Action: &InstallTerminusdBinary{
+			ManifestAction: manifest.ManifestAction{
+				BaseDir:  m.BaseDir,
+				Manifest: m.Manifest,
+			},
+		},
+		Retry: 3,
+	}
+
+	updateEnv := &task.LocalTask{
+		Name:   "UpdateOlaresdEnv",
+		Desc:   "Update olaresd env",
+		Action: new(UpdateOlaresdServiceEnv),
+	}
+
+	restart := &task.LocalTask{
+		Name: "RestartOlaresd",
+		Desc: "Restart olaresd",
+		Action: &terminus.SystemctlCommand{
+			Command:   "restart",
+			UnitNames: []string{"olaresd"},
+		},
+	}
+
+	m.Tasks = []task.Interface{
+		replace,
+		updateEnv,
+		restart,
+	}
+
 }
 
 type InstallTerminusdBinaryModule struct {

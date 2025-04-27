@@ -1,10 +1,11 @@
 package os
 
 import (
+	"log"
+
 	"bytetrade.io/web3os/installer/cmd/ctl/options"
 	"bytetrade.io/web3os/installer/pkg/pipelines"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 type PrepareSystemOptions struct {
@@ -20,11 +21,10 @@ func NewPrepareSystemOptions() *PrepareSystemOptions {
 func NewCmdPrepare() *cobra.Command {
 	o := NewPrepareSystemOptions()
 	cmd := &cobra.Command{
-		Use:   "prepare",
+		Use:   "prepare [component1 component2 ...]",
 		Short: "Prepare install",
 		Run: func(cmd *cobra.Command, args []string) {
-
-			if err := pipelines.PrepareSystemPipeline(o.PrepareOptions); err != nil {
+			if err := pipelines.PrepareSystemPipeline(o.PrepareOptions, args); err != nil {
 				log.Fatalf("error: %v", err)
 			}
 		},
