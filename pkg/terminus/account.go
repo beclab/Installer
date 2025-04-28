@@ -49,7 +49,7 @@ func (s *GetUserInfo) Execute(runtime connector.Runtime) error {
 		return err
 	}
 	logger.Infof("using Olares ID: %s", s.KubeConf.Arg.User.Email)
-	s.KubeConf.Arg.User.Password, err = s.getUserPassword()
+	s.KubeConf.Arg.User.Password, s.KubeConf.Arg.User.EncryptedPassword, err = s.getUserPassword()
 	if err != nil {
 		return err
 	}
@@ -134,15 +134,16 @@ func (s *GetUserInfo) getUserEmail() (string, error) {
 	return userEmail, nil
 }
 
-func (s *GetUserInfo) getUserPassword() (string, error) {
+func (s *GetUserInfo) getUserPassword() (string, string, error) {
 	userPassword := strings.TrimSpace(os.Getenv("TERMINUS_OS_PASSWORD"))
+	if len(userPassword) != 32 && len(userPassword) != 0 {
+		return "", "", fmt.Errorf("invalid password \"%s\" set in env: length should be equal 32, please reset", userPassword)
+
+	}
 	if len(userPassword) == 0 {
-		return utils.GeneratePassword(8)
+		return utils.GenerateEncryptedPassword(8)
 	}
-	if len(userPassword) < 6 || len(userPassword) > 32 {
-		return "", fmt.Errorf("invalid password \"%s\" set in env: length should be between 6 and 32, please reset", userPassword)
-	}
-	return userPassword, nil
+	return userPassword, userPassword, nil
 }
 
 type SetAccountValues struct {
@@ -151,14 +152,10 @@ type SetAccountValues struct {
 
 func (p *SetAccountValues) Execute(runtime connector.Runtime) error {
 	var accountFile = path.Join(runtime.GetInstallerDir(), "wizard", "config", "account", accounttemplates.AccountValues.Name())
-	//encryptedPassword, err := util.Bcrypt(p.KubeConf.Arg.User.Password)
-	//if err != nil {
-	//	return errors.Wrap(err, "failed to encrypt account password")
-	//}
+
 	var data = util.Data{
-		"UserName": p.KubeConf.Arg.User.UserName,
-		//"Password":   encryptedPassword,
-		"Password":   p.KubeConf.Arg.User.Password,
+		"UserName":   p.KubeConf.Arg.User.UserName,
+		"Password":   p.KubeConf.Arg.User.EncryptedPassword,
 		"Email":      p.KubeConf.Arg.User.Email,
 		"DomainName": p.KubeConf.Arg.User.DomainName,
 	}

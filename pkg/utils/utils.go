@@ -19,6 +19,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"bytetrade.io/web3os/backups-sdk/pkg/utils"
 	crypto "crypto/rand"
 	"fmt"
 	"golang.org/x/term"
@@ -215,6 +216,14 @@ func GeneratePassword(length int) (string, error) {
 		password[i] = charset[index.Int64()]
 	}
 	return string(password), nil
+}
+
+func GenerateEncryptedPassword(length int) (string, string, error) {
+	plainText, err := GeneratePassword(length)
+	if err != nil {
+		return "", "", err
+	}
+	return plainText, utils.MD5(plainText + "@Olares2025"), nil
 }
 
 func RemoveAnsiCodes(input string) string {
