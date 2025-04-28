@@ -218,10 +218,11 @@ type PublicNetworkInfo struct {
 }
 
 type User struct {
-	UserName   string `json:"user_name"`
-	Password   string `json:"user_password"`
-	Email      string `json:"user_email"`
-	DomainName string `json:"user_domain_name"`
+	UserName          string `json:"user_name"`
+	Password          string `json:"user_password"`
+	EncryptedPassword string `json:"-"`
+	Email             string `json:"user_email"`
+	DomainName        string `json:"user_domain_name"`
 }
 
 type Storage struct {
