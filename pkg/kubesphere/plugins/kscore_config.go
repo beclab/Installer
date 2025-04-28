@@ -221,8 +221,8 @@ func (t *CreateKsCoreConfig) Execute(runtime connector.Runtime) error {
 	values["Release"] = map[string]string{
 		"Namespace": common.NamespaceKubesphereSystem,
 	}
-	if err := utils.InstallCharts(context.Background(), actionConfig, settings, appKsCoreConfigName,
-		appPath, "", common.NamespaceKubesphereSystem, values); err != nil {
+	if err := utils.UpgradeCharts(context.Background(), actionConfig, settings, appKsCoreConfigName,
+		appPath, "", common.NamespaceKubesphereSystem, values, false); err != nil {
 		logger.Errorf("failed to install %s chart: %v", appKsCoreConfigName, err)
 		return err
 	}
@@ -235,8 +235,8 @@ func (t *CreateKsCoreConfig) Execute(runtime connector.Runtime) error {
 		"JwtSecret":   jwtSecretIf.(string),
 		"TokenMaxAge": t.KubeConf.Arg.TokenMaxAge * int64(time.Second),
 	}
-	if err := utils.InstallCharts(context.Background(), actionConfig, settings, appKsConfigName,
-		appPath, "", common.NamespaceKubesphereSystem, values); err != nil {
+	if err := utils.UpgradeCharts(context.Background(), actionConfig, settings, appKsConfigName,
+		appPath, "", common.NamespaceKubesphereSystem, values, false); err != nil {
 		logger.Errorf("failed to install %s chart: %v", appKsConfigName, err)
 		return err
 	}

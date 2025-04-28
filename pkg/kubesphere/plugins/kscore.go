@@ -57,8 +57,8 @@ func (t *CreateKsCore) Execute(runtime connector.Runtime) error {
 		"Namespace":    common.NamespaceKubesphereSystem,
 		"ReplicaCount": fmt.Sprintf("%d", masterNum),
 	}
-	if err := utils.InstallCharts(context.Background(), actionConfig, settings, appKsCoreName,
-		appPath, "", common.NamespaceKubesphereSystem, values); err != nil {
+	if err := utils.UpgradeCharts(context.Background(), actionConfig, settings, appKsCoreName,
+		appPath, "", common.NamespaceKubesphereSystem, values, false); err != nil {
 		logger.Errorf("failed to install %s chart: %v", appKsCoreName, err)
 		return err
 	}
