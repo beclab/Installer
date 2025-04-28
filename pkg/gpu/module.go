@@ -60,7 +60,8 @@ func (m *InstallDriversModule) Init() {
 type InstallContainerToolkitModule struct {
 	common.KubeModule
 	manifest.ManifestModule
-	Skip bool // enableGPU && ubuntuVersionSupport
+	Skip          bool // enableGPU && ubuntuVersionSupport
+	SkipCudaCheck bool
 }
 
 func (m *InstallContainerToolkitModule) IsSkip() bool {
@@ -69,40 +70,40 @@ func (m *InstallContainerToolkitModule) IsSkip() bool {
 
 func (m *InstallContainerToolkitModule) Init() {
 	m.Name = "InstallContainerToolkit"
+	prepareCollection := prepare.PrepareCollection{
+		new(ContainerdInstalled),
+	}
+	if !m.SkipCudaCheck {
+		prepareCollection = append(prepareCollection, new(CudaInstalled))
+	}
 
 	updateCudaSource := &task.RemoteTask{
-		Name:    "UpdateNvidiaToolkitSource",
-		Hosts:   m.Runtime.GetHostsByRole(common.Master),
-		Prepare: new(CudaInstalled),
-		Action: &UpdateCudaSource{
+		Name:  "UpdateNvidiaToolkitSource",
+		Hosts: m.Runtime.GetHostsByRole(common.Master),
+		Action: &UpdateNvidiaContainerToolkitSource{
 			ManifestAction: manifest.ManifestAction{
 				Manifest: m.Manifest,
 				BaseDir:  m.BaseDir,
 			},
 		},
+		Prepare:  &prepareCollection,
 		Parallel: false,
 		Retry:    1,
 	}
 
 	installNvidiaContainerToolkit := &task.RemoteTask{
-		Name:  "InstallNvidiaToolkit",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(CudaInstalled),
-			new(ContainerdInstalled),
-		},
+		Name:     "InstallNvidiaToolkit",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Prepare:  &prepareCollection,
 		Action:   new(InstallNvidiaContainerToolkit),
 		Parallel: false,
 		Retry:    1,
 	}
 
 	configureContainerdRuntime := &task.RemoteTask{
-		Name:  "ConfigureContainerdRuntime",
-		Hosts: m.Runtime.GetHostsByRole(common.Master),
-		Prepare: &prepare.PrepareCollection{
-			new(CudaInstalled),
-			new(ContainerdInstalled),
-		},
+		Name:     "ConfigureContainerdRuntime",
+		Hosts:    m.Runtime.GetHostsByRole(common.Master),
+		Prepare:  &prepareCollection,
 		Action:   new(ConfigureContainerdRuntime),
 		Parallel: false,
 		Retry:    1,
@@ -368,5 +369,16 @@ func (l *UninstallCudaModule) Init() {
 		uninstallCuda,
 		removeRuntime,
 	}
+
+}
+
+type ExitIfNoDriverUpgradeNeededModule struct {
+	common.KubeModule
+}
+
+func (l *ExitIfNoDriverUpgradeNeededModule) Init() {
+	l.Tasks = append(l.Tasks, &task.LocalTask{
+		Action: new(ExitIfNoDriverUpgradeNeeded),
+	})
 
 }

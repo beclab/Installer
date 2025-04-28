@@ -250,7 +250,11 @@ type RemoveReleaseFile struct {
 }
 
 func (t *RemoveReleaseFile) Execute(runtime connector.Runtime) error {
-	return os.Remove(common.OlaresReleaseFile)
+	err := os.Remove(common.OlaresReleaseFile)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 type CheckPrepared struct {

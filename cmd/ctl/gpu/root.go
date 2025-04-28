@@ -14,6 +14,7 @@ func NewCmdGpu() *cobra.Command {
 	rootGpuCmd.AddCommand(NewCmdUninstallpu())
 	rootGpuCmd.AddCommand(NewCmdEnableGpu())
 	rootGpuCmd.AddCommand(NewCmdDisableGpu())
+	rootGpuCmd.AddCommand(NewCmdUpgradeGpu())
 	rootGpuCmd.AddCommand(NewCmdGpuStatus())
 	return rootGpuCmd
 }
