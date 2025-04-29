@@ -56,8 +56,8 @@ func (t *DeploySnapshotController) Execute(runtime connector.Runtime) error {
 		"Namespace": common.NamespaceKubeSystem,
 	}
 
-	if err := utils.InstallCharts(ctx, actionConfig, settings, appName, appPath, "",
-		common.NamespaceKubeSystem, values); err != nil {
+	if err := utils.UpgradeCharts(ctx, actionConfig, settings, appName, appPath, "",
+		common.NamespaceKubeSystem, values, false); err != nil {
 		return err
 	}
 

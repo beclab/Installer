@@ -54,7 +54,7 @@ func (t *CreateMonitorNotification) Execute(runtime connector.Runtime) error {
 		"Replicas":  fmt.Sprintf("%d", replicas),
 	}
 
-	if err := utils.InstallCharts(ctx, actionConfig, settings, appName, appPath, "", common.NamespaceKubesphereMonitoringSystem, values); err != nil {
+	if err := utils.UpgradeCharts(ctx, actionConfig, settings, appName, appPath, "", common.NamespaceKubesphereMonitoringSystem, values, false); err != nil {
 		return err
 	}
 
