@@ -19,6 +19,7 @@ package util
 import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"encoding/binary"
+	"fmt"
 	"github.com/libp2p/go-netroute"
 	"github.com/pkg/errors"
 	"io"
@@ -269,8 +270,17 @@ func GetPublicIPsFromOS() ([]net.IP, error) {
 }
 
 func GetPublicIPFromAWSIMDS() (net.IP, error) {
+	token, err := GetTokenFROMAWSIMDS()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS IMDS token: %v", err)
+	}
 	url := "http://169.254.169.254/latest/meta-data/public-ipv4"
-	resp, err := http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build http request: %v", err)
+	}
+	req.Header.Set("X-aws-ec2-metadata-token", token)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to reach AWS metadata service")
 	}
@@ -280,5 +290,24 @@ func GetPublicIPFromAWSIMDS() (net.IP, error) {
 		return nil, errors.Wrap(err, "failed to read response from AWS metadata service")
 	}
 	logger.Debugf("retrieved public IP info from AWS metadata service: %s", string(body))
-	return net.ParseIP(string(body)), nil
+	return net.ParseIP(strings.TrimSpace(string(body))), nil
+}
+
+func GetTokenFROMAWSIMDS() (string, error) {
+	url := "http://169.254.169.254/latest/api/token"
+	req, err := http.NewRequest(http.MethodPut, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to build http request: %v", err)
+	}
+	req.Header.Set("X-aws-ec2-metadata-token-ttl-seconds", "600")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to reach AWS metadata service")
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response from AWS metadata service")
+	}
+	return strings.TrimSpace(string(body)), nil
 }
