@@ -4,6 +4,7 @@ import (
 	"bytetrade.io/web3os/installer/apis/kubekey/v1alpha2"
 	"context"
 	"fmt"
+	"github.com/Masterminds/semver/v3"
 	"net/url"
 	"os"
 	"path"
@@ -127,12 +128,12 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(err, "failed to apt-get install nvidia-open")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-kernel-open-550", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-kernel-open-550")
+	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-kernel-open-570", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-kernel-open-570")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-driver-550", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-driver-550")
+	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-driver-570", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-driver-570")
 	}
 
 	// if _, err := runtime.GetRunner().SudoCmd("apt-get -y install cuda-12-1", false, true); err != nil {
@@ -142,12 +143,12 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
-type UpdateCudaSource struct {
+type UpdateNvidiaContainerToolkitSource struct {
 	common.KubeAction
 	manifest.ManifestAction
 }
 
-func (t *UpdateCudaSource) Execute(runtime connector.Runtime) error {
+func (t *UpdateNvidiaContainerToolkitSource) Execute(runtime connector.Runtime) error {
 	var cmd string
 	gpgkey, err := t.Manifest.Get("libnvidia-gpgkey")
 	if err != nil {
@@ -704,5 +705,35 @@ func (t *RestartPlugin) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(errors.WithStack(err), "Failed to restart hami-scheduler")
 	}
 
+	return nil
+}
+
+type ExitIfNoDriverUpgradeNeeded struct {
+	common.KubeAction
+}
+
+func (t *ExitIfNoDriverUpgradeNeeded) Execute(runtime connector.Runtime) error {
+	gpuInfo, installed, err := utils.ExecNvidiaSmi(runtime)
+	if err != nil {
+		logger.Warn("error checking whether the GPU need upgrade:")
+		logger.Warn(err.Error())
+		logger.Warn("assuming an upgrade is needed and continue upgrading")
+		return nil
+	}
+	if !installed {
+		logger.Info("GPU driver not installed, will just install it")
+		return nil
+	}
+	installedVersion, err := semver.NewVersion(gpuInfo.DriverVersion)
+	if err != nil {
+		logger.Warn("error parsing the GPU driver version \"%s\": %v", gpuInfo.DriverVersion, err)
+		logger.Warn("assuming an upgrade is needed and continue installing")
+		return nil
+	}
+	targetVersion, _ := semver.NewVersion("570")
+	if !targetVersion.GreaterThan(installedVersion) {
+		logger.Info("current GPU driver version is up to date， no need to upgrade")
+		os.Exit(0)
+	}
 	return nil
 }
