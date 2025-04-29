@@ -58,7 +58,7 @@ func (t *WelcomeMessage) Execute(runtime connector.Runtime) error {
 		logger.Info("this machine is explicitly specified as publicly accessible")
 		logger.Info("but no public IP address can be found from the system")
 		logger.Info("a reflected public IP as seen by others on the internet is determined on a best effort basis:")
-		logger.Infof("http://%s:%d", localIP, port)
+		logger.Infof("http://%s:%d", publicNetworkInfo.ExternalPublicIP, port)
 	}
 	fmt.Println()
 	logger.Info("Open your browser and visit the above address")
