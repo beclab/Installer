@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/containerd/containerd/pkg/cri/labels"
+	"github.com/containerd/containerd/reference/docker"
 	"math"
 	"net/http"
 	"os"
@@ -163,6 +165,31 @@ func (t *LoadImages) Execute(runtime connector.Runtime) (reserr error) {
 		}
 	}
 	return
+}
+
+type PinImages struct {
+	common.KubeAction
+	manifest.ManifestAction
+}
+
+func (a *PinImages) Execute(runtime connector.Runtime) error {
+	_, manifests := a.Manifest.GetImageList()
+	if !runtime.GetSystemInfo().IsLinux() {
+		return nil
+	}
+	for _, ref := range manifests {
+		parsedRef, err := docker.ParseNormalizedNamed(ref)
+		if err != nil {
+			logger.Warnf("parse image name %s error: %v, skip pinning", ref, err)
+			continue
+		}
+		if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("ctr -n k8s.io i label %s %s=%s", parsedRef.String(), labels.PinnedImageLabelKey, labels.PinnedImageLabelValue), false, false); err != nil {
+			// tolerate cases where some images are not found
+			// e.g., like in the cloud environment and some images are not in the ami
+			logger.Warnf("pin image %s error: %v", parsedRef.String(), err)
+		}
+	}
+	return nil
 }
 
 func filterMinikubeImages(runner *connector.Runner, osType string, minikubepath string, imagesManifest []string, minikubeProfile string) []string {
