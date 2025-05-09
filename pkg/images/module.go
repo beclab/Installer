@@ -56,7 +56,21 @@ func (p *PreloadImagesModule) Init() {
 		Retry:    1,
 	}
 
+	pinImages := &task.LocalTask{
+		Name: "PinImages",
+		Prepare: &prepare.PrepareCollection{
+			&ContainerdInstalled{},
+		},
+		Action: &PinImages{
+			ManifestAction: manifest.ManifestAction{
+				Manifest: p.Manifest,
+				BaseDir:  p.BaseDir,
+			},
+		},
+	}
+
 	p.Tasks = []task.Interface{
 		preload,
+		pinImages,
 	}
 }
