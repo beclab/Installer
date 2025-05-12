@@ -13,6 +13,17 @@ type InstallDriversModule struct {
 	common.KubeModule
 	manifest.ManifestModule
 	Skip bool // enableGPU && ubuntuVersionSupport
+
+	// log a failure message and then exit
+	// instead of silently skip the jobs when:
+	// 1. no card is found (which skips the driver installation)
+	// 2. no driver is found (which skips the container toolkit installation)
+	FailOnNoInstallation bool
+
+	// currently, this is only used to skip the nvidia-smi check after driver upgrade
+	// because the nvidia-smi will not work after upgrade (Failed to initialize NVML: Driver/library version mismatch)
+	// otherwise, always check the driver is running properly after installation to fail early and avoid other issues
+	SkipNVMLCheckAfterInstall bool
 }
 
 func (m *InstallDriversModule) IsSkip() bool {
@@ -27,7 +38,7 @@ func (m *InstallDriversModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(CudaNotInstalled),
-			new(NvidiaGraphicsCard),
+			&NvidiaGraphicsCard{ExitOnNotFound: m.FailOnNoInstallation},
 		},
 		Action: &InstallCudaDeps{
 			ManifestAction: manifest.ManifestAction{
@@ -44,9 +55,9 @@ func (m *InstallDriversModule) Init() {
 		Hosts: m.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(CudaNotInstalled),
-			new(NvidiaGraphicsCard),
+			&NvidiaGraphicsCard{ExitOnNotFound: m.FailOnNoInstallation},
 		},
-		Action:   new(InstallCudaDriver),
+		Action:   &InstallCudaDriver{SkipNVMLCheckAfterInstall: m.SkipNVMLCheckAfterInstall},
 		Parallel: false,
 		Retry:    1,
 	}
@@ -321,7 +332,6 @@ func (l *NodeUnlabelingModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			new(CudaInstalled),
 			new(K8sNodeInstalled),
 			new(GpuDevicePluginInstalled),
 		},
@@ -348,7 +358,6 @@ func (l *UninstallCudaModule) Init() {
 		Hosts: l.Runtime.GetHostsByRole(common.Master),
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
-			new(CudaInstalled),
 		},
 		Action:   new(UninstallNvidiaDrivers),
 		Parallel: false,

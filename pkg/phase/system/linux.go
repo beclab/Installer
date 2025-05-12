@@ -1,6 +1,7 @@
 package system
 
 import (
+	"bytetrade.io/web3os/installer/pkg/gpu"
 	"strings"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/os"
@@ -10,7 +11,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/container"
 	"bytetrade.io/web3os/installer/pkg/core/module"
 	"bytetrade.io/web3os/installer/pkg/daemon"
-	"bytetrade.io/web3os/installer/pkg/gpu"
 	"bytetrade.io/web3os/installer/pkg/images"
 	"bytetrade.io/web3os/installer/pkg/k3s"
 	"bytetrade.io/web3os/installer/pkg/manifest"
@@ -78,17 +78,7 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 			}
 		}).withCloud(l.runtime)...).
 		addModule(cloudModuleBuilder(l.installContainerModule).withoutCloud(l.runtime)...).
-		addModule(cloudModuleBuilder(func() []module.Module {
-			// unitl now, system ready
-			return []module.Module{
-				&images.PreloadImagesModule{
-					ManifestModule: manifest.ManifestModule{
-						Manifest: l.manifestMap,
-						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
-					},
-				}, //
-			}
-		}).withoutCloud(l.runtime)...).
+		addModule(&terminus.WriteReleaseFileModule{}).
 		addModule(gpuModuleBuilder(func() []module.Module {
 			return []module.Module{
 				&gpu.InstallDriversModule{
@@ -107,6 +97,17 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 			}
 
 		}).withGPU(l.runtime)...).
+		addModule(cloudModuleBuilder(func() []module.Module {
+			// unitl now, system ready
+			return []module.Module{
+				&images.PreloadImagesModule{
+					ManifestModule: manifest.ManifestModule{
+						Manifest: l.manifestMap,
+						BaseDir:  l.runtime.GetBaseDir(), // l.runtime.Arg.BaseDir,
+					},
+				}, //
+			}
+		}).withoutCloud(l.runtime)...).
 		addModule(terminusBoxModuleBuilder(func() []module.Module {
 			return []module.Module{
 				&daemon.InstallTerminusdBinaryModule{
@@ -117,6 +118,5 @@ func (l *linuxPhaseBuilder) build() []module.Module {
 				},
 			}
 		}).inBox(l.runtime)...).
-		addModule(&terminus.PreparedModule{}).
-		addModule(&terminus.WriteReleaseFileModule{})
+		addModule(&terminus.PreparedModule{})
 }

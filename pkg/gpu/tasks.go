@@ -116,6 +116,8 @@ func (t *InstallCudaDeps) Execute(runtime connector.Runtime) error {
 
 type InstallCudaDriver struct {
 	common.KubeAction
+
+	SkipNVMLCheckAfterInstall bool
 }
 
 func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
@@ -128,17 +130,30 @@ func (t *InstallCudaDriver) Execute(runtime connector.Runtime) error {
 		return errors.Wrap(err, "failed to apt-get install nvidia-open")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-kernel-open-570", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-kernel-open-570")
+	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-kernel-open-575", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-kernel-open-575")
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-driver-570", false, true); err != nil {
-		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-driver-570")
+	if _, err := runtime.GetRunner().SudoCmd("apt-get -y install nvidia-driver-575", false, true); err != nil {
+		return errors.Wrap(errors.WithStack(err), "Failed to apt-get install nvidia-driver-575")
 	}
 
-	// if _, err := runtime.GetRunner().SudoCmd("apt-get -y install cuda-12-1", false, true); err != nil {
-	// 	return errors.Wrap(errors.WithStack(err), "Failed to apt-get install cuda-12-1")
-	// }
+	if t.SkipNVMLCheckAfterInstall {
+		return nil
+	}
+
+	// now that the nvidia driver is installed,
+	// the nvidia-smi should work correctly,
+	// if not, a manual reboot is needed by the user
+	_, installed, err := utils.ExecNvidiaSmi(runtime)
+	if err != nil {
+		return fmt.Errorf("failed to check nvidia driver status by executing nvidia-smi: %v", err)
+	}
+
+	if !installed {
+		logger.Error("ERROR: nvidia driver has been installed, but is not running properly, please reboot the machine and try again")
+		os.Exit(1)
+	}
 
 	return nil
 }
@@ -724,15 +739,15 @@ func (t *ExitIfNoDriverUpgradeNeeded) Execute(runtime connector.Runtime) error {
 		logger.Info("GPU driver not installed, will just install it")
 		return nil
 	}
-	installedVersion, err := semver.NewVersion(gpuInfo.DriverVersion)
+	installedVersion, err := semver.NewVersion(gpuInfo.CudaVersion)
 	if err != nil {
-		logger.Warn("error parsing the GPU driver version \"%s\": %v", gpuInfo.DriverVersion, err)
+		logger.Warn("error parsing the current CUDA version of GPU driver \"%s\": %v", gpuInfo.CudaVersion, err)
 		logger.Warn("assuming an upgrade is needed and continue installing")
 		return nil
 	}
-	targetVersion, _ := semver.NewVersion("570")
+	targetVersion, _ := semver.NewVersion(common.CurrentVerifiedCudaVersion)
 	if !targetVersion.GreaterThan(installedVersion) {
-		logger.Info("current GPU driver version is up to date， no need to upgrade")
+		logger.Info("current GPU driver version is up to date, no need to upgrade")
 		os.Exit(0)
 	}
 	return nil

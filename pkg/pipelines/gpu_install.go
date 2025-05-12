@@ -40,6 +40,7 @@ func InstallGpuDrivers(opt *options.InstallGpuOptions) error {
 					Manifest: manifestMap,
 					BaseDir:  runtime.Arg.BaseDir,
 				},
+				FailOnNoInstallation: true,
 			},
 			&gpu.InstallContainerToolkitModule{
 				ManifestModule: manifest.ManifestModule{
@@ -48,6 +49,7 @@ func InstallGpuDrivers(opt *options.InstallGpuOptions) error {
 				},
 			},
 			&gpu.RestartContainerdModule{},
+			&gpu.NodeLabelingModule{},
 		},
 		Runtime: runtime,
 	}
