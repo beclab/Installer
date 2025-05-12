@@ -46,6 +46,8 @@ func UpgradeGpuDrivers(opt *options.InstallGpuOptions) error {
 					Manifest: manifestMap,
 					BaseDir:  runtime.Arg.BaseDir,
 				},
+				FailOnNoInstallation:      true,
+				SkipNVMLCheckAfterInstall: true,
 			},
 			&gpu.InstallContainerToolkitModule{
 				ManifestModule: manifest.ManifestModule{

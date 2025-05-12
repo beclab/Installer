@@ -1,7 +1,9 @@
 package options
 
 import (
+	"bytetrade.io/web3os/installer/pkg/common"
 	cc "bytetrade.io/web3os/installer/pkg/core/common"
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -26,5 +28,5 @@ func NewInstallGpuOptions() *InstallGpuOptions {
 
 func (o *InstallGpuOptions) AddFlags(cmd *cobra.Command) {
 	o.GpuOptions.AddFlags(cmd)
-	cmd.Flags().StringVar(&o.Cuda, "cuda", "", "The version of the CUDA driver, current supported versions are 12.4")
+	cmd.Flags().StringVar(&o.Cuda, "cuda", "", fmt.Sprintf("The version of the CUDA driver, current supported versions are %s", common.CurrentVerifiedCudaVersion))
 }

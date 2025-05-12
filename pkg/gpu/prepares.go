@@ -2,6 +2,7 @@ package gpu
 
 import (
 	"context"
+	"os"
 
 	"bytetrade.io/web3os/installer/pkg/bootstrap/precheck"
 	"bytetrade.io/web3os/installer/pkg/clientset"
@@ -40,6 +41,7 @@ func (p *GPUSharePrepare) PreCheck(runtime connector.Runtime) (bool, error) {
 type CudaInstalled struct {
 	common.KubePrepare
 	precheck.CudaCheckTask
+	FailOnNoInstallation bool
 }
 
 func (p *CudaInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
@@ -99,21 +101,35 @@ func (p *K8sNodeInstalled) PreCheck(runtime connector.Runtime) (bool, error) {
 
 type NvidiaGraphicsCard struct {
 	common.KubePrepare
+	ExitOnNotFound bool
 }
 
-func (p *NvidiaGraphicsCard) PreCheck(runtime connector.Runtime) (bool, error) {
+func (p *NvidiaGraphicsCard) PreCheck(runtime connector.Runtime) (found bool, err error) {
 	if runtime.RemoteHost().GetOs() == common.Darwin {
 		return false, nil
 	}
+	defer func() {
+		if !p.ExitOnNotFound {
+			return
+		}
+		if !found {
+			logger.Error("ERROR: no graphics card found")
+			os.Exit(1)
+		}
+	}()
 	output, err := runtime.GetRunner().SudoCmd(
 		"lspci | grep -i vga | grep -i nvidia", false, false)
+	// an empty grep also results in the exit code to be 1
+	// and thus a non-nil err
 	if err != nil {
-		logger.Error("try to find nvidia graphics card error", err)
-		logger.Error("ignore card driver installation")
+		logger.Debug("try to find nvidia graphics card error ", err)
+		logger.Debug("ignore card driver installation")
 		return false, nil
 	}
 
-	logger.Info("find nvidia graphics card", output)
+	if output != "" {
+		logger.Info("found nvidia graphics card: ", output)
+	}
 	return output != "", nil
 }
 

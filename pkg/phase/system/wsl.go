@@ -87,12 +87,7 @@ func (l *wslPhaseBuilder) build() []module.Module {
 	(&gpu.CheckWslGPU{}).Execute(l.runtime)
 	return l.base().
 		addModule(l.installContainerModule()...).
-		addModule(&images.PreloadImagesModule{
-			ManifestModule: manifest.ManifestModule{
-				Manifest: l.manifestMap,
-				BaseDir:  l.baseDir,
-			},
-		}).
+		addModule(&terminus.WriteReleaseFileModule{}).
 		addModule(gpuModuleBuilder(func() []module.Module {
 			return []module.Module{
 				// on wsl, only install container toolkit. cuda driver is already installed in windows
@@ -106,6 +101,12 @@ func (l *wslPhaseBuilder) build() []module.Module {
 			}
 
 		}).withGPU(l.runtime)...).
+		addModule(&images.PreloadImagesModule{
+			ManifestModule: manifest.ManifestModule{
+				Manifest: l.manifestMap,
+				BaseDir:  l.baseDir,
+			},
+		}).
 		addModule(terminusBoxModuleBuilder(func() []module.Module {
 			return []module.Module{
 				&daemon.InstallTerminusdBinaryModule{
@@ -116,6 +117,5 @@ func (l *wslPhaseBuilder) build() []module.Module {
 				},
 			}
 		}).inBox(l.runtime)...).
-		addModule(&terminus.PreparedModule{}).
-		addModule(&terminus.WriteReleaseFileModule{})
+		addModule(&terminus.PreparedModule{})
 }
