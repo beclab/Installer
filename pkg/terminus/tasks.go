@@ -37,7 +37,6 @@ import (
 	"bytetrade.io/web3os/installer/pkg/core/logger"
 	"bytetrade.io/web3os/installer/pkg/core/util"
 	"bytetrade.io/web3os/installer/pkg/files"
-	uninstalltemplate "bytetrade.io/web3os/installer/pkg/terminus/templates"
 	"bytetrade.io/web3os/installer/pkg/utils"
 
 	"github.com/pkg/errors"
@@ -287,39 +286,6 @@ func (t *CheckInstalled) Execute(runtime connector.Runtime) error {
 		t.PipelineCache.Set(common.CacheInstalledState, true)
 	} else if t.Force {
 		return errors.New("Olares is not installed, refuse to continue")
-	}
-
-	return nil
-}
-
-type GenerateOlaresUninstallScript struct {
-	common.KubeAction
-}
-
-func (t *GenerateOlaresUninstallScript) Execute(runtime connector.Runtime) error {
-	filePath := path.Join(runtime.GetBaseDir(), uninstalltemplate.OlaresUninstallScriptValues.Name())
-	uninstallPath := path.Join("/usr/local/bin", uninstalltemplate.OlaresUninstallScriptValues.Name())
-	data := util.Data{
-		"BaseDir": runtime.GetBaseDir(),
-		"Phase":   "install",
-		"Version": t.KubeConf.Arg.OlaresVersion,
-	}
-
-	uninstallScriptStr, err := util.Render(uninstalltemplate.OlaresUninstallScriptValues, data)
-	if err != nil {
-		return errors.Wrap(errors.WithStack(err), "render uninstall template failed")
-	}
-
-	if err := util.WriteFile(filePath, []byte(uninstallScriptStr), cc.FileMode0755); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write uninstall %s failed", filePath))
-	}
-
-	if err := runtime.GetRunner().SudoScp(filePath, uninstallPath); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", filePath, uninstallPath))
-	}
-
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("rm -rf %s", filePath), false, false); err != nil {
-		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove file %s failed", filePath))
 	}
 
 	return nil
