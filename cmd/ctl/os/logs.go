@@ -61,6 +61,11 @@ func collectLogs(options *LogCollectOptions) error {
 		return fmt.Errorf("failed to collect systemd logs: %v", err)
 	}
 
+	fmt.Println("collecting dmesg logs ...")
+	if err := collectDmesgLogs(tw, options); err != nil {
+		return fmt.Errorf("failed to collect dmesg logs: %v", err)
+	}
+
 	fmt.Println("collecting logs from kubernetes cluster...")
 	if err := collectKubernetesLogs(tw, options); err != nil {
 		return fmt.Errorf("failed to collect kubernetes logs: %v", err)
@@ -219,6 +224,27 @@ func collectSystemdLogs(tw *tar.Writer, options *LogCollectOptions) error {
 		if _, err := io.CopyN(tw, logFile, header.Size); err != nil {
 			return fmt.Errorf("failed to write logs for %s: %v", service, err)
 		}
+	}
+	return nil
+}
+
+func collectDmesgLogs(tw *tar.Writer, options *LogCollectOptions) error {
+	cmd := exec.Command("dmesg")
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	header := &tar.Header{
+		Name:    "dmesg.log",
+		Mode:    0644,
+		Size:    int64(len(output)),
+		ModTime: time.Now(),
+	}
+	if err := tw.WriteHeader(header); err != nil {
+		return fmt.Errorf("failed to write dmesg header: %v", err)
+	}
+	if _, err := tw.Write(output); err != nil {
+		return fmt.Errorf("failed to write dmesg data: %v", err)
 	}
 	return nil
 }
