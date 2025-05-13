@@ -134,23 +134,6 @@ func (m *CheckInstalledModule) Init() {
 	}
 }
 
-type OlaresUninstallScriptModule struct {
-	common.KubeModule
-}
-
-func (m *OlaresUninstallScriptModule) Init() {
-	m.Name = "GenerateOlaresUninstallScript"
-
-	uninstallScript := &task.LocalTask{
-		Name:   "GenerateOlaresUninstallScript",
-		Action: &GenerateOlaresUninstallScript{},
-	}
-
-	m.Tasks = []task.Interface{
-		uninstallScript,
-	}
-}
-
 type InstallComponentsInClusterModule struct {
 	common.KubeModule
 }

@@ -1,4 +1,4 @@
-package info
+package osinfo
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 func NewCmdInfo() *cobra.Command {
 	infoCmd := &cobra.Command{
-		Use:   "info",
+		Use:   "osinfo",
 		Short: "Print system information, etc.",
 		Long:  "help for printing info",
 	}
